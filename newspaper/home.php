@@ -41,7 +41,7 @@ $showBreakingLive = filter_var(
 );
 
 // Lokales Platzhalterbild (keine Drittanbieter-Requests; CSP img-src 'self').
-$newsPlaceholderImg = rtrim((string) \CMS\ThemeManager::instance()->getThemeUrl('cms-newspaper'), '/') . '/images/placeholder.svg';
+$newsPlaceholderImg = theme_v4_theme_url(__DIR__) . '/images/placeholder.svg';
 
 /**
  * Static editorial placeholders – mirror the broadsheet layout of the
@@ -217,14 +217,16 @@ $feedRight = [
             $badge    = (string) ($item['badge'] ?? '');
             $badgeQ   = !empty($item['badge_q']);
             $href     = news_href((string) ($item['href'] ?? '#'));
+            // Demo-Artikel: nur verlinken, wenn das Ziel als Route/veröffentlichte Seite existiert.
+            $tag      = theme_v4_link_available($href) ? 'a' : 'div';
             ?>
-            <a href="<?php echo $safe($href); ?>" class="news-list-card news-reveal">
+            <<?php echo $tag; ?><?php echo $tag === 'a' ? ' href="' . $safe($href) . '"' : ''; ?> class="news-list-card news-reveal">
                 <div class="news-list-img">
                     <?php if ($badge !== '') : ?>
                         <span class="news-badge<?php echo $badgeQ ? ' is-quiet' : ''; ?>"><?php echo $safe($badge); ?></span>
                     <?php endif; ?>
                     <?php if ($img !== '') : ?>
-                        <img src="<?php echo $safe($img); ?>" alt="" loading="lazy" decoding="async">
+                        <?php echo theme_v4_img($img, '', ['width' => 400, 'height' => 250, 'item' => $item]); ?>
                     <?php endif; ?>
                 </div>
                 <div class="news-list-body">
@@ -236,7 +238,7 @@ $feedRight = [
                         <span><?php echo $safe(strtoupper($read)); ?></span>
                     </div>
                 </div>
-            </a>
+            </<?php echo $tag; ?>>
         <?php endforeach; ?>
     </div>
 
@@ -250,9 +252,11 @@ $feedRight = [
                 <?php echo $safe($infoLeftHeading); ?>
             </h3>
             <p><?php echo $safe($infoLeftText); ?></p>
+            <?php if (theme_v4_link_available(news_href($infoLeftUrl))) : ?>
             <a href="<?php echo $safe(news_href($infoLeftUrl)); ?>" class="news-info-link">
                 <?php echo $safe($infoLeftLabel); ?> →
             </a>
+            <?php endif; ?>
         </div>
         <div class="news-info-box is-accent news-reveal">
             <h3>
@@ -262,9 +266,11 @@ $feedRight = [
                 <?php echo $safe($infoRightHeading); ?>
             </h3>
             <p><?php echo $safe($infoRightText); ?></p>
+            <?php if (theme_v4_link_available(news_href($infoRightUrl))) : ?>
             <a href="<?php echo $safe(news_href($infoRightUrl)); ?>" class="news-info-link">
                 <?php echo $safe($infoRightLabel); ?> →
             </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -279,14 +285,15 @@ $feedRight = [
             $tKind  = (string) ($tile['kind']  ?? '');
             $tBadge = (string) ($tile['badge'] ?? '');
             $tHref  = news_href((string) ($tile['href'] ?? '#'));
+            $tTag   = theme_v4_link_available($tHref) ? 'a' : 'div';
             ?>
-            <a href="<?php echo $safe($tHref); ?>" class="news-tile news-reveal">
+            <<?php echo $tTag; ?><?php echo $tTag === 'a' ? ' href="' . $safe($tHref) . '"' : ''; ?> class="news-tile news-reveal">
                 <div class="news-tile-img">
                     <?php if ($tBadge !== '') : ?>
                         <span class="news-badge is-quiet"><?php echo $safe($tBadge); ?></span>
                     <?php endif; ?>
                     <?php if ($tImg !== '') : ?>
-                        <img src="<?php echo $safe($tImg); ?>" alt="" loading="lazy" decoding="async">
+                        <?php echo theme_v4_img($tImg, '', ['width' => 400, 'height' => 250, 'item' => $tile]); ?>
                     <?php endif; ?>
                 </div>
                 <div class="news-tile-body">
@@ -296,7 +303,7 @@ $feedRight = [
                         <span><?php echo $safe(strtoupper($tKind)); ?></span>
                     </div>
                 </div>
-            </a>
+            </<?php echo $tTag; ?>>
         <?php endforeach; ?>
     </div>
 
@@ -306,11 +313,14 @@ $feedRight = [
         <div>
             <h2 class="news-section-hdr"><?php echo $safe($feedLeftHeading); ?></h2>
             <div class="news-feed-box">
-                <?php foreach ($feedLeft as $row) : ?>
-                    <a href="<?php echo $safe(news_href((string) ($row['href'] ?? '#'))); ?>" class="news-feed-item">
+                <?php foreach ($feedLeft as $row) :
+                    $fHref = trim((string) ($row['href'] ?? ''));
+                    $fTag  = $fHref !== '' && $fHref !== '#' && theme_v4_link_available(news_href($fHref)) ? 'a' : 'div';
+                    ?>
+                    <<?php echo $fTag; ?><?php echo $fTag === 'a' ? ' href="' . $safe(news_href($fHref)) . '"' : ''; ?> class="news-feed-item">
                         <span class="news-feed-title"><?php echo $safe((string) ($row['title'] ?? '')); ?></span>
                         <span class="news-feed-date"><?php echo $safe((string) ($row['date'] ?? '')); ?></span>
-                    </a>
+                    </<?php echo $fTag; ?>>
                 <?php endforeach; ?>
             </div>
         </div>
@@ -318,11 +328,14 @@ $feedRight = [
         <div>
             <h2 class="news-section-hdr"><?php echo $safe($feedRightHeading); ?></h2>
             <div class="news-feed-box">
-                <?php foreach ($feedRight as $row) : ?>
-                    <a href="<?php echo $safe(news_href((string) ($row['href'] ?? '#'))); ?>" class="news-feed-item">
+                <?php foreach ($feedRight as $row) :
+                    $fHref = trim((string) ($row['href'] ?? ''));
+                    $fTag  = $fHref !== '' && $fHref !== '#' && theme_v4_link_available(news_href($fHref)) ? 'a' : 'div';
+                    ?>
+                    <<?php echo $fTag; ?><?php echo $fTag === 'a' ? ' href="' . $safe(news_href($fHref)) . '"' : ''; ?> class="news-feed-item">
                         <span class="news-feed-title"><?php echo $safe((string) ($row['title'] ?? '')); ?></span>
                         <span class="news-feed-date"><?php echo $safe((string) ($row['date'] ?? '')); ?></span>
-                    </a>
+                    </<?php echo $fTag; ?>>
                 <?php endforeach; ?>
             </div>
         </div>

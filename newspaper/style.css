@@ -4,10 +4,10 @@ Theme URI: https://phin.network
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phin.network
 Description: Editoriales News-/Magazin-Theme – Broadsheet-Typografie, Ink-Schwarz mit sparsam eingesetztem Signal-Rot, Rule-Lines statt Card-Shadows. Für IT-News, Magazine und redaktionelle Portale.
-Version: 1.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: cms-newspaper
@@ -25,13 +25,14 @@ Tags: news, newspaper, magazine, editorial, broadsheet, portal, blog
     --news-ink:          #0a0b0c;
     --news-ink-mid:      #3a3b3c;
     --news-ink-dim:      #6b6c6d;
-    --news-ink-ghost:    #9a9b9c;
+    --news-ink-ghost:    #6f7071; /* Meta-Text: 4,7:1 auf Papier (bisher #9a9b9c: 2,6:1) */
     --news-paper:        #f8f9fa;
     --news-paper-warm:   #f1f0ec;
     --news-surface:      #ffffff;
-    --news-accent:       #e32d12;
-    --news-accent-hover: #c22510;
-    --news-accent-soft:  rgba(227, 45, 18, 0.06);
+    --news-accent:       #c22510; /* 5,6:1 auf Papier, 5,9:1 mit weißer Schrift (bisher #e32d12: 4,3:1) */
+    --news-accent-hover: #9f1e0d;
+    --news-accent-on-dark: color-mix(in srgb, var(--news-accent) 60%, #fff); /* Akzent auf Ink-Flächen: 6,7:1 */
+    --news-accent-soft:  rgba(194, 37, 16, 0.06);
     --news-rule:         #e4e5e7;
     --news-rule-soft:    #f0f0f1;
     --news-live:         #22c55e;
@@ -39,8 +40,8 @@ Tags: news, newspaper, magazine, editorial, broadsheet, portal, blog
     --news-text-on-dark:      rgba(255, 255, 255, 0.82);
     --news-text-on-dark-mute: rgba(255, 255, 255, 0.55);
 
-    --news-font-display: "Playfair Display", Georgia, "Times New Roman", serif;
-    --news-font-body:    "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --news-font-display: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --news-font-body:    "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --news-font-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
     --news-font-size-base: 16px;
@@ -594,10 +595,10 @@ p { color: var(--news-ink-mid); }
 .news-hero-icon svg { width: 32px; height: 32px; fill: currentColor; color: var(--news-surface); }
 .news-hero-card .news-hero-body { min-width: 0; }
 .news-hero-card .news-kicker {
-    color: var(--news-accent);
+    color: var(--news-accent-on-dark);
     margin-bottom: 0.5rem;
 }
-.news-hero-card .news-kicker::before { background: var(--news-accent); }
+.news-hero-card .news-kicker::before { background: var(--news-accent-on-dark); }
 .news-hero-card h1,
 .news-hero-card .news-hero-title {
     font-family: var(--news-font-display);
@@ -896,7 +897,7 @@ p { color: var(--news-ink-mid); }
     position: relative;
     border-bottom: 3px solid var(--news-accent);
 }
-.news-page-hero .news-kicker { color: var(--news-accent); }
+.news-page-hero .news-kicker { color: var(--news-accent-on-dark); }
 .news-page-hero h1 {
     font-family: var(--news-font-display);
     font-size: clamp(1.875rem, 4vw, 2.75rem);
@@ -1034,18 +1035,19 @@ p { color: var(--news-ink-mid); }
     margin-bottom: 1rem;
     display: inline-block;
 }
-.news-footer-brand .news-wordmark-accent { color: var(--news-accent); }
+.news-footer-brand .news-wordmark-accent { color: var(--news-accent-on-dark); }
 .news-footer-brand p {
     color: var(--news-text-on-dark-mute);
     font-size: 0.9375rem;
     line-height: 1.55;
     max-width: 36ch;
 }
-.news-footer-col h4 {
+.news-footer-col h4,
+.news-footer-col .news-footer-heading {
     font-family: var(--news-font-mono);
     font-size: 0.6875rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.55);
     text-transform: uppercase;
     letter-spacing: 0.12em;
     margin-bottom: 1.25rem;
@@ -1058,7 +1060,7 @@ p { color: var(--news-ink-mid); }
     transition: color 0.2s ease;
 }
 .news-footer-col ul li a:hover,
-.news-footer-col ul li.current-menu-item a { color: var(--news-accent); }
+.news-footer-col ul li.current-menu-item a { color: var(--news-accent-on-dark); }
 
 /* Partner strip (very thin black bar) */
 .news-partner-strip {
@@ -1070,7 +1072,7 @@ p { color: var(--news-ink-mid); }
 .news-partner-strip a {
     font-family: var(--news-font-mono);
     font-size: 0.625rem;
-    color: #555;
+    color: #8a8a8a;
     text-transform: uppercase;
     letter-spacing: 0.12em;
     margin: 0 0.875rem;
@@ -1086,7 +1088,7 @@ p { color: var(--news-ink-mid); }
     padding: 1.25rem 1rem;
     font-family: var(--news-font-mono);
     font-size: 0.625rem;
-    color: #444;
+    color: #8a8a8a;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -1102,7 +1104,7 @@ p { color: var(--news-ink-mid); }
     gap: 1rem;
 }
 .news-footer-legal a {
-    color: #555;
+    color: #8a8a8a;
     transition: color 0.2s ease;
 }
 .news-footer-legal a:hover { color: #bbb; }
@@ -1131,7 +1133,6 @@ p { color: var(--news-ink-mid); }
 @media (max-width: 1024px) {
     .news-bar-inner { gap: 1rem; }
     .news-footer-grid { grid-template-columns: 1.5fr 1fr 1fr; gap: 2rem; }
-    .news-footer-col:nth-child(4) { display: none; }
 }
 
 @media (max-width: 768px) {
@@ -1162,7 +1163,6 @@ p { color: var(--news-ink-mid); }
     .news-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
 
     .news-footer-grid { grid-template-columns: 1fr; gap: 1.75rem; }
-    .news-footer-col:nth-child(4) { display: block; }
 
     .news-footer-legal { display: block; margin: 0.75rem 0 0; }
 }
@@ -1200,3 +1200,73 @@ p { color: var(--news-ink-mid); }
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
 form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
 form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+
+/* ================================================================
+   17. Barrierefreiheit (365CMS 4.x)
+   ================================================================ */
+/* Geschlossener Drawer ist nicht per Tastatur erreichbar (hidden), Social-Profile als Liste */
+.news-mobile-drawer[hidden] { display: none; }
+.news-social { list-style: none; }
+.news-social li { display: inline-flex; }
+.news-content:focus { outline: none; }
+
+/* Fokus auf Ink-Flächen (Utility-Bar, Hero-Karte, Seitenkopf, Footer): heller Akzent statt Signal-Rot (≥ 3:1) */
+.news-bar-utility :focus-visible,
+.news-hero-card :focus-visible,
+.news-page-hero :focus-visible,
+.news-footer :focus-visible {
+    outline-color: var(--news-accent-on-dark);
+}
+.news-footer .news-focus-shadow:focus-visible {
+    box-shadow: 0 0 0 2px var(--news-ink), 0 0 0 4px var(--news-accent-on-dark);
+}
+
+/* ================================================================
+   18. 365CMS 4.x Token-Brücke
+   Übergibt die Newspaper-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis, Login-Showcase). Das Theme hat keinen Dark Mode.
+   ================================================================ */
+:root {
+    --tv4-primary:       var(--news-ink);
+    --tv4-primary-hover: var(--news-accent);
+    --tv4-on-primary:    #ffffff;
+    --tv4-link:          var(--news-accent);
+    --tv4-text:          var(--news-ink);
+    --tv4-muted:         var(--news-ink-dim);
+    --tv4-bg:            var(--news-paper);
+    --tv4-surface:       var(--news-surface);
+    --tv4-surface-alt:   var(--news-paper-warm);
+    --tv4-border:        var(--news-rule);
+    --tv4-border-strong: #8d8e8f;
+    --tv4-radius:        var(--news-radius);
+    --tv4-btn-radius:    var(--news-btn-radius);
+    --tv4-focus:         var(--focus-ring);
+    --tv4-font-body:     var(--news-font-body);
+    --tv4-font-heading:  var(--news-font-display);
+    --tv4-hero-start:    var(--news-ink);
+    --tv4-hero-end:      #1a1b1c;
+    --tv4-max:           var(--news-max-width);
+}
+
+/* Rahmen der Core-Module (Breite wie .news-container; der Header ist sticky, nicht fixed) */
+.theme-v4-module {
+    width: 100%;
+    max-width: var(--news-max-width);
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content { padding-top: 0; }
+
+/* Fehlerseiten: eigenständiges Dokument (Wartung, Fatal-Handler) */
+body.error-standalone {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    background: var(--news-paper);
+    color: var(--news-ink);
+    font-family: var(--news-font-body);
+}
+body.error-standalone .news-content { flex: 1 0 auto; }

@@ -2,6 +2,9 @@
 /**
  * CMS Newspaper Theme – Generic static page (CMS Page record)
  *
+ * Datenvertrag (365CMS 4.0): $page (Array; content = vom Core gerendertes, sanitiertes HTML). Downloads und
+ * Feeds rendert der Core ebenfalls hierüber ($page['id'] = 0, ohne Datum/Bild) – alle Felder optional.
+ *
  * @package CmsNewspaper_Theme
  * @var array $page
  */
@@ -11,35 +14,21 @@ if (!defined('ABSPATH')) {
 }
 
 if (empty($page) || !is_array($page)) {
-    http_response_code(404);
-    try {
-        \CMS\ThemeManager::instance()->render('404');
-    } catch (\Throwable) {
-        require __DIR__ . '/404.php';
-    }
+    require __DIR__ . '/404.php';
     return;
 }
 
-$pageTitle   = (string) ($page['title']      ?? '');
-$pageContent = (string) ($page['content']    ?? '');
+$pageTitle   = trim((string) ($page['title'] ?? ''));
+$pageContent = (string) ($page['content'] ?? '');
 $updatedAt   = (string) ($page['updated_at'] ?? '');
-
-$allowedTags = '<p><br><strong><b><em><i><u><s>'
-    . '<h1><h2><h3><h4><h5><h6>'
-    . '<ul><ol><li><dl><dt><dd>'
-    . '<a><img>'
-    . '<blockquote><pre><code>'
-    . '<table><thead><tbody><tr><th><td>'
-    . '<div><span><section><article><aside>'
-    . '<hr><figure><figcaption>';
 
 $safe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 ?>
 
-<section class="news-page-hero" aria-label="<?php echo $safe($pageTitle); ?>">
+<section class="news-page-hero"<?php echo $pageTitle !== '' ? ' aria-label="' . $safe($pageTitle) . '"' : ''; ?>>
     <div class="news-container">
         <span class="news-kicker">Seite</span>
-        <?php if (trim($pageTitle) !== '') : ?>
+        <?php if ($pageTitle !== '') : ?>
             <h1><?php echo $safe($pageTitle); ?></h1>
         <?php endif; ?>
         <?php
@@ -59,7 +48,11 @@ $safe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8'
     <div class="news-container">
         <?php if (trim($pageContent) !== '') : ?>
             <div class="news-prose">
-                <?php echo strip_tags($pageContent, $allowedTags); ?>
+                <?php
+                // Vom Core gerendertes, sanitiertes HTML unverändert ausgeben. Bisher filterte strip_tags() u. a.
+                // <form>, <button>, <picture>, <svg> und <nav> heraus und zerlegte damit Downloads, Feeds und Formulare.
+                echo $pageContent;
+                ?>
             </div>
         <?php else : ?>
             <p class="news-prose-empty">Diese Seite hat noch keinen Inhalt.</p>
