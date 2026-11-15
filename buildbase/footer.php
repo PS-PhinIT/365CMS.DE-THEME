@@ -30,47 +30,86 @@ try {
 
 $safe = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 
+// Vorlage enthält z. B. `&copy;`: erst Entities auflösen, dann einmal escapen (bisher als „&amp;copy;“ sichtbar).
 $copyright = str_replace(
     ['{year}', '{site_title}'],
     [gmdate('Y'), $siteTitle],
-    strip_tags($copyrightTpl)
+    html_entity_decode(strip_tags($copyrightTpl), ENT_QUOTES | ENT_HTML5, 'UTF-8')
 );
 
 $baseUrl = rtrim($siteUrl, '/');
+
+// Standardspalten: nur Ziele verlinken, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0);
+// leere Spalten entfallen.
+$bbFooterColumns = [];
+if ($showLinks) {
+    $bbFooterColumns['Handwerk'] = [
+        ['label' => 'Handwerker finden', 'url' => $baseUrl . '/handwerker'],
+        ['label' => 'Baufirmen',         'url' => $baseUrl . '/baufirmen'],
+        ['label' => 'Angebot anfragen',  'url' => $baseUrl . '/angebot'],
+        ['label' => 'Referenzprojekte',  'url' => $baseUrl . '/projekte'],
+    ];
+    $bbFooterColumns['Für Fachbetriebe'] = [
+        ['label' => 'Profil anlegen',    'url' => $baseUrl . '/register'],
+        ['label' => 'Pakete & Preise',   'url' => $baseUrl . '/pricing'],
+        ['label' => 'Downloads',         'url' => $baseUrl . '/downloads'],
+    ];
+}
+$bbFooterColumns['Service'] = [
+    ['label' => 'Kontakt',           'url' => $baseUrl . '/contact'],
+    ['label' => 'Newsletter',        'url' => $baseUrl . '/newsletter'],
+    ['label' => 'Wissensdatenbank',  'url' => $baseUrl . '/kb'],
+];
+
+// Im Admin gepflegte Footer-Menüs (bisher registriert, aber nie ausgegeben).
+$bbFooterMenu = static function (string $location): string {
+    ob_start();
+    theme_nav_menu($location);
+    return trim((string) ob_get_clean());
+};
+$bbFooterNavHtml   = $bbFooterMenu('footer-nav');
+$bbFooterLegalHtml = $bbFooterMenu('footer-legal');
 ?>
     </div><!-- #content -->
 
-    <footer id="bb-footer" class="bb-footer" role="contentinfo">
+    <footer id="bb-footer" class="bb-footer">
         <div class="bb-container">
             <div class="bb-footer-widgets">
                 <div>
-                    <h3><?php echo $safe($siteTitle); ?></h3>
+                    <h2 class="bb-footer-heading"><?php echo $safe($siteTitle); ?></h2>
                     <?php if ($footerText !== '') : ?>
                         <p><?php echo nl2br($safe($footerText)); ?></p>
                     <?php endif; ?>
                 </div>
-                <?php if ($showLinks) : ?>
+                <?php foreach ($bbFooterColumns as $bbColumnTitle => $bbColumnLinks) :
+                    $bbColumnLinks = theme_v4_filter_links($bbColumnLinks);
+                    if ($bbColumnLinks === []) {
+                        continue;
+                    } ?>
                     <div>
-                        <h3>Handwerk</h3>
+                        <h2 class="bb-footer-heading"><?php echo $safe($bbColumnTitle); ?></h2>
                         <ul>
-                            <li><a href="<?php echo $safe(buildbase_safe_url($baseUrl . '/handwerker', $siteUrl)); ?>">Handwerker finden</a></li>
-                            <li><a href="<?php echo $safe(buildbase_safe_url($baseUrl . '/baufirmen', $siteUrl)); ?>">Baufirmen</a></li>
-                            <li><a href="<?php echo $safe(buildbase_safe_url($baseUrl . '/angebot', $siteUrl)); ?>">Angebot anfragen</a></li>
-                            <li><a href="<?php echo $safe(buildbase_safe_url($baseUrl . '/projekte', $siteUrl)); ?>">Referenzprojekte</a></li>
+                            <?php foreach ($bbColumnLinks as $bbLink) : ?>
+                            <li><a href="<?php echo $safe(buildbase_safe_url($bbLink['url'], $siteUrl)); ?>"><?php echo $safe($bbLink['label']); ?></a></li>
+                            <?php endforeach; ?>
                         </ul>
                     </div>
-                    <div>
-                        <h3>Für Fachbetriebe</h3>
-                        <ul>
-                            <li><a href="<?php echo $safe(buildbase_safe_url($baseUrl . '/register', $siteUrl)); ?>">Profil anlegen</a></li>
-                            <li><a href="<?php echo $safe(buildbase_safe_url($baseUrl . '/pricing', $siteUrl)); ?>">Pakete &amp; Preise</a></li>
-                        </ul>
-                    </div>
+                <?php endforeach; ?>
+                <?php if ($bbFooterNavHtml !== '') : ?>
+                    <nav aria-labelledby="bb-footer-nav-title">
+                        <h2 class="bb-footer-heading" id="bb-footer-nav-title">Navigation</h2>
+                        <?php echo $bbFooterNavHtml; // theme_nav_menu(): alle Werte escaped ?>
+                    </nav>
                 <?php endif; ?>
             </div>
         </div>
         <div class="bb-footer-bottom">
-            <div class="bb-container"><?php echo $safe($copyright); ?></div>
+            <div class="bb-container">
+                <?php echo $safe($copyright); ?>
+                <?php if ($bbFooterLegalHtml !== '') : ?>
+                    <nav class="bb-footer-legal" aria-label="Rechtliche Links"><?php echo $bbFooterLegalHtml; // escaped ?></nav>
+                <?php endif; ?>
+            </div>
         </div>
     </footer>
 

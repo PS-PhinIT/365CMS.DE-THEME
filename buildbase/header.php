@@ -31,6 +31,8 @@ $siteTitle    = (string) $themeManager->getSiteTitle();
 $siteDesc     = (string) $themeManager->getSiteDescription();
 $isLoggedIn   = theme_is_logged_in();
 $siteUrl      = (string) SITE_URL;
+$bbLocale     = theme_v4_locale($contentLocale ?? null);
+$bbIsPreview  = theme_v4_is_preview(get_defined_vars());
 
 $safe        = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 $siteBase    = rtrim(buildbase_safe_url($siteUrl, '/'), '/');
@@ -40,7 +42,8 @@ $searchUrl   = buildbase_safe_url(function_exists('theme_route_url') ? theme_rou
 $loginUrl    = buildbase_safe_url(function_exists('theme_route_url') ? theme_route_url('login') : $siteBase . '/login', $siteBase . '/login');
 $registerUrl = buildbase_safe_url(function_exists('theme_route_url') ? theme_route_url('register') : $siteBase . '/register', $siteBase . '/register');
 $memberUrl   = buildbase_safe_url($siteBase . '/member', $siteBase . '/');
-$logoSafeUrl = buildbase_safe_url($logoUrl);
+$logoSafeUrl = theme_v4_site_logo(buildbase_safe_url($logoUrl));
+$logoDims    = $logoSafeUrl !== '' ? theme_v4_image_dimensions($logoSafeUrl) : null;
 
 $telDigits = preg_replace('/[^0-9+]/', '', $emergencyPhone) ?? '';
 $hasEmBanner = $showEmBanner && $emergencyPhone !== '';
@@ -48,36 +51,39 @@ $hasEmBanner = $showEmBanner && $emergencyPhone !== '';
 $bodyClasses = ['bb-body'];
 if ($isLoggedIn)   { $bodyClasses[] = 'is-logged-in'; }
 if ($hasEmBanner)  { $bodyClasses[] = 'has-emergency-banner'; }
+if ($bbIsPreview)  { $bodyClasses[] = 'is-preview'; }
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?php echo $safe($bbLocale); ?>">
 <head>
     <meta charset="UTF-8">
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
-    <meta name="description" content="<?php echo $safe($siteDesc); ?>">
-    <title><?php echo $safe($siteTitle); ?></title>
+    <title><?php echo $safe(theme_v4_document_title($title ?? null)); ?></title>
+    <?php echo theme_v4_head_tags($bbIsPreview, $siteDesc); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
 <body class="<?php echo $safe(implode(' ', $bodyClasses)); ?>">
 <div id="page" class="bb-page-wrapper">
 
-    <a class="bb-skip-link" href="#main">Zum Inhalt springen</a>
+    <a class="bb-skip-link" href="#main"><?php echo $safe(theme_v4_t('Zum Inhalt springen', 'Skip to content', $bbLocale)); ?></a>
 
     <?php if ($hasEmBanner) : ?>
-        <div class="bb-emergency-banner" role="alert">
+        <?php // Kein role="alert": der Hinweis ist statisch und soll nicht bei jedem Seitenaufruf vorgelesen werden. ?>
+        <div class="bb-emergency-banner">
             <?php echo $safe($emergencyLabel); ?>
             <a class="bb-emergency-link" href="tel:<?php echo $safe($telDigits); ?>"><?php echo $safe($emergencyPhone); ?></a>
         </div>
     <?php endif; ?>
 
-    <header id="masthead" class="bb-site-header" role="banner">
+    <header id="masthead" class="bb-site-header">
         <div class="bb-header-inner">
 
             <div class="bb-branding">
                 <a href="<?php echo $safe($homeUrl); ?>" class="bb-site-logo" rel="home">
                     <?php if ($logoSafeUrl !== '') : ?>
-                        <img src="<?php echo $safe($logoSafeUrl); ?>" alt="<?php echo $safe($siteTitle); ?>" width="160" height="44">
+                        <img src="<?php echo $safe($logoSafeUrl); ?>" alt="<?php echo $safe($siteTitle); ?>" width="<?php echo $logoDims !== null ? $logoDims[0] : 160; ?>" height="<?php echo $logoDims !== null ? $logoDims[1] : 44; ?>" decoding="async">
                     <?php else : ?>
                         <span class="bb-logo-text">
                             <span class="bb-logo-icon" aria-hidden="true">&#9874;</span>
@@ -87,8 +93,9 @@ if ($hasEmBanner)  { $bodyClasses[] = 'has-emergency-banner'; }
                 </a>
             </div>
 
-            <nav id="site-navigation" class="main-navigation" role="navigation" aria-label="Hauptnavigation">
-                <?php theme_nav_menu('primary-nav'); ?>
+            <nav id="site-navigation" class="main-navigation" aria-label="<?php echo $safe(theme_v4_t('Hauptnavigation', 'Main navigation', $bbLocale)); ?>">
+                <?php // Eine responsive Navigation für Desktop und Mobil: main_nav einmal (Kontext desktop), sonst doppelte Einträge. ?>
+                <?php theme_nav_menu('primary-nav', 'desktop'); ?>
             </nav>
 
             <div class="bb-header-actions">
@@ -115,17 +122,20 @@ if ($hasEmBanner)  { $bodyClasses[] = 'has-emergency-banner'; }
         </div>
 
         <?php if ($showSearch) : ?>
-            <div id="searchPanel" class="bb-search-panel" hidden aria-hidden="true">
+            <div id="searchPanel" class="bb-search-panel" hidden>
                 <div class="bb-header-inner">
                     <form role="search" method="get" action="<?php echo $safe($searchUrl); ?>" class="bb-search-form">
                         <label for="bb-search" class="bb-visually-hidden">Suche</label>
                         <input id="bb-search" type="search" name="q" placeholder="Handwerker, Baufirmen, Projekte suchen …" autocomplete="off" class="bb-search-input bb-focus-shadow">
                         <button type="submit" class="bb-btn bb-btn-primary" aria-label="Suchen">Suchen</button>
                     </form>
-                    <button id="searchClose" type="button" class="bb-btn bb-btn-ghost" aria-label="Suche schließen">&times;</button>
+                    <button id="searchClose" type="button" class="bb-btn bb-btn-ghost" aria-label="Suche schließen"><span aria-hidden="true">&times;</span></button>
                 </div>
             </div>
         <?php endif; ?>
     </header>
 
 <div id="content" class="bb-site-content">
+<?php if ($bbIsPreview) : ?>
+<p class="theme-v4-preview-banner" role="status"><?php echo $safe(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $bbLocale)); ?></p>
+<?php endif; ?>

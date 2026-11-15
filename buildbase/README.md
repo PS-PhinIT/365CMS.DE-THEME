@@ -1,7 +1,7 @@
 # BuildBase Theme
 
-**Version:** 3.1.0
-**Target:** 365CMS 3.4.00+, PHP 8.4
+**Version:** 4.0.0
+**Target:** 365CMS 4.0.0 – 4.1.0, PHP 8.4.1+
 **Identität:** Bau & Handwerk, Projektabwicklung, Handwerksbetriebe.
 
 ## Fokus
@@ -14,11 +14,11 @@ blau-violetten Verläufe – jede Designentscheidung ist auf das Gewerk abgestim
 ## Architektur
 
 - Theme-Klasse `BuildBase_Theme` mit `\CMS\Hooks::addAction(...)`-Bindings.
-- Menüregistrierung sowohl auf `init` als auch `cms_init` für v3-Startup-Pfade.
+- Menüpositionen über den Core-Filter `register_menu_locations`; die Hauptnavigation löst den Core-Hook `main_nav` aus.
 - Konstante `BUILDBASE_THEME_VERSION` synchron zu `theme.json`, `style.css`-Header und `update.json`.
-- Stylesheet wird via `enqueueStyles()` mit `<link rel="preload">` + `<link rel="stylesheet">` (Cache-Busting `?v=`) ausgegeben.
+- `enqueueStyles()` lädt `style.css` und `css/cms-v4.css` (Cache-Busting `?v=`); im Memberbereich nur die Palette über `member_head`.
 - Navigation-JS wird mit `defer` und Cache-Busting geladen.
-- Google Fonts via `preconnect` + escapte CSS-URL.
+- Keine externen Schriften: lokale Schriften aus der Core-Schriftverwaltung, sonst System-Stack.
 - Alle Customizer-Werte werden String-gecastet und mit `htmlspecialchars()` ausgegeben; Booleans via `filter_var(..., FILTER_VALIDATE_BOOLEAN)`.
 
 ## Designprinzipien
@@ -59,15 +59,22 @@ blau-violetten Verläufe – jede Designentscheidung ist auf das Gewerk abgestim
 buildbase/
 ├── 404.php
 ├── CHANGELOG.md
+├── contact.php                  (Core-Kontaktformular, 4.0.0)
+├── css/cms-v4.css               (gemeinsame 4.x-Integrationsstile)
 ├── error.php
 ├── footer.php
 ├── functions.php
 ├── header.php
 ├── home.php
+├── includes/cms-v4-compat.php   (gemeinsame 4.x-Helfer theme_v4_*)
 ├── index.php
 ├── js/navigation.js
+├── knowledgebase/{archive,single}.php
+├── newsletter/{page,action,issue}.php
 ├── page.php
 ├── README.md
+├── blog-single.php
+├── search.php
 ├── style.css
 ├── theme.json
 └── update.json

@@ -1,5 +1,8 @@
 /**
  * BuildBase Theme – Navigation & UI
+ *
+ * Mobil-Menü und Suchpanel als Disclosure (aria-expanded/aria-controls); Escape schließt das jeweils
+ * offene Element und gibt den Fokus an seinen Schalter zurück. Nur DOM-APIs, keine HTML-Strings.
  */
 (function () {
     'use strict';
@@ -16,37 +19,63 @@
         window.addEventListener('scroll', onScroll, { passive: true });
         onScroll();
     }
+
     if (mToggle && nav) {
+        const isOpen = () => mToggle.getAttribute('aria-expanded') === 'true';
+        const setOpen = (open) => {
+            mToggle.setAttribute('aria-expanded', String(open));
+            mToggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
+            nav.classList.toggle('open', open);
+        };
         mToggle.addEventListener('click', () => {
-            const open = mToggle.getAttribute('aria-expanded') === 'true';
-            mToggle.setAttribute('aria-expanded', String(!open));
-            nav.classList.toggle('open', !open);
+            setOpen(!isOpen());
+            if (isOpen()) {
+                nav.querySelector('a')?.focus();
+            }
         });
         document.addEventListener('click', (e) => {
-            if (!nav.contains(e.target) && !mToggle.contains(e.target)) {
-                nav.classList.remove('open');
-                mToggle.setAttribute('aria-expanded', 'false');
+            if (isOpen() && !nav.contains(e.target) && !mToggle.contains(e.target)) {
+                setOpen(false);
             }
         });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') { nav.classList.remove('open'); mToggle.setAttribute('aria-expanded', 'false'); }
+            if (e.key === 'Escape' && isOpen()) {
+                const focusInside = nav.contains(document.activeElement);
+                setOpen(false);
+                if (focusInside) {
+                    mToggle.focus();
+                }
+            }
         });
     }
+
     if (srchBtn && srchPnl) {
+        const closeSearch = () => {
+            srchPnl.setAttribute('hidden', '');
+            srchBtn.setAttribute('aria-expanded', 'false');
+            srchBtn.focus();
+        };
         srchBtn.addEventListener('click', () => {
+            if (!srchPnl.hasAttribute('hidden')) {
+                closeSearch();
+                return;
+            }
             srchPnl.removeAttribute('hidden');
-            srchPnl.setAttribute('aria-hidden', 'false');
             srchBtn.setAttribute('aria-expanded', 'true');
             srchPnl.querySelector('input')?.focus();
         });
-        srchCls?.addEventListener('click', () => {
-            srchPnl.setAttribute('hidden', '');
-            srchPnl.setAttribute('aria-hidden', 'true');
-            srchBtn.setAttribute('aria-expanded', 'false');
-            srchBtn.focus();
+        srchCls?.addEventListener('click', closeSearch);
+        srchPnl.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                e.stopPropagation();
+                closeSearch();
+            }
         });
     }
+
     if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+        // Einblend-Animation nur mit laufendem Script (ohne JS, z. B. auf der Wartungsseite, bleiben Karten sichtbar).
+        document.documentElement.classList.add('bb-js');
         const obs = new IntersectionObserver((entries) => { entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('is-visible'); obs.unobserve(e.target); } }); }, { threshold: 0.1 });
         document.querySelectorAll('.bb-card').forEach(el => obs.observe(el));
     }

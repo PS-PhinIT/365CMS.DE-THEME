@@ -59,6 +59,11 @@ $heroCtaUrl  = $buildUrl($siteUrl, '/handwerker');
 $heroSecUrl  = $buildUrl($siteUrl, '/angebot');
 $projectsUrl = $buildUrl($siteUrl, '/projekte');
 $registerUrl = function_exists('theme_route_url') ? theme_route_url('register') : $buildUrl($siteUrl, '/register');
+
+// Standardziele (/handwerker, /angebot, /projekte) sind optionale Seiten: nur verlinken, wenn sie existieren.
+$showHeroCta  = theme_v4_link_available($heroCtaUrl);
+$showHeroSec  = theme_v4_link_available($heroSecUrl);
+$showProjects = theme_v4_link_available($projectsUrl);
 ?>
 
 <main id="main" class="bb-main" role="main">
@@ -72,10 +77,16 @@ $registerUrl = function_exists('theme_route_url') ? theme_route_url('register') 
             <?php if ($heroSubline !== '') : ?>
                 <p class="bb-hero-sub"><?php echo $safe($heroSubline); ?></p>
             <?php endif; ?>
+            <?php if ($showHeroCta || $showHeroSec) : ?>
             <div class="bb-cta-group">
+                <?php if ($showHeroCta) : ?>
                 <a href="<?php echo $safe($heroCtaUrl); ?>" class="bb-btn bb-btn-primary"><?php echo $safe($heroCta); ?></a>
+                <?php endif; ?>
+                <?php if ($showHeroSec) : ?>
                 <a href="<?php echo $safe($heroSecUrl); ?>" class="bb-btn bb-btn-outline"><?php echo $safe($heroSecCta); ?></a>
+                <?php endif; ?>
             </div>
+            <?php endif; ?>
             <?php if ($showStats) : ?>
                 <div class="bb-stats-row" role="list" aria-label="Kennzahlen">
                     <div class="bb-stat" role="listitem">
@@ -95,6 +106,7 @@ $registerUrl = function_exists('theme_route_url') ? theme_route_url('register') 
         </div>
     </section>
 
+    <?php if ($showProjects) : ?>
     <section class="bb-section" aria-label="<?php echo $safe($portfolioTitle); ?>">
         <div class="bb-container">
             <div class="bb-section-header">
@@ -106,12 +118,13 @@ $registerUrl = function_exists('theme_route_url') ? theme_route_url('register') 
             <div class="bb-grid">
                 <div class="bb-card bb-card--portfolio-cta">
                     <a href="<?php echo $safe($projectsUrl); ?>" class="bb-btn bb-btn-primary">
-                        Alle Referenzen ansehen &rarr;
+                        Alle Referenzen ansehen <span aria-hidden="true">&rarr;</span>
                     </a>
                 </div>
             </div>
         </div>
     </section>
+    <?php endif; ?>
 
     <?php if (!$isLoggedIn) : ?>
         <section class="bb-section bb-section--alt" aria-label="Betrieb registrieren">

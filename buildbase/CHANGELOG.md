@@ -1,5 +1,48 @@
 # Changelog
 
+## 4.0.0 – 2026-11-15
+
+### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
+
+Setzt 365CMS 4.0.0 und PHP 8.4.1 voraus (`requires_cms`, `tested_up_to: 4.1.0`, `requires_php`).
+
+#### Core-Verträge 4.0.0
+- `error.php` wertet `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`, `$error_standalone` und `$error_retry_after` aus. 403-, 429- und 503-Seiten antworten mit ihrem Status statt mit HTTP 500; eigenständige Fehler- und Wartungsseiten sind vollständige Dokumente mit Theme-Stylesheet (ohne Header, Hooks und Datenbank), bei 429/503 mit `Retry-After`. `error.php` ruft `get_header()`/`get_footer()` nicht mehr selbst auf (doppelter Seitenrahmen, im Fatal-Handler mit Datenbankzugriff) und lädt im Fatal-Handler nur `includes/cms-v4-compat.php`.
+- Die Hauptnavigation löst den Core-Hook `main_nav` direkt nach den Menüeinträgen aus (Downloads, Knowledgebase, Newsletter), auch ohne gepflegtes Menü. Die Navigation ist für Desktop und Mobil dieselbe, deshalb einmal mit dem Kontext `desktop`.
+- Menüeinträge zeigen die Beschriftung aus `title` (der Core liefert `title`, das Theme las nur `label`); der aktive Eintrag trägt `aria-current="page"` und ist sichtbar markiert (bisher ohne Stil). Anker-, `mailto:`- und `tel:`-Einträge gelten nie als aktiv.
+- `theme_use_local_fonts()` liest `privacy_use_local_fonts` über den OptionStore statt per SQL.
+
+#### Vorlagen und Core-Module
+- Neu: `contact.php` gibt das Core-Formular (`$contactFormHtml`) mit Kontaktdaten aus dem neuen Customizer-Bereich „Kontakt“ aus (Telefon-Fallback: Notfall-Nummer, E-Mail-Fallback: `ADMIN_EMAIL`).
+- Neu: `knowledgebase/archive.php`, `knowledgebase/single.php`, `newsletter/page.php`, `newsletter/action.php`, `newsletter/issue.php` binden die Core-Views im Theme-Rahmen ein (Skip-Link-Ziel `#main`, genau ein `<main>`).
+- Neu: `css/cms-v4.css` und `includes/cms-v4-compat.php` (gemeinsam mit allen Public Themes) sowie die Token-Brücke `--tv4-*` in `style.css`.
+- Fußzeile, Startseite und 404-Seite verlinken nur noch vorhandene Seiten und Routen (z. B. `/handwerker`, `/angebot`, `/projekte`, `/pricing` nur, wenn veröffentlicht); leere Spalten und die Referenz-Sektion ohne Zielseite entfallen. Neue Footer-Spalte „Service“ (Kontakt, Newsletter, Wissensdatenbank), die registrierten Menüs `footer-nav` und `footer-legal` werden ausgegeben (bisher nie).
+- Copyright: `&copy;` aus der Vorlage erschien als „&amp;copy;“.
+- Blog-Archiv (`index.php`): Titel für Kategorie- und Schlagwort-Archive, Blätter-Links (bisher keine Paginierung), Beiträge auch als Array.
+- `page.php` läuft auch für Downloads und Feeds (`id` 0) und gibt das Core-HTML unverändert aus; fehlende Seite mit `h1`.
+- Logo-Fallback `site_logo` (mit echten Bildmaßen), Favicon `site_favicon`.
+
+#### 4.1.0
+- Memberbereich und Newsletter-Widget übernehmen die BuildBase-Palette über `member_head` (`--member-*`); im Admin geänderte Member-Farben haben Vorrang. Theme-Stylesheet und Scripts werden in der Member-Shell nicht mehr geladen.
+- Login: Farbvorschlag `login_page.colors` in `theme.json` für die Core-Loginseite.
+- Beitragsbild mit Fokus-Punkt (`object-position`).
+- Vorschau-Links (`$isPreview`) und nicht veröffentlichte Inhalte: `noindex, nofollow`, keine JSON-LD-Ausgabe, Hinweisleiste.
+
+#### Sicherheit, Datenschutz, Performance
+- Keine Google-Fonts-Requests mehr (bisher sieben Familien auf jeder Seite); Schriften kommen aus der Core-Schriftverwaltung, sonst System-Stack. Die Customizer-Schriftwahl wirkt wieder: die Font-Stacks wurden HTML-escaped (`&quot;`) in den `<style>`-Block geschrieben, `--font-heading` war dadurch ungültig.
+- Core-SEO-Ausgabe (`theme_v4_head_tags()`) statt nur Site-Beschreibung; Seitentitel aus Modulen (`$title`).
+- `cms_csp_runtime_tags(true)` als erstes Script nach `<meta charset>`; Navigation weiter per `defer`.
+- Beitragsbild als LCP-Bild mit `width`/`height` und `fetchpriority="high"` statt `loading="lazy"`.
+
+#### Barrierefreiheit
+- Farb-Mapping: `section_dark_bg` landete in `--bg-secondary` und färbte die helle Sektion `.bb-section--alt` (Registrierungs-CTA der Startseite) dunkel – Text 1,2:1, Überschrift 2,1:1. Jetzt `--section-dark`; die Alt-Sektion bleibt hell (Text 16,0:1, Überschrift 6,5:1).
+- Kontraste: Muted-Farbe `#78716c` → `#6b645f` (4,4:1 → 5,3:1 auf `#f5f5f4`), Outline-Button im Hero 2,1:1 → 4,8:1 (Amber), Fußzeilen-Unterzeile 6,1:1 → 7,9:1.
+- Fokusrahmen: auf hellen Flächen Dunkelbraun (6,8:1 statt Gold 3,1:1), auf Header, Hero, Footer Amber (4,8–8,1:1), im Notfall-Banner in Textfarbe.
+- Fußzeilen-Überschriften `h2` statt `h3` (kein Sprung unter `h1`), `aria-current`, `html lang` nach Inhaltssprache, Notfall-Banner ohne `role="alert"` (wurde bei jedem Seitenaufruf vorgelesen).
+- Escape schließt Mobil-Menü und Suchpanel und gibt den Fokus an den Schalter zurück; das Suchpanel nutzt nur noch `hidden`.
+- Karten-Einblendung nur mit laufendem Script: ohne JavaScript (z. B. auf der eigenständigen Wartungsseite) waren `.bb-card`-Elemente unsichtbar.
+- `supports` ohne `dark-mode`: Das Theme hat keinen Dark Mode.
+
 ## 3.1.0 – 2026-09-26
 
 ### Kompatibilität mit 365CMS 3.4.00 (CSP, Trusted Types, Layout-Hooks)

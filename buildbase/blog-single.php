@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Beitrags-Detailseite
  *
- * Datenvertrag (365CMS 3.4, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image).
+ * Datenvertrag (365CMS 4.x, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image, optional focal_x/focal_y).
  */
 
 if (!defined('ABSPATH')) {
@@ -53,18 +53,19 @@ $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], sta
                     <p class="cms-post-meta"><?php echo $safe(implode(' · ', $metaParts)); ?></p>
                 <?php endif; ?>
                 <?php if ($postImage !== '') : ?>
-                    <figure class="cms-post-image"><img src="<?php echo $safe($postImage); ?>" alt="<?php echo $safe($postTitle); ?>" loading="lazy" decoding="async"></figure>
+                    <?php // LCP-Bild: width/height, fetchpriority="high" statt lazy, Fokus-Punkt (4.1.0) ?>
+                    <figure class="cms-post-image"><?php echo theme_v4_img($postImage, $postTitle, ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 860px) 100vw, 860px']); ?></figure>
                 <?php endif; ?>
                 <?php if (trim($postContent) !== '') : ?>
                     <div class="prose">
-                        <?php echo $postContent; ?>
+                        <?php echo $postContent; // Core-HTML unverändert (bereits bereinigt) ?>
                     </div>
                 <?php endif; ?>
-                <p><a href="<?php echo $safe($blogUrl); ?>" class="bb-btn bb-btn-outline">← Alle Beiträge</a></p>
+                <p><a href="<?php echo $safe($blogUrl); ?>" class="bb-btn bb-btn-outline"><span aria-hidden="true">←</span> Alle Beiträge</a></p>
             </article>
         <?php else : ?>
             <div class="bb-empty">
-                <p>Beitrag nicht gefunden.</p>
+                <h1 class="bb-page-title">Beitrag nicht gefunden</h1>
                 <a href="<?php echo $safe($siteUrl . '/'); ?>" class="bb-btn bb-btn-primary">Zur Startseite</a>
             </div>
         <?php endif; ?>

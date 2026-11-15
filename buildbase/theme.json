@@ -1,15 +1,51 @@
 {
   "name": "BuildBase",
   "slug": "buildbase",
-  "version": "3.1.0",
-  "requires_cms": "3.4.00",
+  "version": "4.0.0",
+  "requires_cms": "4.0.0",
+  "requires_php": "8.4.1",
+  "tested_up_to": "4.1.0",
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "Bau & Handwerk Theme – Robust, solide, handwerklich. Für Bauunternehmen, Architekten und Handwerksbetriebe.",
-  "tags": ["bau", "handwerk", "portfolio", "directory", "robust", "cms"],
-  "supports": ["dark-mode", "custom-logo", "sticky-header", "custom-css", "portfolio", "before-after-slider"],
-
+  "tags": [
+    "bau",
+    "handwerk",
+    "portfolio",
+    "directory",
+    "robust",
+    "cms"
+  ],
+  "supports": [
+    "custom-logo",
+    "sticky-header",
+    "custom-css",
+    "portfolio",
+    "before-after-slider"
+  ],
+  "templates": {
+    "home": "home.php",
+    "page": "page.php",
+    "blog-single": "blog-single.php",
+    "search": "search.php",
+    "contact": "contact.php",
+    "404": "404.php",
+    "error": "error.php"
+  },
+  "login_page": {
+    "colors": {
+      "background_start": "#fafaf9",
+      "background_end": "#e7e5e4",
+      "card_background": "#ffffff",
+      "text_color": "#1c1917",
+      "muted_color": "#57534e",
+      "primary_color": "#b45309",
+      "primary_text_color": "#ffffff",
+      "link_color": "#92400e",
+      "input_background": "#ffffff",
+      "input_border": "#78716c"
+    }
+  },
   "customization": {
-
     "colors": {
       "label": "Farben",
       "description": "Erdige, robuste Farbpalette – warme Braun- und Goldtöne.",
@@ -71,7 +107,7 @@
         "muted_color": {
           "label": "Gedämpfte Textfarbe",
           "type": "color",
-          "default": "#78716c",
+          "default": "#6b645f",
           "description": "Sekundärer Text – Stone-Grau"
         },
         "border_color": {
@@ -94,7 +130,6 @@
         }
       }
     },
-
     "typography": {
       "label": "Typografie",
       "description": "Kräftige, industrielle Schriften – Bebas für Display, Roboto für Lesbarkeit.",
@@ -163,7 +198,6 @@
         }
       }
     },
-
     "layout": {
       "label": "Layout",
       "description": "Robustes, strukturiertes Layout mit klaren Hierarchien.",
@@ -223,7 +257,6 @@
         }
       }
     },
-
     "header": {
       "label": "Header",
       "description": "Robuster Header mit optionalem Notfall-Kontakt-Banner.",
@@ -291,7 +324,6 @@
         }
       }
     },
-
     "footer": {
       "label": "Footer",
       "description": "Footer mit Gewerk-Übersicht und Kontaktdaten.",
@@ -334,7 +366,6 @@
         }
       }
     },
-
     "buttons": {
       "label": "Buttons",
       "description": "Kräftige, solide Buttons – klares Handwerk-Design.",
@@ -383,7 +414,6 @@
         }
       }
     },
-
     "build_hero": {
       "label": "Hero-Bereich",
       "description": "Texte für den Hero-Einstiegsbereich.",
@@ -471,7 +501,6 @@
         }
       }
     },
-
     "build_content": {
       "label": "Seiteninhalte / Texte",
       "description": "Texte für Dienstleister-Verzeichnis, Portfolio und Anfrage-Formulare.",
@@ -544,7 +573,6 @@
         }
       }
     },
-
     "advanced": {
       "label": "Erweitert",
       "description": "Custom CSS und erweiterte Einstellungen.",
@@ -562,7 +590,34 @@
           "description": "OpenStreetMap-Karte für Einzugsgebiete anzeigen"
         }
       }
+    },
+    "contact": {
+      "label": "Kontakt",
+      "description": "Kontaktdaten neben dem Core-Kontaktformular (/contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse"
+        },
+        "contact_phone": {
+          "label": "Telefon",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Notfall-Nummer aus dem Header (falls gesetzt)"
+        },
+        "contact_address": {
+          "label": "Adresse",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Erreichbarkeit",
+          "type": "textarea",
+          "default": ""
+        }
+      }
     }
-
   }
 }

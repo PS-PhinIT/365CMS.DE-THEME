@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * BuildBase Theme – Bootstrap & Customizer Integration
  *
- * Construction / trade / project-delivery theme for 365CMS v3.x.x on PHP 8.4.
+ * Construction / trade / project-delivery theme for 365CMS 4.0.0 / 4.1.0 on PHP 8.4.1.
  *
  * @package BuildBase_Theme
  */
@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BUILDBASE_THEME_VERSION')) {
-    define('BUILDBASE_THEME_VERSION', '3.1.0');
+    define('BUILDBASE_THEME_VERSION', '4.0.0');
 }
 if (!defined('BUILDBASE_THEME_SLUG')) {
     define('BUILDBASE_THEME_SLUG', 'buildbase');
@@ -22,6 +22,15 @@ if (!defined('BUILDBASE_THEME_SLUG')) {
 if (!defined('THEME_VERSION')) {
     define('THEME_VERSION', BUILDBASE_THEME_VERSION);
 }
+
+// 365CMS 4.x: header.php öffnet kein <main>; die Templates setzen <main id="main"> selbst.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', false);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 final class BuildBase_Theme {
     private static ?self $instance = null;
@@ -38,11 +47,42 @@ final class BuildBase_Theme {
     }
 
     private function registerHooks(): void {
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Tabler-Shell und löst ebenfalls `head` aus:
+        // dort kein Frontend-Stylesheet und keine Theme-Scripts, sondern nur die Theme-Palette als --member-*.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head',          [$this, 'enqueueStyles'],            1);
-        \CMS\Hooks::addAction('head',          [$this, 'outputGoogleFonts'],        5);
         \CMS\Hooks::addAction('head',          [$this, 'outputCustomStyles'],       15);
         \CMS\Hooks::addAction('before_footer', [$this, 'outputNavigationScript'],   99);
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+    }
+
+    /** Memberdashboard (inkl. Newsletter-Widget) in der BuildBase-Palette; das Theme hat keinen Dark Mode. */
+    public function outputMemberTokens(): void {
+        try {
+            $c = \CMS\Services\ThemeCustomizer::instance();
+        } catch (\Throwable) {
+            $c = null;
+        }
+        $color = static fn(string $key, string $default): string =>
+            buildbase_css_color($c !== null ? (string) $c->get('colors', $key, $default) : $default, $default);
+
+        echo theme_v4_member_tokens_style([
+            'primary'    => $color('primary_color', '#b45309'),
+            'accent'     => $color('accent_color', '#d97706'),
+            'bg'         => $color('bg_color', '#fafaf9'),
+            'card_bg'    => $color('card_bg_color', '#ffffff'),
+            'text'       => $color('text_color', '#1c1917'),
+            'text_muted' => $color('muted_color', '#6b645f'),
+            'border'     => $color('border_color', '#d6d3d1'),
+            'focus'      => $color('secondary_color', '#92400e'),
+            'radius'     => buildbase_css_number($c !== null ? $c->get('layout', 'border_radius', '4') : '4', 4, 0, 16) . 'px',
+            'font'       => $this->mapFontChoice($c !== null ? (string) $c->get('typography', 'font_family_base', 'roboto') : 'roboto', self::FONT_SANS),
+        ]);
     }
 
     /**
@@ -60,41 +100,28 @@ final class BuildBase_Theme {
     }
 
     public function enqueueStyles(): void {
-        $themeUrl = (string) \CMS\ThemeManager::instance()->getThemeUrl('buildbase');
-        $href = htmlspecialchars(
-            rtrim($themeUrl, '/') . '/style.css?v=' . BUILDBASE_THEME_VERSION,
-            ENT_QUOTES,
-            'UTF-8'
-        );
-        echo '<link rel="preload" href="' . $href . '" as="style">' . "\n";
-        echo '<link rel="stylesheet" href="' . $href . '">' . "\n";
+        $themeUrl = rtrim(theme_v4_theme_url(__DIR__), '/');
+        $ver      = rawurlencode(BUILDBASE_THEME_VERSION);
+        echo '<link rel="stylesheet" href="' . htmlspecialchars($themeUrl . '/style.css?v=' . $ver, ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        // Gemeinsame 4.x-Integrationsstile (Downloads, Feeds, Formulare, Knowledgebase, Newsletter …) nach style.css.
+        echo '<link rel="stylesheet" href="' . htmlspecialchars($themeUrl . '/css/cms-v4.css?v=' . $ver, ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greift der System-Font-Stack.
     }
 
-    public function outputGoogleFonts(): void {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $fonts = 'Roboto:wght@400;500;700&family=Roboto+Condensed:wght@600;700'
-               . '&family=Oswald:wght@500;700'
-               . '&family=Open+Sans:wght@400;600;700'
-               . '&family=Lato:wght@400;700'
-               . '&family=Inter:wght@400;600;700'
-               . '&family=Bebas+Neue';
-        $url = 'https://fonts.googleapis.com/css2?family=' . $fonts . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    }
+    /** System-Fallbacks hinter jeder Schriftwahl (keine externen Schriften). */
+    private const FONT_SANS = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+    private const FONT_CONDENSED = '"Arial Narrow", system-ui, -apple-system, "Segoe UI", sans-serif';
 
     private function mapFontChoice(string $fontChoice, string $fallback): string {
         return match ($fontChoice) {
-            'roboto'           => 'Roboto, sans-serif',
-            'open-sans'        => '"Open Sans", sans-serif',
-            'lato'             => 'Lato, sans-serif',
-            'inter'            => 'Inter, sans-serif',
-            'roboto-condensed' => '"Roboto Condensed", sans-serif',
-            'bebas-neue'       => '"Bebas Neue", sans-serif',
-            'oswald'           => 'Oswald, sans-serif',
+            'roboto'           => 'Roboto, ' . self::FONT_SANS,
+            'open-sans'        => '"Open Sans", ' . self::FONT_SANS,
+            'lato'             => 'Lato, ' . self::FONT_SANS,
+            'inter'            => 'Inter, ' . self::FONT_SANS,
+            'roboto-condensed' => '"Roboto Condensed", ' . self::FONT_CONDENSED,
+            'bebas-neue'       => '"Bebas Neue", ' . self::FONT_CONDENSED,
+            'oswald'           => 'Oswald, ' . self::FONT_CONDENSED,
             default            => $fallback,
         };
     }
@@ -133,9 +160,11 @@ final class BuildBase_Theme {
         $headingFontChoice = (string) $c->get('typography', 'font_family_heading', 'roboto-condensed');
         $badgeFontChoice   = (string) $c->get('typography', 'font_family_badge',   'oswald');
 
-        $baseFont    = htmlspecialchars($this->mapFontChoice($baseFontChoice,    'Roboto, sans-serif'),               ENT_QUOTES, 'UTF-8');
-        $headingFont = htmlspecialchars($this->mapFontChoice($headingFontChoice, '"Roboto Condensed", sans-serif'),   ENT_QUOTES, 'UTF-8');
-        $badgeFont   = htmlspecialchars($this->mapFontChoice($badgeFontChoice,   'Oswald, sans-serif'),               ENT_QUOTES, 'UTF-8');
+        // Feste Stacks aus mapFontChoice() – nicht HTML-escapen: &quot; im <style> machte die Deklaration
+        // ungültig (die Überschriften fielen auf die geerbte Schrift zurück).
+        $baseFont    = $this->mapFontChoice($baseFontChoice,    'Roboto, ' . self::FONT_SANS);
+        $headingFont = $this->mapFontChoice($headingFontChoice, '"Roboto Condensed", ' . self::FONT_CONDENSED);
+        $badgeFont   = $this->mapFontChoice($badgeFontChoice,   'Oswald, ' . self::FONT_CONDENSED);
 
         echo '<style id="bb-custom-vars"' . theme_csp_nonce_attr() . '>:root{';
         // Colors
@@ -145,16 +174,21 @@ final class BuildBase_Theme {
         echo '--accent-color:'      . $color('colors', 'accent_color',     '#d97706') . ';';
         echo '--safety-color:'      . $color('colors', 'safety_color',     '#f59e0b') . ';';
         echo '--bg-primary:'        . $color('colors', 'bg_color',         '#fafaf9') . ';';
-        echo '--bg-secondary:'      . $color('colors', 'section_dark_bg',  '#292524') . ';';
+        // section_dark_bg ist die dunkle Sektionsfläche; bisher landete sie in --bg-secondary (helle Alt-Fläche)
+        // und machte .bb-section--alt dunkel bei dunkler Schrift (1,2:1).
+        echo '--section-dark:'      . $color('colors', 'section_dark_bg',  '#292524') . ';';
         echo '--bg-card:'           . $color('colors', 'card_bg_color',    '#ffffff') . ';';
         echo '--text-primary:'      . $color('colors', 'text_color',       '#1c1917') . ';';
-        echo '--text-secondary:'    . $color('colors', 'muted_color',      '#78716c') . ';';
-        echo '--muted-color:'       . $color('colors', 'muted_color',      '#78716c') . ';';
+        echo '--text-secondary:'    . $color('colors', 'muted_color',      '#6b645f') . ';';
+        echo '--muted-color:'       . $color('colors', 'muted_color',      '#6b645f') . ';';
         echo '--border-color:'      . $color('colors', 'border_color',     '#d6d3d1') . ';';
         echo '--link-color:'        . $color('colors', 'link_color',       '#b45309') . ';';
         echo '--success-color:'     . $color('colors', 'success_color',    '#16a34a') . ';';
         echo '--error-color:'       . $color('colors', 'error_color',      '#dc2626') . ';';
-        echo '--focus-ring:'        . $color('colors', 'accent_color',     '#d97706') . ';';
+        // Fokusrahmen auf hellen Flächen in Dunkelbraun (6,8:1 auf --bg-primary; Akzent-Gold nur 3,1:1),
+        // auf dunklen Flächen in Sicherheits-Amber (--focus-ring-on-dark, style.css).
+        echo '--focus-ring:'        . $color('colors', 'secondary_color',  '#92400e') . ';';
+        echo '--focus-ring-on-dark:' . $color('colors', 'safety_color',    '#f59e0b') . ';';
 
         // Header
         echo '--header-bg:'         . $color('header', 'header_bg_color',   '#292524') . ';';
@@ -202,7 +236,7 @@ final class BuildBase_Theme {
     }
 
     public function outputNavigationScript(): void {
-        $themeUrl = (string) \CMS\ThemeManager::instance()->getThemeUrl('buildbase');
+        $themeUrl = theme_v4_theme_url(__DIR__);
         $src = htmlspecialchars(
             rtrim($themeUrl, '/') . '/js/navigation.js?v=' . BUILDBASE_THEME_VERSION,
             ENT_QUOTES,
@@ -308,33 +342,50 @@ if (!function_exists('theme_route_url')) {
 }
 
 if (!function_exists('theme_nav_menu')) {
-    function theme_nav_menu(string $location): void
+    /**
+     * Menü einer Position als Liste. Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den
+     * Menüeinträgen die Einträge der Core-Module (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) –
+     * auch wenn im Admin (noch) kein Menü gepflegt ist.
+     */
+    function theme_nav_menu(string $location, string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
             $items = [];
         }
-        if ($items === []) {
+        $items = is_array($items) ? $items : [];
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'current-menu-item']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
-        $cur = rtrim(parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/', '/');
         echo '<ul>';
         foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
             $rawUrl = (string) ($item['url'] ?? '#');
-            $label  = (string) ($item['label'] ?? '');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
+            // Der Core liefert die Beschriftung im Feld `title`, ältere Menüs in `label`.
+            $label  = (string) ($item['label'] ?? $item['title'] ?? '');
 
-            $isActive = ($path === '' || $path === '/')
-                ? ($cur === '' || $cur === '/')
-                : str_starts_with($cur, $path);
-
-            $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
-                ? $rawUrl
-                : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
-                    ? $rawUrl
-                    : '#');
+            $trimmedUrl   = trim($rawUrl);
+            $sanitizedUrl = preg_match('/^(?:mailto:[^\s@<>"]+@[^\s@<>"]+|tel:\+?[0-9][0-9\s().-]{2,31})$/i', $trimmedUrl) === 1
+                ? $trimmedUrl
+                : buildbase_safe_url($trimmedUrl, str_starts_with($trimmedUrl, '#') ? $trimmedUrl : '#');
+            if (str_starts_with($sanitizedUrl, '#') && preg_match('/^#[A-Za-z][A-Za-z0-9_-]*$/', $sanitizedUrl) !== 1) {
+                $sanitizedUrl = '#';
+            }
+            // Aktiv: gleicher Pfad (Startseite nur exakt); Anker, mailto: und tel: nie.
+            $isActive = !str_contains($sanitizedUrl, '#')
+                && preg_match('/^(?:mailto|tel):/i', $sanitizedUrl) !== 1
+                && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'
@@ -343,10 +394,11 @@ if (!function_exists('theme_nav_menu')) {
             $cls = $isActive ? ' class="current-menu-item"' : '';
             echo '<li' . $cls . '><a href="'
                 . htmlspecialchars($sanitizedUrl, ENT_QUOTES, 'UTF-8')
-                . '"' . $target . '>'
+                . '"' . $target . ($isActive ? ' aria-current="page"' : '') . '>'
                 . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
                 . '</a></li>';
         }
+        echo $coreItems;
         echo '</ul>';
     }
 }
@@ -385,7 +437,7 @@ if (!function_exists('get_footer')) {
     }
 }
 
-// ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
+// ── 365CMS-Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────────
 
 if (!function_exists('theme_csp_nonce_attr')) {
     /** Liefert ` nonce="…"` für Inline-<style>/<script> unter der 365CMS-CSP. */
@@ -402,25 +454,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 
