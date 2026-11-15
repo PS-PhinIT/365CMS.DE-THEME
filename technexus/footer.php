@@ -34,53 +34,72 @@ $copyrightTemplate = (string) tn_get_setting(
     '&copy; {year} {site_title}. Alle Rechte vorbehalten.'
 );
 
+// Copyright-Vorlage aus dem Customizer: Entities wie &copy; bleiben erhalten, Markup wird escaped.
 $copyrightText = str_replace(
     ['{year}', '{site_title}'],
     [gmdate('Y'), $tnTitleEsc],
-    $copyrightTemplate
+    htmlspecialchars($copyrightTemplate, ENT_QUOTES, 'UTF-8', false)
 );
+
+// Standardlinks: nur Ziele, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0).
+// /it-experts, /companies, /events und /jobs sind Plugin-/Theme-Ziele ohne Core-Route.
+$tnNetworkLinks = theme_v4_filter_links([
+    ['label' => 'IT-Experten', 'url' => theme_route_url('experts')],
+    ['label' => 'Tech-Unternehmen', 'url' => theme_route_url('companies')],
+    ['label' => 'Tech Events', 'url' => theme_route_url('events')],
+    ['label' => 'IT Jobs', 'url' => theme_route_url('jobs')],
+    ['label' => 'Downloads', 'url' => theme_route_url('downloads')],
+    ['label' => 'Wissensdatenbank', 'url' => theme_route_url('kb')],
+    ['label' => 'Newsletter', 'url' => theme_route_url('newsletter')],
+    ['label' => 'Kontakt', 'url' => theme_route_url('contact')],
+]);
+ob_start();
+theme_nav_menu('footer-nav');
+$tnFooterNav = (string) ob_get_clean();
 ?>
     </div><!-- #content .site-content -->
 
-    <footer id="colophon" class="site-footer" role="contentinfo" aria-label="Fußbereich">
+    <footer id="colophon" class="site-footer">
 
         <div class="footer-content-band">
             <div class="footer-container">
                 <div class="footer-widgets">
 
                     <div class="footer-widget">
-                        <h3 class="footer-widget-title"><?php echo $tnTitleEsc; ?></h3>
+                        <h2 class="footer-widget-title"><?php echo $tnTitleEsc; ?></h2>
                         <p><?php echo nl2br(tn_html_attr($footerText)); ?></p>
                     </div>
 
                     <?php if ($showTechLinks) : ?>
-                    <div class="footer-widget">
-                        <h3 class="footer-widget-title">Netzwerk</h3>
+                    <?php if ($tnNetworkLinks !== []) : ?>
+                    <nav class="footer-widget" aria-label="Netzwerk">
+                        <h2 class="footer-widget-title">Netzwerk</h2>
                         <ul>
-                            <li><a href="<?php echo tn_html_attr(theme_route_url('experts')); ?>">IT-Experten</a></li>
-                            <li><a href="<?php echo tn_html_attr(theme_route_url('companies')); ?>">Tech-Unternehmen</a></li>
-                            <li><a href="<?php echo tn_html_attr(theme_route_url('events')); ?>">Tech Events</a></li>
-                            <li><a href="<?php echo tn_html_attr(theme_route_url('jobs')); ?>">IT Jobs</a></li>
+                            <?php foreach ($tnNetworkLinks as $tnLink) : ?>
+                            <li><a href="<?php echo tn_html_attr($tnLink['url']); ?>"><?php echo tn_html_attr($tnLink['label']); ?></a></li>
+                            <?php endforeach; ?>
                         </ul>
-                    </div>
+                    </nav>
+                    <?php endif; ?>
 
-                    <div class="footer-widget">
-                        <h3 class="footer-widget-title">Mitglieder</h3>
+                    <nav class="footer-widget" aria-label="Mitglieder">
+                        <h2 class="footer-widget-title">Mitglieder</h2>
                         <ul>
                             <?php if ($tnIsLogged) : ?>
                                 <li><a href="<?php echo tn_html_attr(theme_route_url('member')); ?>">Mein Dashboard</a></li>
                                 <li><a href="<?php echo tn_html_attr(theme_route_url('member/profile')); ?>">Mein Profil</a></li>
-                                <li><a href="<?php echo tn_html_attr(theme_logout_url()); ?>">Abmelden</a></li>
+                                <?php // Abmelden als CSRF-geschütztes POST-Formular (vorher GET-Link mit Token in der URL). ?>
+                                <li><?php echo theme_v4_logout_form('Abmelden', 'theme-v4-link-button tn-footer-logout'); ?></li>
                             <?php else : ?>
                                 <li><a href="<?php echo tn_html_attr(theme_route_url('login')); ?>">Anmelden</a></li>
                                 <li><a href="<?php echo tn_html_attr(theme_route_url('register')); ?>">Registrieren</a></li>
                             <?php endif; ?>
                         </ul>
-                    </div>
-                    <?php else : ?>
-                    <div class="footer-widget">
-                        <?php theme_nav_menu('footer-nav'); ?>
-                    </div>
+                    </nav>
+                    <?php elseif (trim($tnFooterNav) !== '') : ?>
+                    <nav class="footer-widget" aria-label="Footer-Navigation">
+                        <?php echo $tnFooterNav; // theme_nav_menu(): escaped ?>
+                    </nav>
                     <?php endif; ?>
 
                 </div>
@@ -91,14 +110,12 @@ $copyrightText = str_replace(
             <div class="footer-container footer-bottom-inner">
                 <p class="footer-copyright"><?php echo $copyrightText; ?></p>
                 <?php
-                try {
-                    $legalMenu = \CMS\ThemeManager::instance()->getMenu('footer-legal');
-                } catch (\Throwable) {
-                    $legalMenu = [];
-                }
-                if (!empty($legalMenu)) : ?>
+                ob_start();
+                theme_nav_menu('footer-legal');
+                $tnLegalNav = (string) ob_get_clean();
+                if (trim($tnLegalNav) !== '') : ?>
                     <nav class="footer-legal-nav" aria-label="Rechtliche Links">
-                        <?php theme_nav_menu('footer-legal'); ?>
+                        <?php echo $tnLegalNav; // theme_nav_menu(): escaped ?>
                     </nav>
                 <?php endif; ?>
             </div>

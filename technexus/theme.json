@@ -1,15 +1,53 @@
 {
   "name": "TechNexus",
   "slug": "technexus",
-  "version": "1.1.0",
-  "requires_cms": "3.4.00",
+  "version": "2.0.0",
+  "requires_cms": "4.0.0",
+  "requires_php": "8.4.1",
+  "tested_up_to": "4.1.0",
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "IT & Tech Hub Theme – Präzise, technisch, vertrauenswürdig. Für IT-Dienstleister, Softwarehäuser und Tech-Hubs.",
-  "tags": ["tech", "it", "dark-mode", "responsive", "cms", "network"],
-  "supports": ["dark-mode", "custom-logo", "sticky-header", "custom-css", "mega-menu", "code-blocks"],
-
+  "tags": [
+    "tech",
+    "it",
+    "dark-mode",
+    "responsive",
+    "cms",
+    "network"
+  ],
+  "supports": [
+    "dark-mode",
+    "custom-logo",
+    "sticky-header",
+    "custom-css",
+    "mega-menu",
+    "code-blocks"
+  ],
+  "templates": {
+    "home": "home.php",
+    "page": "page.php",
+    "index": "index.php",
+    "blog-single": "blog-single.php",
+    "search": "search.php",
+    "contact": "contact.php",
+    "404": "404.php",
+    "error": "error.php"
+  },
+  "login_page": {
+    "colors": {
+      "background_start": "#0f172a",
+      "background_end": "#1e3a5f",
+      "card_background": "#ffffff",
+      "text_color": "#0f172a",
+      "muted_color": "#5c6b7a",
+      "primary_color": "#0e7490",
+      "primary_text_color": "#ffffff",
+      "link_color": "#1d4ed8",
+      "input_background": "#ffffff",
+      "input_border": "#94a3b8"
+    }
+  },
   "customization": {
-
     "colors": {
       "label": "Farben",
       "description": "Farbpalette im Tech-/IT-Stil – Elektrisches Blau als Primärfarbe.",
@@ -17,25 +55,25 @@
         "primary_color": {
           "label": "Primärfarbe",
           "type": "color",
-          "default": "#0891b2",
+          "default": "#0e7490",
           "description": "Electric Cyan – Hauptfarbe für Buttons, Links und Akzente"
         },
         "secondary_color": {
           "label": "Sekundärfarbe",
           "type": "color",
-          "default": "#0e7490",
+          "default": "#155e75",
           "description": "Dunkleres Cyan für Hover-Zustände"
         },
         "accent_color": {
           "label": "Akzentfarbe",
           "type": "color",
           "default": "#22d3ee",
-          "description": "Cyan-Akzent für Tech-Stack-Badges und Highlights"
+          "description": "Cyan-Akzent für Highlights und Fokusrahmen auf dunklen Flächen (Header, Hero, Footer, Dark Mode). Auf hellen Flächen erreicht Cyan keine 3:1 – dort nutzt das Theme die Primärfarbe."
         },
         "code_color": {
           "label": "Code-Akzentfarbe",
           "type": "color",
-          "default": "#10b981",
+          "default": "#047857",
           "description": "Grün für Code-Blöcke und Syntax-Highlights"
         },
         "text_color": {
@@ -71,13 +109,13 @@
         "link_color": {
           "label": "Linkfarbe",
           "type": "color",
-          "default": "#2563eb",
+          "default": "#1d4ed8",
           "description": "Standard-Linkfarbe im Content"
         },
         "muted_color": {
           "label": "Gedämpfte Textfarbe",
           "type": "color",
-          "default": "#64748b",
+          "default": "#5c6b7a",
           "description": "Sekundärer Text (Meta-Infos, Labels)"
         },
         "border_color": {
@@ -106,7 +144,6 @@
         }
       }
     },
-
     "typography": {
       "label": "Typografie",
       "description": "Tech-optimierte Schriften – JetBrains Mono für Code, Plus Jakarta Sans / Inter für UI.",
@@ -179,7 +216,6 @@
         }
       }
     },
-
     "layout": {
       "label": "Layout",
       "description": "Containerbreite, Abstände und Layout-Optionen für Tech-Darstellungen.",
@@ -243,7 +279,6 @@
         }
       }
     },
-
     "header": {
       "label": "Header",
       "description": "Navigation mit Mega-Menu-Support und optionalem Blur-Effekt.",
@@ -302,7 +337,6 @@
         }
       }
     },
-
     "footer": {
       "label": "Footer",
       "description": "Footer mit Tech-Community-Links und Newsletter-Opt-in.",
@@ -345,7 +379,6 @@
         }
       }
     },
-
     "buttons": {
       "label": "Buttons",
       "description": "Button-Stil im Tech-Look – leicht gerundete Ecken, klar und präzise.",
@@ -400,7 +433,6 @@
         }
       }
     },
-
     "tech_hero": {
       "label": "Hero-Bereich",
       "description": "Texte und Einstellungen für den Einstiegs-Hero-Bereich der Startseite.",
@@ -473,7 +505,6 @@
         }
       }
     },
-
     "tech_expert_cards": {
       "label": "Expert-Card Anzeige",
       "description": "Einstellungen für die Darstellung von Experten-Profil-Karten.",
@@ -518,7 +549,6 @@
         }
       }
     },
-
     "tech_content": {
       "label": "Seiteninhalte / Texte",
       "description": "Überschriften und Texte für die wichtigsten Seiten-Sektionen.",
@@ -573,7 +603,6 @@
         }
       }
     },
-
     "advanced": {
       "label": "Erweitert",
       "description": "Custom CSS und erweiterte Theme-Einstellungen.",
@@ -597,7 +626,33 @@
           "description": "Dark-Mode als Standard-Modus aktivieren"
         }
       }
+    },
+    "contact": {
+      "label": "Kontakt",
+      "description": "Kontaktdaten neben dem Core-Kontaktformular (/contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse"
+        },
+        "contact_phone": {
+          "label": "Telefon",
+          "type": "text",
+          "default": ""
+        },
+        "contact_address": {
+          "label": "Adresse",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Erreichbarkeit",
+          "type": "textarea",
+          "default": ""
+        }
+      }
     }
-
   }
 }

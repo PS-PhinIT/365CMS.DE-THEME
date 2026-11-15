@@ -4,40 +4,44 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: IT & Tech Hub Theme – Präzise, technisch, vertrauenswürdig. Charcoal-Oberflächen mit elektrischem Cyan-Akzent, JetBrains Mono nur für Code/Meta.
-Version: 1.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GNU General Public License v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: technexus
 Tags: tech, it, dark-mode, responsive
 */
 
-/* ── Tokens (Customizer überschreibt via #tn-custom-vars) ── */
+/* ── Tokens (Customizer überschreibt via #tn-custom-vars) ──
+   Standardwerte = Customizer-Standards aus theme.json (WCAG AA, Kontraste s. CHANGELOG 2.0.0). */
 :root {
     --container-max-width: 1280px;
     --container-padding: 2rem;
-    --primary-color: #0891b2;
-    --primary-hover: #0e7490;
-    --accent-color: #22d3ee;
-    --code-color: #34d399;
+    --primary-color: #0e7490;      /* Weiß darauf 5,4:1 (vorher #0891b2: 3,7:1) */
+    --primary-hover: #155e75;
+    --accent-color: #22d3ee;       /* nur auf dunklen Flächen */
+    --tn-accent-text: #0e7490;     /* Akzent als Textfarbe auf hellen Flächen */
+    --code-color: #047857;         /* 4,7:1 auf --bg-secondary (vorher #10b981: 2,2:1) */
     --text-color: #0f172a;
     --text-primary: #0f172a;
     --heading-color: #0f172a;
-    --background-color: #f4f6f8;
+    --background-color: #f8fafc;
     --bg-secondary: #e8edf2;
     --card-bg: #ffffff;
-    --muted-color: #5c6b7a;
-    --header-bg: #0c1220;
-    --header-text: #e8edf2;
-    --footer-bg: #0c1220;
+    --muted-color: #5c6b7a;        /* 4,6:1 auf --bg-secondary (vorher #64748b: 4,0:1) */
+    --link-color: #1d4ed8;
+    --header-bg: #0f172a;
+    --header-text: #f1f5f9;
+    --footer-bg: #0f172a;
     --footer-text: #94a3b8;
-    --tn-footer-link: #cbd5e1;
-    --border-color: #d8dee6;
-    --border-radius: 6px;
-    --font-body: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    --font-heading: "Plus Jakarta Sans", Inter, sans-serif;
-    --font-code: "JetBrains Mono", ui-monospace, monospace;
+    --tn-footer-link: #e2e8f0;
+    --border-color: #e2e8f0;
+    --border-radius: 8px;
+    --font-body: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-heading: "Plus Jakarta Sans", Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-code: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --spacing-xs: 0.5rem;
     --spacing-sm: 1rem;
     --spacing-md: 1.5rem;
@@ -47,9 +51,9 @@ Tags: tech, it, dark-mode, responsive
     --tn-section-pad: 5rem;
     --status-online: #22c55e;
     --status-busy: #f59e0b;
-    --focus-ring: #22d3ee;
-    --hero-grad-start: #0c1220;
-    --hero-grad-end: #132238;
+    --focus-ring: #0e7490;         /* helle Flächen 5,1:1; dunkle Flächen: --accent-color (s. Fokus) */
+    --hero-grad-start: #0f172a;
+    --hero-grad-end: #1e3a5f;
     --tn-btn-radius: 6px;
     --tn-btn-padding-x: 1.5rem;
     --tn-btn-padding-y: 0.625rem;
@@ -57,15 +61,21 @@ Tags: tech, it, dark-mode, responsive
     --tn-btn-transform: none;
 }
 
-[data-theme="dark"] {
+/* :root[data-theme] statt [data-theme]: Die Customizer-Variablen (#tn-custom-vars, :root) stehen nach diesem
+   Stylesheet und hoben den Dark Mode bisher wieder auf – höhere Spezifität gewinnt jetzt. */
+:root[data-theme="dark"] {
     --text-color: #e8edf2;
     --text-primary: #e8edf2;
     --heading-color: #f8fafc;
-    --background-color: #0c1220;
-    --bg-secondary: #151d2e;
-    --card-bg: #151d2e;
-    --muted-color: #94a3b8;
+    --background-color: var(--tn-dark-bg, #0f172a);
+    --bg-secondary: var(--tn-dark-surface, #1e293b);
+    --card-bg: var(--tn-dark-surface, #1e293b);
+    --muted-color: #94a3b8;        /* 5,7:1 auf #1e293b */
     --border-color: #2a3548;
+    --link-color: #22d3ee;         /* 8,1:1 auf #1e293b (Hell-Link #1d4ed8 hätte 2,5:1) */
+    --tn-accent-text: #22d3ee;
+    --code-color: #34d399;
+    --focus-ring: var(--accent-color);
 }
 
 /* ── Reset & base ── */
@@ -97,13 +107,23 @@ body.tn-grid-bg {
     outline-offset: 2px;
 }
 
+/* Dunkle Flächen: Cyan-Fokus (9,9:1 auf #0f172a) */
+.site-header,
+.search-panel,
+.home-hero,
+.cta-section,
+.site-footer,
+.skip-link { --focus-ring: var(--accent-color); }
+
+/* Formularfelder: voller Ring statt 35-%-Schatten (vorher unter 3:1) */
 .search-input:focus-visible,
 input[type="search"]:focus-visible,
 input[type="text"]:focus-visible,
 textarea:focus-visible,
 select:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus-ring) 35%, transparent);
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 2px var(--focus-ring);
 }
 
 /* ── Skip link ── */
@@ -402,7 +422,7 @@ body.no-sticky-header .site-header { position: static; }
     font-family: var(--font-heading);
 }
 
-.hero-stat-label { font-size: 0.875rem; color: #94a3b8; }
+.hero-stat-label { font-size: 0.875rem; color: #b8c5d4; } /* #94a3b8 erreichte am Verlaufsende nur 4,5:1 knapp nicht */
 
 /* ── Cards ── */
 .tech-card {
@@ -439,7 +459,7 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
 
 .tech-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--tn-card-columns, 3), minmax(0, 1fr));
     gap: 1.25rem;
 }
 
@@ -449,8 +469,8 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
     display: inline-block;
     margin-top: 0.75rem;
     background: var(--bg-secondary);
-    color: var(--primary-color);
-    border: 1px solid color-mix(in srgb, var(--primary-color) 25%, transparent);
+    color: var(--tn-accent-text);
+    border: 1px solid color-mix(in srgb, var(--tn-accent-text) 35%, transparent);
     border-radius: 4px;
     padding: 0.25rem 0.5rem;
     font-size: 0.75rem;
@@ -517,7 +537,8 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
 
 .home-experts .btn-outline,
 .tn-error-actions .btn-outline,
-.tn-post-card .btn-outline {
+.tn-post-card .btn-outline,
+.tn-prose-card .btn-outline {
     border-color: var(--border-color);
     color: var(--text-color);
 }
@@ -587,7 +608,7 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
     margin-bottom: 0.5rem;
 }
 
-.tn-error-code--system { color: var(--accent-color); }
+.tn-error-code--system { color: var(--tn-accent-text); } /* Cyan auf weißer Karte: 1,8:1 */
 
 .tn-error-actions {
     margin-top: 1.5rem;
@@ -618,6 +639,7 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
 }
 
 .footer-widget-title {
+    font-family: var(--font-heading);
     color: #f1f5f9;
     font-size: 0.9375rem;
     font-weight: 600;
@@ -691,7 +713,8 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
     .footer-widgets { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 1024px) {
+/* Nur Tablet: stand bisher nach der 768px-Regel und setzte auch auf dem Smartphone zwei Spalten */
+@media (max-width: 1024px) and (min-width: 769px) {
     .tech-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -712,11 +735,66 @@ body.tn-card-hover-none .tech-card:hover { transform: none; }
     .tech-card:hover { transform: none; }
 }
 
-/* ── 365CMS 3.4: gemeinsame Template-Bausteine (Beitrag, Suche, Pagination) ── */
+/* ── 365CMS: gemeinsame Template-Bausteine (Beitrag, Suche, Pagination) ── */
 .cms-visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .cms-post-meta { margin: 0 0 1.25rem; font-size: .9rem; opacity: .75; }
 .cms-post-image { margin: 0 0 1.5rem; }
 .cms-post-image img { display: block; width: 100%; height: auto; border-radius: 8px; }
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
-form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
-form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+/* Suchformular der Suchseite (vorher form[role="search"]: traf auch das Header-Suchpanel) */
+.tn-search-form { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
+.tn-search-form input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+
+/* ── 365CMS 4.x Token-Brücke ──
+   Übergibt die TechNexus-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites, Inhaltsverzeichnis).
+   Dark Mode über :root[data-theme="dark"] (Umschalter im Header, Customizer „prefers_dark_mode“). */
+:root {
+    --tv4-primary:        var(--primary-color);
+    --tv4-primary-hover:  var(--primary-hover);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--link-color);
+    --tv4-text:           var(--text-color);
+    --tv4-muted:          var(--muted-color);
+    --tv4-bg:             var(--background-color);
+    --tv4-surface:        var(--card-bg);
+    --tv4-surface-alt:    var(--bg-secondary);
+    --tv4-border:         var(--border-color);
+    --tv4-border-strong:  #94a3b8;
+    --tv4-radius:         var(--border-radius);
+    --tv4-btn-radius:     var(--tn-btn-radius);
+    --tv4-focus:          var(--focus-ring);
+    --tv4-font-body:      var(--font-body);
+    --tv4-font-heading:   var(--font-heading);
+    --tv4-hero-start:     var(--hero-grad-start);
+    --tv4-hero-end:       var(--hero-grad-end);
+    --tv4-max:            var(--container-max-width);
+}
+:root[data-theme="dark"] {
+    --tv4-link:           var(--link-color);
+    --tv4-text:           var(--text-color);
+    --tv4-muted:          var(--muted-color);
+    --tv4-bg:             var(--background-color);
+    --tv4-surface:        var(--card-bg);
+    --tv4-surface-alt:    var(--bg-secondary);
+    --tv4-border:         var(--border-color);
+    --tv4-border-strong:  #4b5a70;
+    --tv4-focus:          var(--accent-color);
+}
+/* Core-Module (Knowledgebase, Newsletter) im Theme-Rahmen; der Header ist sticky (kein Versatz nötig) */
+.theme-v4-module {
+    max-width: var(--container-max-width);
+    margin-inline: auto;
+    padding: var(--tn-section-pad) var(--container-padding);
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content { padding-top: 0; }
+.tn-contact-badge {
+    color: var(--tn-accent-text);
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+.tn-contact-section h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin-bottom: 0.75rem; }
+.tn-footer-logout { color: var(--tn-footer-link, var(--footer-text)); font-size: 0.9rem; }
+.tn-footer-logout:hover { color: var(--accent-color); }
+.theme-v4-error .tn-error-card { margin-inline: auto; }
