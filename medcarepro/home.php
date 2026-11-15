@@ -38,16 +38,20 @@ $ctaTitle     = (string) mc_get_setting('medical_content', 'cta_section_title', 
 $ctaText      = (string) mc_get_setting('medical_content', 'cta_section_text',          '');
 
 $isLoggedIn = theme_is_logged_in();
-$doctorsUrl = $safe(mc_href($heroCtaUrl));
-$bookingUrl = $safe(mc_href($heroSecUrl));
-$fieldsUrl  = $safe(theme_route_url('fields'));
-$registerUrl= $safe(theme_route_url('register'));
-$searchActionUrl = $safe(mc_href('/aerzte'));
+// Standardziele (/aerzte, /termin, /fachgebiete, /fachgebiet/…) stellt ein Praxis-Plugin oder eine Seite bereit:
+// nur verlinken, wenn Route bzw. veröffentlichte Seite existiert (365CMS 4.0.0).
+$mcLinkIf   = static fn(string $url): string => theme_v4_link_available($url) ? htmlspecialchars($url, ENT_QUOTES, 'UTF-8') : '';
+$doctorsUrl = $mcLinkIf(mc_href($heroCtaUrl));
+$bookingUrl = $mcLinkIf(mc_href($heroSecUrl));
+$fieldsUrl  = $mcLinkIf(theme_route_url('fields'));
+$registerUrl= mc_registration_enabled() ? $safe(theme_route_url('register')) : '';
+// Hero-Suche: Arztsuche, sonst die Core-Suche.
+$searchActionUrl = $doctorsUrl !== '' ? $doctorsUrl : $safe(theme_route_url('search'));
 ?>
 <main id="main" class="mc-main" role="main">
 
     <?php if (trim($emergInfo) !== '') : ?>
-    <div class="mc-emergency-notice" role="alert" aria-live="polite">
+    <div class="mc-emergency-notice" role="note">
         <div class="mc-container mc-emergency-notice-row">
             <strong class="mc-emergency-notice-tag">
                 <span aria-hidden="true">⚕</span> Wichtiger Hinweis
@@ -88,15 +92,21 @@ $searchActionUrl = $safe(mc_href('/aerzte'));
                 </button>
             </form>
 
+            <?php if ($bookingUrl !== '' || $doctorsUrl !== '') : ?>
             <div class="mc-hero-actions">
+                <?php if ($bookingUrl !== '') : ?>
                 <a href="<?php echo $bookingUrl; ?>" class="mc-btn mc-btn-accent mc-btn-lg">
                     <span class="mc-btn-icon" aria-hidden="true">🗓</span>
                     <?php echo $safe($heroSecCta); ?>
                 </a>
+                <?php endif; ?>
+                <?php if ($doctorsUrl !== '') : ?>
                 <a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-onhero">
                     Alle Ärzte anzeigen
                 </a>
+                <?php endif; ?>
             </div>
+            <?php endif; ?>
 
             <?php if ($showStats) : ?>
             <ul class="mc-stats-row" aria-label="Plattform-Statistiken">
@@ -137,16 +147,26 @@ $searchActionUrl = $safe(mc_href('/aerzte'));
             ];
             ?>
             <ul class="mc-specialties-grid">
-                <?php foreach ($specialties as $sp) : ?>
+                <?php foreach ($specialties as $sp) :
+                    $spUrl = $mcLinkIf(mc_href((string) $sp['url']));
+                    ?>
                 <li class="mc-specialty">
-                    <a href="<?php echo $safe(mc_href((string) $sp['url'])); ?>"
+                    <?php if ($spUrl !== '') : ?>
+                    <a href="<?php echo $spUrl; ?>"
                        class="mc-specialty-card mc-specialty-card--<?php echo $safe($sp['slug']); ?>"
                        aria-label="Fachgebiet <?php echo $safe($sp['label']); ?> anzeigen">
                         <span class="mc-specialty-icon" aria-hidden="true"><?php echo $safe($sp['icon']); ?></span>
                         <span class="mc-specialty-name"><?php echo $safe($sp['label']); ?></span>
                     </a>
+                    <?php else : ?>
+                    <span class="mc-specialty-card mc-specialty-card--<?php echo $safe($sp['slug']); ?>">
+                        <span class="mc-specialty-icon" aria-hidden="true"><?php echo $safe($sp['icon']); ?></span>
+                        <span class="mc-specialty-name"><?php echo $safe($sp['label']); ?></span>
+                    </span>
+                    <?php endif; ?>
                 </li>
                 <?php endforeach; ?>
+                <?php if ($fieldsUrl !== '') : ?>
                 <li class="mc-specialty">
                     <a href="<?php echo $fieldsUrl; ?>"
                        class="mc-specialty-card mc-specialty-card--more"
@@ -155,6 +175,7 @@ $searchActionUrl = $safe(mc_href('/aerzte'));
                         <span class="mc-specialty-name">Alle Fachgebiete</span>
                     </a>
                 </li>
+                <?php endif; ?>
             </ul>
         </div>
     </section><!-- /.mc-specialties -->
@@ -196,10 +217,12 @@ $searchActionUrl = $safe(mc_href('/aerzte'));
                 <p class="mc-doctor-cta-lead">
                     Finden Sie den passenden Spezialisten in Ihrer Nähe – mit Bewertungen, Öffnungszeiten und Online-Terminbuchung.
                 </p>
+                <?php if ($doctorsUrl !== '') : ?>
                 <a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-primary">
                     Alle Ärzte anzeigen
                     <span aria-hidden="true">→</span>
                 </a>
+                <?php endif; ?>
             </div>
         </div>
     </section><!-- /.mc-doctors -->
@@ -222,13 +245,17 @@ $searchActionUrl = $safe(mc_href('/aerzte'));
                     </ul>
                 </div>
                 <div class="mc-booking-cta__actions">
+                    <?php if ($bookingUrl !== '') : ?>
                     <a href="<?php echo $bookingUrl; ?>" class="mc-btn mc-btn-primary mc-btn-lg">
                         <span class="mc-btn-icon" aria-hidden="true">🗓</span>
                         Termin buchen
                     </a>
+                    <?php endif; ?>
+                    <?php if ($registerUrl !== '') : ?>
                     <a href="<?php echo $registerUrl; ?>" class="mc-btn mc-btn-outline">
                         Als Arzt registrieren
                     </a>
+                    <?php endif; ?>
                     <p class="mc-booking-dsgvo-note">
                         Ihre Daten werden gemäß DSGVO &amp; § 203 StGB geschützt.
                     </p>
@@ -305,12 +332,16 @@ $searchActionUrl = $safe(mc_href('/aerzte'));
                 </p>
             <?php endif; ?>
             <div class="mc-cta-actions">
+                <?php if ($registerUrl !== '') : ?>
                 <a href="<?php echo $registerUrl; ?>" class="mc-btn mc-btn-primary mc-btn-lg">
                     Jetzt kostenlos registrieren
                 </a>
+                <?php endif; ?>
+                <?php if ($doctorsUrl !== '') : ?>
                 <a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-outline">
                     Arzt suchen
                 </a>
+                <?php endif; ?>
             </div>
         </div>
     </section><!-- /.mc-cta-section -->

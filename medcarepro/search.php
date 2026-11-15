@@ -23,21 +23,11 @@ $queryEsc = $safe($query);
 $page     = max(1, (int) ($_GET['page'] ?? $currentPage ?? 1));
 
 $searchUrl  = $safe(theme_route_url('search'));
-$doctorsUrl = $safe(theme_route_url('doctors'));
+$doctorsUrl = theme_v4_link_available(theme_route_url('doctors')) ? $safe(theme_route_url('doctors')) : ''; // nur, wenn /aerzte existiert
 
-$normalizeResultUrl = static function (mixed $value, string $fallback): string {
-    $url = trim((string) $value);
-    if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || preg_match('#^javascript:#i', $url) === 1) {
-        return htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8');
-    }
-    if (str_starts_with($url, '//')) {
-        return htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8');
-    }
-    if (preg_match('#^[a-z][a-z0-9+.-]*:#i', $url) === 1 && filter_var($url, FILTER_VALIDATE_URL) === false) {
-        return htmlspecialchars($fallback, ENT_QUOTES, 'UTF-8');
-    }
-    return htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
-};
+// Nur Pfade, Anker, http(s), mailto:, tel: – die bisherige Prüfung ließ fremde Schemata wie `data://` durch.
+$normalizeResultUrl = static fn(mixed $value, string $fallback): string
+    => htmlspecialchars(mc_safe_url((string) $value, $fallback), ENT_QUOTES, 'UTF-8');
 
 // Der Core übergibt die Treffer ($results, Arrays mit _type/slug/title/meta_description).
 $results    = isset($results) && is_array($results) ? $results : [];
@@ -87,12 +77,12 @@ $totalPages = max(1, (int) ($totalPages ?? 1));
                 $excerpt = $safe((string) ($r->excerpt ?? $r->meta_description ?? ''));
                 $type    = (string) ($r->_type ?? $r->type ?? '');
                 $typeEsc = $safe($type);
-                $date    = isset($r->created_at) ? date('d.m.Y', strtotime((string) $r->created_at)) : '';
-                $imgUrl  = $safe((string) ($r->thumbnail_url ?? ''));
+                $date    = mc_format_date((string) ($r->published_at ?? $r->created_at ?? ''));
+                $imgUrl  = $safe(mc_media_url($r->thumbnail_url ?? ''));
             ?>
             <article class="mc-search-result">
                 <?php if ($imgUrl !== '') : ?>
-                <img src="<?php echo $imgUrl; ?>" alt="" aria-hidden="true" class="mc-search-result__avatar">
+                <img src="<?php echo $imgUrl; ?>" alt="" class="mc-search-result__avatar" width="56" height="56" loading="lazy" decoding="async">
                 <?php else : ?>
                 <div class="mc-search-result__avatar mc-search-result__avatar--placeholder" aria-hidden="true">
                     <?php echo ($type === 'doctor') ? '👨‍⚕' : '📄'; ?>
@@ -128,7 +118,7 @@ $totalPages = max(1, (int) ($totalPages ?? 1));
             <p class="mc-empty-state__text">
                 Zu <strong><?php echo $queryEsc; ?></strong> wurde nichts gefunden. Bitte versuchen Sie andere Suchbegriffe oder durchsuchen Sie direkt unsere Ärzteliste.
             </p>
-            <a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-primary mc-empty-state__action">Arzt suchen</a>
+            <?php if ($doctorsUrl !== '') : ?><a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-primary mc-empty-state__action">Arzt suchen</a><?php endif; ?>
         </div>
         <?php endif; ?>
 

@@ -29,12 +29,12 @@ $name       = $safe((string) ($d['name']             ?? $d['display_name'] ?? ''
 $titleAbbr  = $safe((string) ($d['title']            ?? $d['academic_title'] ?? ''));
 $specialty  = $safe((string) ($d['specialty']        ?? $d['specialty_name'] ?? ''));
 $specSlug   = $safe((string) ($d['specialty_slug']   ?? strtolower(str_replace([' ', '/'], '-', (string) ($d['specialty'] ?? 'general')))));
-$avatarUrl  = $safe((string) ($d['avatar_url']       ?? ''));
+$avatarUrl  = $safe(mc_media_url($d['avatar_url'] ?? ''));
 $location   = $safe((string) ($d['location']         ?? $d['city'] ?? ''));
 $rating     = (float) ($d['rating']         ?? 0);
 $reviews    = (int) ($d['review_count']   ?? 0);
 $nextAppt   = $safe((string) ($d['next_appointment'] ?? ''));
-$profileUrl = $safe((string) ($d['url']              ?? mc_href('/arzt/' . $id)));
+$profileUrl = $safe(mc_safe_url((string) ($d['url'] ?? mc_href('/arzt/' . $id)), mc_href('/arzt/' . $id))); // nur sichere Ziele (Pfad, http/s)
 $bookingUrl = $safe(mc_href('/termin?doctor=' . $id));
 $hasGkv     = !empty($d['insurance']['gkv']) || !empty($d['gkv']);
 $hasPkv     = !empty($d['insurance']['pkv']) || !empty($d['pkv']);
@@ -45,7 +45,7 @@ $ratingRnd  = (int) round($rating);
     <div class="mc-doctor-card__head">
         <?php if ($avatarUrl !== '') : ?>
         <img src="<?php echo $avatarUrl; ?>" alt="Profilbild von <?php echo $name; ?>"
-             class="mc-doctor-avatar" width="80" height="80">
+             class="mc-doctor-avatar" width="80" height="80" loading="lazy" decoding="async">
         <?php else : ?>
         <div class="mc-doctor-avatar mc-doctor-avatar--placeholder" aria-hidden="true">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"

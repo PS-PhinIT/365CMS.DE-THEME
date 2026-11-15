@@ -4,10 +4,10 @@ Theme URI: https://phin.network
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phin.network
 Description: Medizinisches Praxis-Theme – ruhige, vertrauensvolle Identität für Arztpraxen, Kliniken, Therapeuten und Pflegedienste. DSGVO- & § 203 StGB-Posture, WCAG 2.2 AA, editoriale Serif-Akzente.
-Version: 1.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: medcarepro
 Tags: medizin, gesundheit, arzt, klinik, dsgvo, barrierefrei, cms
@@ -28,8 +28,8 @@ Tags: medizin, gesundheit, arzt, klinik, dsgvo, barrierefrei, cms
     --mc-primary-soft:   #e3edf0;
     --mc-primary-ink:    #082f38;
 
-    --mc-accent:         #0f9d6a;
-    --mc-accent-hover:   #0c8056;
+    --mc-accent:         #047857; /* 5,5:1 mit weißer Schrift (bisher #0f9d6a: 3,5:1) */
+    --mc-accent-hover:   #065f46;
     --mc-accent-soft:    #e0f4ec;
 
     --mc-warning:        #b45309;
@@ -50,7 +50,7 @@ Tags: medizin, gesundheit, arzt, klinik, dsgvo, barrierefrei, cms
     --mc-spec-dental:    #b45309;
     --mc-spec-psy:       #047857;
     --mc-spec-surgery:   #7c3aed;
-    --mc-spec-therapy:   #0f9d6a;
+    --mc-spec-therapy:   #047857;
 
     --mc-spec-general-bg: #e3edf0;
     --mc-spec-cardio-bg:  #fdecec;
@@ -83,9 +83,9 @@ Tags: medizin, gesundheit, arzt, klinik, dsgvo, barrierefrei, cms
     --mc-footer-link:    #e0f1f5;
 
     /* Typography */
-    --mc-font-body:      "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    --mc-font-heading:   "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    --mc-font-serif:     "Source Serif 4", Georgia, "Times New Roman", serif;
+    --mc-font-body:      "Open Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mc-font-heading:   "Source Sans 3", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --mc-font-serif:     "Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", serif;
 
     --mc-font-size-base: 17px;
     --mc-font-size-min:  16px;
@@ -1543,3 +1543,98 @@ body.mc-high-contrast .mc-trust-item { border: 2px solid #000 !important; }
     .mc-emergency-phone { display: block; margin-top: .25rem; }
     .mc-header-actions { gap: .25rem; }
 }
+
+/* ================================================================
+   23. 365CMS 4.x: Konto im Menü, Footer-Überschriften, Fokus auf dunklen Flächen
+   ================================================================ */
+/* Kontolinks im Aufklappmenü (≤ 768 px sind die Header-Buttons ausgeblendet) */
+.mc-nav-account { display: none; }
+.mc-header-actions .theme-v4-logout { display: inline-flex; }
+@media (max-width: 768px) {
+    .main-navigation .mc-nav-account { display: flex; margin-top: .5rem; }
+    .mc-nav-account .theme-v4-logout button {
+        width: 100%;
+        padding: .85rem 1rem;
+        border: 0;
+        border-bottom: 1px solid var(--mc-rule);
+        background: none;
+        color: var(--mc-text-mute);
+        font: 600 var(--mc-font-sm) var(--mc-font-heading);
+        text-align: left;
+        cursor: pointer;
+    }
+    .mc-header-actions > .theme-v4-logout { display: none; }
+}
+
+/* Footer: Spaltenüberschriften h2 statt h3 (Ebenenfolge), Markenzeile als Absatz */
+.mc-footer .mc-footer-heading,
+.mc-footer .mc-footer-brand {
+    color: #fff;
+    font-family: var(--mc-font-heading);
+    font-weight: 700;
+    margin-bottom: .85rem;
+    font-size: var(--mc-font-md);
+    letter-spacing: .02em;
+    line-height: 1.25;
+}
+.mc-footer .mc-footer-brand { font-size: var(--mc-font-lg); }
+
+/* Fokusrahmen auf dunklen Flächen: Teal (#0e5b6b) erreicht auf #082f38 nur 1,9:1 → helles Gelb (11,7:1) */
+.mc-hero :focus-visible,
+.mc-section--cta :focus-visible,
+.mc-footer :focus-visible,
+.mc-emergency-banner :focus-visible {
+    outline-color: #ffe89a;
+}
+
+/* ================================================================
+   24. 365CMS 4.x Token-Brücke
+   Übergibt die MedCare-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis, Login-Showcase). Auch im Hochkontrast-Modus (body.mc-high-contrast),
+   der die --mc-*-Variablen am body überschreibt. Das Theme hat keinen Dark Mode.
+   ================================================================ */
+:root,
+body.mc-high-contrast {
+    --tv4-primary:       var(--mc-primary);
+    --tv4-primary-hover: var(--mc-primary-hover);
+    --tv4-on-primary:    #ffffff;
+    --tv4-link:          var(--mc-link);
+    --tv4-text:          var(--mc-ink);
+    --tv4-muted:         var(--mc-text-mute);
+    --tv4-bg:            var(--mc-paper);
+    --tv4-surface:       var(--mc-surface);
+    --tv4-surface-alt:   var(--mc-paper-alt);
+    --tv4-border:        var(--mc-rule);
+    --tv4-border-strong: var(--mc-rule-strong);
+    --tv4-radius:        var(--mc-radius);
+    --tv4-btn-radius:    var(--mc-btn-radius);
+    --tv4-focus:         var(--focus-ring);
+    --tv4-font-body:     var(--mc-font-body);
+    --tv4-font-heading:  var(--mc-font-heading);
+    --tv4-hero-start:    var(--mc-primary-ink);
+    --tv4-hero-end:      var(--mc-primary);
+    --tv4-max:           var(--mc-max-width);
+}
+
+/* Rahmen der Core-Module: Breite wie .mc-container; der fixe Header wird über padding-top am body ausgeglichen */
+.theme-v4-module {
+    width: 100%;
+    max-width: var(--mc-max-width);
+    margin: 0 auto;
+    padding: var(--mc-space-xl) 1.5rem;
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content { padding-top: 0; }
+.theme-v4-module :target { scroll-margin-top: calc(var(--mc-header-height) + 1rem); }
+
+/* Kontaktseite */
+.mc-page .theme-v4-contact { margin-top: var(--mc-space-lg); }
+
+/* Fehlerseiten: eigenständiges Dokument (Wartung, Fatal-Handler) ohne fixen Header */
+body.error-standalone.mc-body {
+    display: block;
+    padding-top: 0;
+    background: var(--mc-paper);
+}
+body.error-standalone .mc-status-card { opacity: 1; transform: none; }

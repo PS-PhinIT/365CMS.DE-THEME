@@ -1,10 +1,10 @@
 # MedCare Pro – Theme für 365 CMS
 
-**Version:** 1.1.0
+**Version:** 2.0.0
 **Autor:** PHINIT.DE / Andreas Hepp
 **Lizenz:** GPL-2.0-or-later
-**Requires PHP:** 8.4
-**Requires 365CMS:** 3.4.00+
+**Requires PHP:** 8.4.1
+**Requires 365CMS:** 4.0.0 (getestet bis 4.1.0)
 **Zielgruppe:** Arztpraxen, Kliniken, Therapeuten, Pflegedienste, Gesundheitsportale
 
 ---
@@ -32,7 +32,7 @@ Notfall-Banner mit AA-konformen Farben, `prefers-reduced-motion`-Fallback.
 | `--mc-primary` | `#0e5b6b` | Klinik-Anker-Teal, Buttons, Header-Akzente |
 | `--mc-primary-hover` | `#0c4f5d` | Hover-/Aktiv-Zustand |
 | `--mc-primary-ink` | `#082f38` | Footer, Hero-Hintergrund, dunkle Sektionen |
-| `--mc-accent` | `#0f9d6a` | Bestätigung („Befund OK", Success-Alerts) |
+| `--mc-accent` | `#047857` | Bestätigung („Befund OK", Success-Alerts); bis 1.1.0 `#0f9d6a` |
 | `--mc-warning` | `#b45309` | Hinweise (Amber, AA gegen Weiß) |
 | `--mc-urgent` | `#b91c1c` | Notfall-Banner, ärztlicher Hinweis – nicht dekorativ |
 | `--mc-paper` | `#f6f8fa` | Seitenhintergrund (sea-salt, nicht eisig) |
@@ -78,18 +78,20 @@ medcarepro/
 
 | Konstante | Wert |
 |---|---|
-| `MEDCAREPRO_THEME_VERSION` | `1.1.0` |
+| `MEDCAREPRO_THEME_VERSION` | `2.0.0` |
 | `MEDCAREPRO_THEME_SLUG` | `medcarepro` |
 
 | Hook | Priorität | Aktion |
 |---|---|---|
-| `head` | 1 | `enqueueStyles()` – preload + stylesheet mit `?v=`-Cache-Bust |
-| `head` | 5 | `outputGoogleFonts()` – nur tatsächlich gewählte Familien |
-| `head` | 10 | `outputMetaTags()` – Description, og:url, theme-color, robots |
-| `head` | 15 | `outputCustomStyles()` – Customizer → CSS-Variablen + custom_css |
+| `head` | 1 | `enqueueStyles()` – `style.css` + `css/cms-v4.css` mit `?v=`-Cache-Bust (keine Google Fonts) |
+| `head` | 10 | `outputMetaTags()` – nur theme-color; SEO-Tags liefert `theme_v4_head_tags()` in `header.php` |
+| `head` | 15 | `outputCustomStyles()` – Customizer → validierte CSS-Variablen + custom_css |
 | `before_footer` | 99 | `enqueueScripts()` – `navigation.js` defer + Cache-Bust |
-| `init` / `cms_init` | 10 | `registerNavMenus()` – beide Hooks für v3-Bootstrap-Kompatibilität |
+| `member_head` | 20 | `outputMemberTokens()` – nur im Memberbereich, statt aller Frontend-Assets |
 | `register_menu_locations` (Filter) | – | Menü-Locations für ThemeManager |
+
+365CMS 4.x: `includes/cms-v4-compat.php` und `css/cms-v4.css` (gemeinsame Schicht aller Public Themes),
+`contact.php`, `knowledgebase/*.php`, `newsletter/*.php` (Core-Formular bzw. Core-Views im Theme-Rahmen).
 
 ---
 
@@ -256,7 +258,7 @@ include THEME_PATH . 'medcarepro/partials/doctor-card.php';
   Accessibility (`min_font_size_accessibility`), Spezialgebiet-Farben.
 - **Google Fonts dynamisch:** URL listet nur tatsächlich gewählte Familien.
   Bei reinem System-Stack (z. B. Georgia) wird der Request übersprungen.
-  `preconnect` zu `fonts.googleapis.com` + `fonts.gstatic.com` (crossorigin).
+  (Seit 2.0.0 entfallen: keine Google-Fonts-Requests mehr, Schriften nur aus der Core-Schriftverwaltung.)
 - **`has-emergency-banner` Body-Klasse:** Inline-`<style>`-Block in
   `header.php` entfernt; Header-Höhe wird in `style.css` über
   `body.has-emergency-banner` adjustiert.

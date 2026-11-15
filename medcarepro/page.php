@@ -25,7 +25,7 @@ $page = isset($page) && is_array($page) && $page !== [] ? (object) $page : null;
             <?php endif; ?>
             <?php if (!empty($page->content)) : ?>
                 <div class="prose mc-page__content">
-                    <?php echo (string) $page->content; ?>
+                    <?php echo (string) $page->content; // vom Core gerendertes, sanitiertes HTML – unverändert (auch Downloads/Feeds mit id = 0) ?>
                 </div>
             <?php endif; ?>
         </article>

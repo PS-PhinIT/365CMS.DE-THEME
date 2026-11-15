@@ -1,6 +1,12 @@
 <?php
 /**
- * Login-Seite – MedCare Pro Theme
+ * Login-Seite – MedCare Pro Theme (Legacy-Modus, /login)
+ *
+ * Rendert der Core nur bei `auth_slug_mode = legacy` (PublicRouter::redirectLegacyLogin()) und übergibt
+ * `$login_redirect` und `$showcase`. Das Formular postet an den Core (PublicRouter::handleLogin(),
+ * CSRF-Aktion `login`), der ausschließlich über `\CMS\Auth::instance()->login()` anmeldet, Fehlversuche
+ * drosselt und neutrale Meldungen („Ungültige Anmeldedaten.“) als Session-Flash zurückgibt. Das Theme
+ * prüft keine Zugangsdaten selbst und gibt keine Exception-Texte aus.
  *
  * @package MedCarePro_Theme
  */
@@ -24,19 +30,26 @@ $error   = isset($_SESSION['error']) && is_string($_SESSION['error']) ? $_SESSIO
 $success = isset($_SESSION['success']) && is_string($_SESSION['success']) ? $_SESSION['success'] : null;
 unset($_SESSION['error'], $_SESSION['success']);
 
+// Eingaben des letzten Versuchs (der Core legt sie in auth_form_old ab) – nie das Passwort.
+$oldInput = is_array($_SESSION['auth_form_old']['login'] ?? null) ? $_SESSION['auth_form_old']['login'] : [];
+unset($_SESSION['auth_form_old']['login']);
+
 try {
     $csrfToken = \CMS\Security::instance()->generateToken('login');
 } catch (\Throwable) {
     $csrfToken = '';
 }
 
-$postedEmail   = '';
+$postedLogin   = mb_substr(trim((string) ($oldInput['username'] ?? $oldInput['email'] ?? '')), 0, 254);
+$loginRedirect = isset($login_redirect) && is_string($login_redirect) ? trim($login_redirect) : '';
+// Nur interne Ziele (der Core prüft das Ziel beim Login zusätzlich).
+$loginRedirect = str_starts_with($loginRedirect, '/') && !str_starts_with($loginRedirect, '//') ? $loginRedirect : '';
 $loginAction   = $safe(theme_route_url('login'));
 $forgotUrl     = $safe(mc_href('/forgot-password'));
-$registerUrl   = $safe(theme_route_url('register'));
+$registerUrl   = mc_registration_enabled() ? $safe(theme_route_url('register')) : '';
 
 ?>
-<main id="main" class="mc-main mc-auth-page" role="main">
+<main id="main" class="mc-main mc-auth-page">
     <div class="mc-container">
         <div class="mc-form-card mc-auth-card">
 
@@ -49,7 +62,7 @@ $registerUrl   = $safe(theme_route_url('register'));
                     </svg>
                 </span>
                 <h1 class="mc-auth-card__title">Anmelden</h1>
-                <p class="mc-auth-card__lead">Willkommen zurück bei MedCare Pro</p>
+                <p class="mc-auth-card__lead">Willkommen zurück bei <?php echo $safe(mc_site_title()); ?></p>
             </div>
 
             <?php if (!empty($error)) : ?>
@@ -61,17 +74,22 @@ $registerUrl   = $safe(theme_route_url('register'));
 
             <form method="POST" action="<?php echo $loginAction; ?>" novalidate class="mc-auth-form">
                 <input type="hidden" name="csrf_token" value="<?php echo $safe($csrfToken); ?>">
+                <?php if ($loginRedirect !== '') : ?>
+                <input type="hidden" name="redirect" value="<?php echo $safe($loginRedirect); ?>">
+                <?php endif; ?>
 
                 <div class="mc-form-group">
                     <label for="login-email" class="mc-label">
-                        E-Mail-Adresse <span class="mc-required" aria-hidden="true">*</span>
+                        E-Mail-Adresse oder Benutzername <span class="mc-required" aria-hidden="true">*</span>
                     </label>
                     <input id="login-email"
-                           type="email"
-                           name="email"
+                           type="text"
+                           name="username"
                            class="mc-input"
-                           value="<?php echo $safe($postedEmail); ?>"
-                           autocomplete="email"
+                           value="<?php echo $safe($postedLogin); ?>"
+                           autocomplete="username"
+                           autocapitalize="none"
+                           spellcheck="false"
                            required
                            aria-required="true"
                            placeholder="ihre@email.de">
@@ -100,7 +118,9 @@ $registerUrl   = $safe(theme_route_url('register'));
 
             <div class="mc-form-links">
                 <a href="<?php echo $forgotUrl; ?>">Passwort vergessen?</a>
+                <?php if ($registerUrl !== '') : ?>
                 <a href="<?php echo $registerUrl; ?>">Jetzt registrieren</a>
+                <?php endif; ?>
             </div>
 
             <p class="mc-dsgvo-note">
@@ -108,5 +128,12 @@ $registerUrl   = $safe(theme_route_url('register'));
                 Ihre Anmeldedaten werden verschlüsselt übertragen und gemäß DSGVO &amp; § 203 StGB geschützt.
             </p>
         </div>
+
+        <?php
+        // Login-Showcase (365CMS 4.1.0): dieselben Inhalte wie auf der Core-Loginseite, Stile aus css/cms-v4.css.
+        if (isset($showcase) && class_exists('\\CMS\\Services\\CmsAuthPageService')) {
+            \CMS\Services\CmsAuthPageService::getInstance()->renderShowcase(is_array($showcase) ? $showcase : null, 'login', 'legacy');
+        }
+        ?>
     </div>
 </main>

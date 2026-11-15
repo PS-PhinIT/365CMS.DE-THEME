@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * MedCare Pro Theme – functions.php
  *
- * Medizin- & Gesundheitspraxis-Theme für 365CMS v3.x.x auf PHP 8.4.
+ * Medizin- & Gesundheitspraxis-Theme für 365CMS 4.0.0 – 4.1.0 auf PHP 8.4.1.
  *
  * @package MedCarePro_Theme
  */
@@ -14,12 +14,21 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MEDCAREPRO_THEME_VERSION')) {
-    define('MEDCAREPRO_THEME_VERSION', '1.1.0');
+    define('MEDCAREPRO_THEME_VERSION', '2.0.0');
 }
 
 if (!defined('MEDCAREPRO_THEME_SLUG')) {
     define('MEDCAREPRO_THEME_SLUG', 'medcarepro');
 }
+
+// 365CMS 4.x: header.php öffnet kein <main>; jedes Template setzt <main id="main"> (Skip-Link-Ziel) selbst.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', false);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 /**
  * Theme bootstrap (singleton).
@@ -43,31 +52,52 @@ final class MedCarePro_Theme
 
     private function registerHooks(): void
     {
+        // Menü-Positionen ausschließlich über den Filter (ThemeManager::registerMenuLocation() gibt es in 4.0 nicht mehr).
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Shell und löst ebenfalls `head` aus:
+        // dort weder Frontend-Stylesheet noch Customizer-Variablen oder Script, nur die Palette als --member-*.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'],      1);
-        \CMS\Hooks::addAction('head', [$this, 'outputGoogleFonts'],  5);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'],     10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 15);
 
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
-
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
-
-        // Auf BEIDEN Hooks für v3-Bootstrap-Kompatibilität.
-        \CMS\Hooks::addAction('init',     [$this, 'registerNavMenus'], 10);
-        \CMS\Hooks::addAction('cms_init', [$this, 'registerNavMenus'], 10);
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
 
     public function enqueueStyles(): void
     {
-        $href = htmlspecialchars(
-            $this->themeBaseUrl() . '/style.css?v=' . rawurlencode(MEDCAREPRO_THEME_VERSION),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-        echo '<link rel="preload" href="' . $href . '" as="style">' . "\n";
+        $version = rawurlencode(MEDCAREPRO_THEME_VERSION);
+        $href    = htmlspecialchars($this->themeBaseUrl() . '/style.css?v=' . $version, ENT_QUOTES, 'UTF-8');
+        $v4Href  = htmlspecialchars($this->themeBaseUrl() . '/css/cms-v4.css?v=' . $version, ENT_QUOTES, 'UTF-8');
         echo '<link rel="stylesheet" href="' . $href . '">' . "\n";
+        echo '<link rel="stylesheet" href="' . $v4Href . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greifen die System-Fallbacks der Font-Stacks.
+    }
+
+    /** Memberbereich (inkl. Newsletter-Widget) in der MedCare-Palette – Customizer-Werte, sanitisiert. */
+    public function outputMemberTokens(): void
+    {
+        $c = fn(string $key, string $default): string => mc_css_color($this->customizerGet('colors', $key, $default), $default);
+        echo theme_v4_member_tokens_style([
+            'primary'    => $c('primary_color', '#0e5b6b'),
+            'accent'     => $c('accent_color', '#047857'),
+            'bg'         => $c('bg_color', '#f6f8fa'),
+            'card_bg'    => $c('card_bg_color', '#ffffff'),
+            'text'       => $c('text_color', '#0f1f25'),
+            'text_muted' => $c('muted_color', '#5b6b73'),
+            'border'     => $c('border_color', '#e1e6ec'),
+            'focus'      => $c('primary_color', '#0e5b6b'),
+            'radius'     => mc_css_number($this->customizerGet('layout', 'border_radius', 10), 10, 0, 24) . 'px',
+            'font'       => $this->mapFontChoice((string) $this->customizerGet('typography', 'font_family_base', 'open-sans'), 'body'),
+        ]);
     }
 
     public function enqueueScripts(): void
@@ -80,67 +110,65 @@ final class MedCarePro_Theme
         echo '<script src="' . $src . '" defer></script>' . "\n";
     }
 
-    /**
-     * Google Fonts – preconnect + nur tatsächlich gewählte Familien.
-     * Bei reinen System-Stacks (z. B. `georgia`) wird die jeweilige
-     * Familie übersprungen und der Request ggf. ganz unterdrückt.
-     */
-    public function outputGoogleFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $families = $this->googleFontFamilies();
-        if ($families === '') {
-            return;
-        }
-        $url = 'https://fonts.googleapis.com/css2?family=' . $families . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    }
-
     // ── Meta ────────────────────────────────────────────────────────────────
 
+    /**
+     * Nur noch theme-color. Beschreibung, Robots, Canonical und Open Graph liefert das Core-SEO in header.php
+     * (theme_v4_head_tags()) – bisher gab das Theme zusätzlich eine site-weite Beschreibung, `og:url` = Startseite
+     * und `robots: index,follow` aus, auch auf Vorschau-, Login- und Fehlerseiten.
+     */
     public function outputMetaTags(): void
     {
-        $tm        = \CMS\ThemeManager::instance();
-        $siteDesc  = htmlspecialchars((string) $tm->getSiteDescription(), ENT_QUOTES, 'UTF-8');
-        $siteUrl   = htmlspecialchars((string) (defined('SITE_URL') ? SITE_URL : ''), ENT_QUOTES, 'UTF-8');
-        $themeColor = htmlspecialchars(
-            (string) $this->customizerGet('header', 'header_bg_color', '#ffffff'),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-
-        echo '<meta name="description" content="' . $siteDesc . '">' . "\n";
-        echo '<meta property="og:url" content="' . $siteUrl . '">' . "\n";
-        echo '<meta name="theme-color" content="' . $themeColor . '">' . "\n";
-        echo '<meta name="robots" content="index,follow">' . "\n";
+        $themeColor = mc_css_color($this->customizerGet('header', 'header_bg_color', '#ffffff'), '#ffffff');
+        echo '<meta name="theme-color" content="' . htmlspecialchars($themeColor, ENT_QUOTES, 'UTF-8') . '">' . "\n";
     }
 
     // ── Customizer-getriebene CSS-Variablen + custom_css ─────────────────────
 
     public function outputCustomStyles(): void
     {
-        $p = fn(string $g, string $k, string $d): string =>
-            htmlspecialchars((string) $this->customizerGet($g, $k, $d), ENT_QUOTES, 'UTF-8');
+        // Werte validiert statt nur HTML-escaped: Farben als Hex/RGB/HSL, Zahlen auf die theme.json-Grenzen geklemmt,
+        // Auswahlwerte gegen ihre Liste geprüft.
+        $numberLimits = [
+            'typography'    => ['font_size_base' => [17, 14, 24], 'line_height_base' => [1.75, 1.2, 2.5]],
+            'accessibility' => ['min_font_size_accessibility' => [16, 14, 24]],
+            'layout'        => ['container_width' => [1100, 800, 1400], 'content_padding' => [2.5, 0.5, 6], 'border_radius' => [10, 0, 24], 'section_spacing' => [5, 1, 12]],
+            'header'        => ['header_height' => [76, 48, 120], 'logo_max_height' => [52, 24, 100]],
+            'buttons'       => ['button_border_radius' => [8, 0, 50], 'button_padding_x' => [2, 0.5, 4], 'button_padding_y' => [0.875, 0.25, 2]],
+        ];
+        $choices = [
+            'typography' => ['font_weight_heading' => ['600', '700']],
+            'buttons'    => ['button_font_weight' => ['600', '700'], 'button_transform' => ['none', 'capitalize', 'uppercase']],
+        ];
+        $p = function (string $g, string $k, string $d) use ($numberLimits, $choices): string {
+            $raw = $this->customizerGet($g, $k, $d);
+            if (isset($numberLimits[$g][$k])) {
+                [$default, $min, $max] = $numberLimits[$g][$k];
+                return mc_css_number($raw, (float) $default, (float) $min, (float) $max);
+            }
+            if (isset($choices[$g][$k])) {
+                return in_array((string) $raw, $choices[$g][$k], true) ? (string) $raw : $d;
+            }
 
-        // Fonts
+            return mc_css_color($raw, $d);
+        };
+
+        // Fonts – feste Stacks aus mapFontChoice(), nicht HTML-escapen (Entities wie &quot; werden in <style>
+        // nicht dekodiert; bisher war --mc-font-* dadurch ungültig und die gewählten Schriften griffen nie).
         $baseChoice    = (string) $this->customizerGet('typography', 'font_family_base',         'open-sans');
         $headingChoice = (string) $this->customizerGet('typography', 'font_family_heading',      'source-sans-pro');
         $medicalChoice = (string) $this->customizerGet('typography', 'font_family_medical_text', 'source-serif-pro');
 
-        $baseFont    = htmlspecialchars($this->mapFontChoice($baseChoice,    'body'),    ENT_QUOTES, 'UTF-8');
-        $headingFont = htmlspecialchars($this->mapFontChoice($headingChoice, 'heading'), ENT_QUOTES, 'UTF-8');
-        $serifFont   = htmlspecialchars($this->mapFontChoice($medicalChoice, 'serif'),   ENT_QUOTES, 'UTF-8');
+        $baseFont    = $this->mapFontChoice($baseChoice,    'body');
+        $headingFont = $this->mapFontChoice($headingChoice, 'heading');
+        $serifFont   = $this->mapFontChoice($medicalChoice, 'serif');
 
         echo '<style id="mc-custom-vars"' . theme_csp_nonce_attr() . '>:root{';
 
         // Brand & Farben
         echo '--mc-primary:'       . $p('colors', 'primary_color',     '#0e5b6b') . ';';
         echo '--mc-primary-hover:' . $p('colors', 'secondary_color',   '#0c4f5d') . ';';
-        echo '--mc-accent:'        . $p('colors', 'accent_color',      '#0f9d6a') . ';';
+        echo '--mc-accent:'        . $p('colors', 'accent_color',      '#047857') . ';';
         echo '--mc-warning:'       . $p('colors', 'warning_color',     '#b45309') . ';';
         echo '--mc-urgent:'        . $p('colors', 'urgent_color',      '#b91c1c') . ';';
         echo '--mc-link:'          . $p('colors', 'link_color',        '#107585') . ';';
@@ -149,7 +177,7 @@ final class MedCarePro_Theme
         echo '--mc-spec-general:'  . $p('colors', 'specialty_general', '#0e5b6b') . ';';
         echo '--mc-spec-dental:'   . $p('colors', 'specialty_dental',  '#b45309') . ';';
         echo '--mc-spec-surgery:'  . $p('colors', 'specialty_surgery', '#7c3aed') . ';';
-        echo '--mc-spec-therapy:'  . $p('colors', 'specialty_therapy', '#0f9d6a') . ';';
+        echo '--mc-spec-therapy:'  . $p('colors', 'specialty_therapy', '#047857') . ';';
 
         // Flächen / Texte
         echo '--mc-paper:'         . $p('colors', 'bg_color',          '#f6f8fa') . ';';
@@ -217,35 +245,31 @@ final class MedCarePro_Theme
 
     // ── Menü-Positionen ──────────────────────────────────────────────────────
 
-    public function registerMenuLocations(array $locations): array
+    /**
+     * @param mixed $locations
+     * @return array<int, mixed>
+     */
+    public function registerMenuLocations(mixed $locations): array
     {
-        $locations[] = ['slug' => 'primary-nav',  'label' => 'Hauptmenü'];
-        $locations[] = ['slug' => 'footer-nav',   'label' => 'Fußzeilen-Navigation'];
-        $locations[] = ['slug' => 'footer-legal', 'label' => 'Rechtliche Links'];
-        return $locations;
-    }
-
-    public function registerNavMenus(): void
-    {
-        $tm = \CMS\ThemeManager::instance();
-        if (method_exists($tm, 'registerMenuLocation')) {
-            $tm->registerMenuLocation('primary-nav',  'Hauptmenü');
-            $tm->registerMenuLocation('footer-nav',   'Fußzeilen-Navigation');
-            $tm->registerMenuLocation('footer-legal', 'Rechtliche Links');
+        $locations = is_array($locations) ? $locations : [];
+        $existing  = array_column(array_filter($locations, 'is_array'), 'slug');
+        foreach ([
+            'primary-nav'  => 'Hauptmenü',
+            'footer-nav'   => 'Fußzeilen-Navigation',
+            'footer-legal' => 'Rechtliche Links',
+        ] as $slug => $label) {
+            if (!in_array($slug, $existing, true)) {
+                $locations[] = ['slug' => $slug, 'label' => $label];
+            }
         }
+        return $locations;
     }
 
     // ── Internal helpers ────────────────────────────────────────────────────
 
     private function themeBaseUrl(): string
     {
-        $tm = \CMS\ThemeManager::instance();
-        try {
-            $url = (string) $tm->getThemeUrl(MEDCAREPRO_THEME_SLUG);
-        } catch (\Throwable) {
-            $url = (string) $tm->getThemeUrl();
-        }
-        return rtrim($url, '/');
+        return theme_v4_theme_url(__DIR__);
     }
 
     private function customizerGet(string $group, string $key, mixed $default = null): mixed
@@ -265,8 +289,9 @@ final class MedCarePro_Theme
      */
     private function mapFontChoice(string $choice, string $slot): string
     {
-        $sansStack  = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-        $serifStack = 'Georgia, "Times New Roman", "Liberation Serif", serif';
+        // System-Fallbacks: Webfonts kommen nur aus der Core-Schriftverwaltung (keine Google Fonts).
+        $sansStack  = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        $serifStack = 'ui-serif, Georgia, Cambria, "Times New Roman", "Liberation Serif", serif';
 
         return match ($choice) {
             'open-sans'         => '"Open Sans", ' . $sansStack,
@@ -283,51 +308,6 @@ final class MedCarePro_Theme
                 default   => '"Open Sans", ' . $sansStack,
             },
         };
-    }
-
-    /**
-     * Liefert die `family=…&family=…`-URL-Stückliste für Google Fonts –
-     * nur tatsächlich gewählte Familien werden geladen. System-Fonts
-     * (z. B. `georgia`) werden übersprungen.
-     */
-    private function googleFontFamilies(): string
-    {
-        $base    = (string) $this->customizerGet('typography', 'font_family_base',         'open-sans');
-        $heading = (string) $this->customizerGet('typography', 'font_family_heading',      'source-sans-pro');
-        $medical = (string) $this->customizerGet('typography', 'font_family_medical_text', 'source-serif-pro');
-
-        $needed = [];
-        foreach ([$base, $heading, $medical] as $choice) {
-            switch ($choice) {
-                case 'open-sans':
-                    $needed['Open Sans']         = 'Open+Sans:wght@400;600;700';
-                    break;
-                case 'roboto':
-                    $needed['Roboto']            = 'Roboto:wght@400;500;700';
-                    break;
-                case 'lato':
-                    $needed['Lato']              = 'Lato:wght@400;700';
-                    break;
-                case 'inter':
-                    $needed['Inter']             = 'Inter:wght@400;500;600;700';
-                    break;
-                case 'source-sans-pro':
-                    $needed['Source Sans 3']     = 'Source+Sans+3:wght@400;600;700';
-                    break;
-                case 'libre-baskerville':
-                    $needed['Libre Baskerville'] = 'Libre+Baskerville:wght@400;700';
-                    break;
-                case 'source-serif-pro':
-                    $needed['Source Serif 4']    = 'Source+Serif+4:wght@400;600;700';
-                    break;
-                // 'georgia' bleibt System-Schrift.
-            }
-        }
-
-        if ($needed === []) {
-            return '';
-        }
-        return implode('&family=', $needed);
     }
 
     private function sanitizeCustomCss(string $raw): string
@@ -394,34 +374,43 @@ if (!function_exists('theme_nav_menu')) {
     /**
      * Render a registered navigation menu as a <ul> list.
      *
+     * Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den Menüeinträgen die Einträge der Core-Module
+     * (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) – auch wenn das Menü leer ist.
+     *
      * @param string $location  Menu location slug (e.g. 'primary-nav')
+     * @return bool true, wenn eine Liste ausgegeben wurde
      */
-    function theme_nav_menu(string $location): void
+    function theme_nav_menu(string $location, string $mainNavContext = ''): bool
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
             $items = [];
         }
-        if (empty($items)) {
-            return;
+        $items = is_array($items) ? $items : [];
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'current-menu-item']);
+            $coreItems = (string) ob_get_clean();
         }
-        $cur = rtrim(parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/', '/');
+        if ($items === [] && $coreItems === '') {
+            return false;
+        }
+
         echo '<ul>';
         foreach ($items as $item) {
-            $rawUrl = (string) ($item['url']   ?? '#');
-            $label  = (string) ($item['label'] ?? '');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
-
-            $isActive = ($path === '' || $path === '/')
-                ? ($cur === '' || $cur === '/')
-                : str_starts_with($cur, $path);
-
-            $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
-                ? $rawUrl
-                : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
-                    ? $rawUrl
-                    : '#');
+            if (!is_array($item)) {
+                continue;
+            }
+            // Der Core liefert die Beschriftung in `title`; `label` bleibt für ältere Menüdaten.
+            $label = trim((string) ($item['label'] ?? $item['title'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+            $sanitizedUrl = mc_safe_url((string) ($item['url'] ?? '#'));
+            $isActive = $sanitizedUrl !== '#' && !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'
@@ -430,28 +419,22 @@ if (!function_exists('theme_nav_menu')) {
             $cls = $isActive ? ' class="current-menu-item"' : '';
             echo '<li' . $cls . '><a href="'
                 . htmlspecialchars($sanitizedUrl, ENT_QUOTES, 'UTF-8')
-                . '"' . $target . '>'
+                . '"' . $target . ($isActive ? ' aria-current="page"' : '') . '>'
                 . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
                 . '</a></li>';
         }
+        echo $coreItems; // Core-Hook main_nav: fertige, escapte Links in <li>
         echo '</ul>';
+
+        return true;
     }
 }
 
 if (!function_exists('get_header')) {
     function get_header(): void
     {
-        $path = __DIR__ . '/header.php';
-        try {
-            $tp = \CMS\ThemeManager::instance()->getThemePath(MEDCAREPRO_THEME_SLUG) . '/header.php';
-            if (file_exists($tp)) {
-                $path = $tp;
-            }
-        } catch (\Throwable) {
-            // bleibt bei __DIR__
-        }
-        if (file_exists($path)) {
-            require $path;
+        if (is_file(__DIR__ . '/header.php')) {
+            require __DIR__ . '/header.php';
         }
     }
 }
@@ -459,18 +442,102 @@ if (!function_exists('get_header')) {
 if (!function_exists('get_footer')) {
     function get_footer(): void
     {
-        $path = __DIR__ . '/footer.php';
+        if (is_file(__DIR__ . '/footer.php')) {
+            require __DIR__ . '/footer.php';
+        }
+    }
+}
+
+if (!function_exists('mc_safe_url')) {
+    /**
+     * Nur sichere Linkziele: Pfad, Anker, Query, http(s), mailto:, tel: – sonst `$fallback`
+     * (FILTER_VALIDATE_URL allein lässt auch Script-Schemata mit `://` durch).
+     */
+    function mc_safe_url(string $url, string $fallback = '#'): string
+    {
+        $url = trim($url);
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_starts_with($url, '//')) {
+            return $fallback;
+        }
+        if (str_starts_with($url, '/') || str_starts_with($url, '#') || str_starts_with($url, '?')) {
+            return $url;
+        }
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false) {
+            return $url;
+        }
+
+        return in_array($scheme, ['mailto', 'tel'], true) ? $url : $fallback;
+    }
+}
+
+if (!function_exists('mc_media_url')) {
+    /** Bild-URL aus Inhalt/Customizer: relative Pfade („uploads/…“) werden zu „/uploads/…“, unsichere Ziele zu ''. */
+    function mc_media_url(mixed $value): string
+    {
+        $url = trim(is_scalar($value) ? (string) $value : '');
+        if ($url === '') {
+            return '';
+        }
+        if (preg_match('#^[a-z][a-z0-9+.-]*:#i', $url) !== 1 && !str_starts_with($url, '/')) {
+            $url = '/' . $url;
+        }
+        $safe = mc_safe_url($url, '');
+
+        return ($safe === '' || str_starts_with($safe, '#') || preg_match('#^(?:mailto|tel):#i', $safe) === 1) ? '' : $safe;
+    }
+}
+
+if (!function_exists('mc_css_color')) {
+    /** Farbwert für CSS: nur Hex/RGB(A)/HSL(A), sonst `$fallback`. */
+    function mc_css_color(mixed $value, string $fallback): string
+    {
+        $candidate = trim(is_scalar($value) ? (string) $value : '');
+        if (preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i', $candidate) === 1
+            || preg_match('/^(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s\/]+\)$/i', $candidate) === 1) {
+            return $candidate;
+        }
+
+        return $fallback;
+    }
+}
+
+if (!function_exists('mc_css_number')) {
+    /** Zahl für CSS, auf [min, max] geklemmt. */
+    function mc_css_number(mixed $value, float $default, float $min, float $max): string
+    {
+        $number = is_numeric($value) ? (float) $value : $default;
+        $number = max($min, min($max, $number));
+
+        return rtrim(rtrim(number_format($number, 3, '.', ''), '0'), '.');
+    }
+}
+
+if (!function_exists('mc_format_date')) {
+    /**
+     * Datum für die Ausgabe (`d.m.Y` bzw. `Y-m-d` für datetime). Leer bei ungültigem Wert – bisher führte
+     * date(…, strtotime(…)) unter strict_types bei ungültigen Daten zu einem TypeError.
+     */
+    function mc_format_date(mixed $value, string $format = 'd.m.Y'): string
+    {
+        $ts = is_string($value) && trim($value) !== '' ? strtotime($value) : false;
+
+        return $ts !== false ? date($format, $ts) : '';
+    }
+}
+
+if (!function_exists('mc_registration_enabled')) {
+    /** true, wenn die Core-Registrierung aktiv ist (Einstellungen → Login & Registrierung). */
+    function mc_registration_enabled(): bool
+    {
         try {
-            $tp = \CMS\ThemeManager::instance()->getThemePath(MEDCAREPRO_THEME_SLUG) . '/footer.php';
-            if (file_exists($tp)) {
-                $path = $tp;
+            if (class_exists('\\CMS\\Services\\CmsAuthPageService')) {
+                return \CMS\Services\CmsAuthPageService::getInstance()->isRegistrationEnabled();
             }
         } catch (\Throwable) {
-            // bleibt bei __DIR__
         }
-        if (file_exists($path)) {
-            require $path;
-        }
+
+        return true;
     }
 }
 
@@ -631,7 +698,7 @@ if (!function_exists('mc_tel_sanitize')) {
     }
 }
 
-// ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
+// ── 365CMS-Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────────
 
 if (!function_exists('theme_csp_nonce_attr')) {
     /** Liefert ` nonce="…"` für Inline-<style>/<script> unter der 365CMS-CSP. */
@@ -648,25 +715,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

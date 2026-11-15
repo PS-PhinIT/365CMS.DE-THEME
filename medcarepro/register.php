@@ -2,7 +2,12 @@
 /**
  * Registrierung – MedCare Pro Theme
  *
- * Unterstützt Patienten- und Arzt-Registrierung via GET-Parameter ?type=doctor
+ * Unterstützt Patienten- und Arzt-Registrierung via GET-Parameter ?type=doctor (nur Darstellung).
+ *
+ * Legacy-Modus (`auth_slug_mode = legacy`, PublicRouter::redirectLegacyRegister()): Der Core übergibt
+ * `$showcase`. Das Formular postet an den Core (PublicRouter::handleRegister(), CSRF-Aktion `register`,
+ * Rate-Limit, Passwort-Richtlinie), der ausschließlich über `\CMS\Auth::instance()->register()` anlegt und
+ * neutrale Meldungen als Session-Flash zurückgibt – ohne Hinweis, ob eine E-Mail-Adresse bereits existiert.
  *
  * @package MedCarePro_Theme
  */
@@ -20,14 +25,20 @@ if (theme_is_logged_in()) {
 
 $isDoctor       = ($_GET['type'] ?? '') === 'doctor';
 $safe           = static fn(mixed $v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
-$postedEmail    = '';
-$postedUsername = '';
+$registrationOn = mc_registration_enabled();
 
 // POST /login bzw. /register verarbeitet der Core (PublicRouter::handleLogin/handleRegister,
 // CSRF-Aktion 'login'/'register'); Meldungen kommen als Session-Flash zurück.
 $error   = isset($_SESSION['error']) && is_string($_SESSION['error']) ? $_SESSION['error'] : null;
 $success = isset($_SESSION['success']) && is_string($_SESSION['success']) ? $_SESSION['success'] : null;
 unset($_SESSION['error'], $_SESSION['success']);
+
+// Eingaben des letzten Versuchs (der Core legt sie in auth_form_old ab) – nie Passwörter.
+$oldInput = is_array($_SESSION['auth_form_old']['register'] ?? null) ? $_SESSION['auth_form_old']['register'] : [];
+unset($_SESSION['auth_form_old']['register']);
+$postedEmail    = mb_substr(trim((string) ($oldInput['email'] ?? '')), 0, 254);
+$postedUsername = mb_substr(trim((string) ($oldInput['username'] ?? '')), 0, 80);
+$postedTerms    = ($oldInput['terms'] ?? '0') === '1';
 
 try {
     $csrfToken = \CMS\Security::instance()->generateToken('register');
@@ -38,10 +49,10 @@ try {
 $privText   = (string) mc_get_setting('dsgvo_medical', 'privacy_form_text', 'Ihre Daten werden gemäß DSGVO und § 203 StGB vertraulich behandelt.');
 $loginUrl   = $safe(theme_route_url('login'));
 $registerAction = $safe(theme_route_url('register'));
-$privacyUrl = $safe(theme_route_url('privacy'));
+$privacyUrl = theme_v4_link_available(theme_route_url('privacy')) ? $safe(theme_route_url('privacy')) : ''; // nur veröffentlichte Seite
 
 ?>
-<main id="main" class="mc-main mc-auth-page" role="main">
+<main id="main" class="mc-main mc-auth-page">
     <div class="mc-container">
         <div class="mc-form-card mc-auth-card mc-auth-card--wide">
 
@@ -72,20 +83,19 @@ $privacyUrl = $safe(theme_route_url('privacy'));
                 </p>
             </div>
 
-            <div class="mc-auth-toggle" role="tablist" aria-label="Registrierungs-Typ">
+            <?php // Umschalter sind Links (Seitenwechsel), daher aria-current statt Tab-Rollen. ?>
+            <nav class="mc-auth-toggle" aria-label="Registrierungs-Typ">
                 <a href="?type=patient"
                    class="mc-auth-toggle__btn<?php echo !$isDoctor ? ' is-active' : ''; ?>"
-                   role="tab"
-                   aria-selected="<?php echo !$isDoctor ? 'true' : 'false'; ?>">
+                   <?php echo !$isDoctor ? 'aria-current="page"' : ''; ?>>
                     Patient
                 </a>
                 <a href="?type=doctor"
                    class="mc-auth-toggle__btn<?php echo $isDoctor ? ' is-active' : ''; ?>"
-                   role="tab"
-                   aria-selected="<?php echo $isDoctor ? 'true' : 'false'; ?>">
+                   <?php echo $isDoctor ? 'aria-current="page"' : ''; ?>>
                     Arzt / Therapeut
                 </a>
-            </div>
+            </nav>
 
             <?php if (!empty($error)) : ?>
             <div class="mc-alert mc-alert-error" role="alert"><?php echo $safe($error); ?></div>
@@ -97,7 +107,11 @@ $privacyUrl = $safe(theme_route_url('privacy'));
             </div>
             <?php endif; ?>
 
-            <?php if (empty($success)) : ?>
+            <?php if (empty($success) && !$registrationOn) : ?>
+            <div class="mc-alert mc-alert-error" role="status">Die Registrierung ist derzeit deaktiviert.</div>
+            <?php endif; ?>
+
+            <?php if (empty($success) && $registrationOn) : ?>
             <form method="POST" action="<?php echo $registerAction; ?>" novalidate class="mc-auth-form">
                 <input type="hidden" name="csrf_token" value="<?php echo $safe($csrfToken); ?>">
 
@@ -131,11 +145,15 @@ $privacyUrl = $safe(theme_route_url('privacy'));
                            name="username"
                            class="mc-input"
                            value="<?php echo $safe($postedUsername); ?>"
-                           autocomplete="name"
+                           autocomplete="username"
+                           autocapitalize="none"
+                           spellcheck="false"
                            required
                            aria-required="true"
-                           placeholder="<?php echo $isDoctor ? 'Dr. med. Mustermann' : 'max_mustermann'; ?>"
+                           aria-describedby="reg-username-hint"
+                           placeholder="<?php echo $isDoctor ? 'praxis_mustermann' : 'max_mustermann'; ?>"
                            minlength="3">
+                    <p class="mc-form-hint" id="reg-username-hint">3–50 Zeichen: Buchstaben, Zahlen und Unterstrich. Den Praxisnamen ergänzen Sie später im Profil.</p>
                 </div>
 
                 <div class="mc-form-group">
@@ -150,8 +168,9 @@ $privacyUrl = $safe(theme_route_url('privacy'));
                            required
                            aria-required="true"
                            placeholder="Mindestens 8 Zeichen"
+                           aria-describedby="reg-password-hint"
                            minlength="8">
-                    <p class="mc-form-hint">Min. 8 Zeichen – nutzen Sie Groß-/Kleinbuchstaben und Zahlen.</p>
+                    <p class="mc-form-hint" id="reg-password-hint">Mindestens 8 Zeichen; es gilt die Passwort-Richtlinie dieser Website.</p>
                 </div>
 
                 <div class="mc-form-group">
@@ -175,10 +194,14 @@ $privacyUrl = $safe(theme_route_url('privacy'));
                            value="1"
                            required
                            aria-required="true"
-                           class="mc-checkbox">
+                           class="mc-checkbox"<?php echo $postedTerms ? ' checked' : ''; ?>>
                     <label for="reg-privacy" class="mc-checkbox-label">
                         Ich habe die
+                        <?php if ($privacyUrl !== '') : ?>
                         <a href="<?php echo $privacyUrl; ?>" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a>
+                        <?php else : ?>
+                        Datenschutzerklärung
+                        <?php endif; ?>
                         gelesen und stimme der Verarbeitung meiner Daten zu.
                         <span class="mc-required" aria-hidden="true">*</span>
                     </label>
@@ -198,5 +221,12 @@ $privacyUrl = $safe(theme_route_url('privacy'));
                 <span aria-hidden="true">🔒</span> <?php echo $safe($privText); ?>
             </p>
         </div>
+
+        <?php
+        // Login-Showcase (365CMS 4.1.0) für die Registrierung, Stile aus css/cms-v4.css.
+        if (isset($showcase) && class_exists('\\CMS\\Services\\CmsAuthPageService')) {
+            \CMS\Services\CmsAuthPageService::getInstance()->renderShowcase(is_array($showcase) ? $showcase : null, 'register', 'legacy');
+        }
+        ?>
     </div>
 </main>
