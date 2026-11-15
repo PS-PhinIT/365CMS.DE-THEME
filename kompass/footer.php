@@ -24,6 +24,8 @@ $organisation = kompass_organisation();
 $service = kompass_service();
 $tagline = kompass_text('footer', 'footer_tagline');
 $a11yUrl = kompass_safe_url(kompass_text('footer', 'accessibility_url'), '');
+// Standard /barrierefreiheit: nur verlinken, wenn die Seite veröffentlicht ist (365CMS 4.0.0).
+$a11yUrl = $a11yUrl !== '' && theme_v4_link_available(kompass_url($a11yUrl)) ? $a11yUrl : '';
 $copyright = strtr(kompass_text('footer', 'footer_copyright', '© {year} {site_title}'), [
     '{year}' => date('Y'),
     '{site_title}' => kompass_site_title(),
@@ -51,6 +53,7 @@ $copyright = strtr(kompass_text('footer', 'footer_copyright', '© {year} {site_t
             <?php kompass_nav_menu('footer-nav', 'kp-footer__list', kompass_default_menu('footer-nav')); ?>
         </nav>
 
+        <?php if ($service['phone_href'] !== '' || $service['email_href'] !== '' || $service['hours'] !== []) : // leere Spalte ausblenden ?>
         <div class="kp-footer__col">
             <h2 class="kp-footer__title">Kontakt</h2>
             <ul class="kp-footer__contact">
@@ -65,6 +68,7 @@ $copyright = strtr(kompass_text('footer', 'footer_copyright', '© {year} {site_t
                 <?php endif; ?>
             </ul>
         </div>
+        <?php endif; ?>
     </div>
 
     <div class="kp-footer__bottom">

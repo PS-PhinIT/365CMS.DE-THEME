@@ -101,7 +101,7 @@ if (count($related) < 3) {
     <article class="kp-layout__main" aria-label="<?php echo kompass_e($title); ?>">
         <?php if ($image !== '') : ?>
             <figure class="kp-media">
-                <img src="<?php echo kompass_e($image); ?>" alt="" width="1200" height="675" loading="eager" decoding="async" fetchpriority="high">
+                <?php echo kompass_img($image, '', ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 860px) 100vw, 48rem'], 1200, 675); ?>
             </figure>
         <?php endif; ?>
 

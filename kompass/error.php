@@ -2,10 +2,15 @@
 declare(strict_types=1);
 
 /**
- * Kompass – Fehlerseite
+ * Kompass – Fehlerseite für alle Status außer 404 (Router::renderError(), 365CMS 4.0.0)
  *
- * Wird vom Fatal-Handler in index.php direkt eingebunden (ohne header/footer) und
- * rendert deshalb ein eigenständiges Dokument – bewusst ohne functions.php.
+ * Router-Vertrag: `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`;
+ * eigenständig (Wartungsmodus, Fatal-Handler) zusätzlich `$error_standalone` und bei 503 `$error_retry_after`.
+ *
+ * - Eigenständig: vollständiges Dokument mit Theme-Stylesheet, ohne Header/Footer, Hooks, Customizer
+ *   und Datenbank; eigenes <main>.
+ * - Sonst rendert der Core header.php/footer.php; header.php öffnet <main id="main-content"> bereits,
+ *   deshalb hier nur der Inhalt.
  *
  * @package Kompass_Theme
  */
@@ -14,41 +19,56 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$errorCode = (int) ($GLOBALS['error_code'] ?? $errorCode ?? 500);
-$errorCode = $errorCode >= 400 && $errorCode < 600 ? $errorCode : 500;
-$errorMessage = (string) ($GLOBALS['error_message'] ?? $errorMessage ?? 'Beim Laden der Seite ist ein unerwarteter Fehler aufgetreten.');
-$siteUrl = rtrim(defined('SITE_URL') ? (string) SITE_URL : '', '/');
-$siteName = defined('SITE_NAME') ? (string) SITE_NAME : '365CMS';
-$esc = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-
-if (!headers_sent()) {
-    http_response_code($errorCode);
+// Auch vom Fatal-Handler (index.php) direkt eingebunden – dann ohne functions.php.
+if (!function_exists('theme_v4_error_context')) {
+    require_once __DIR__ . '/includes/cms-v4-compat.php';
 }
 
-$inner = '<header class="kp-pagehead kp-pagehead--center"><div class="kp-container kp-notfound">'
-    . '<p class="kp-eyebrow">Fehler ' . $errorCode . '</p>'
-    . '<h1 class="kp-pagehead__title">Hier ist etwas schiefgelaufen.</h1>'
-    . '<p class="kp-pagehead__lead">' . $esc($errorMessage) . '</p>'
-    . '<p class="kp-notfound__actions"><a class="kp-button kp-button--primary" href="' . $esc($siteUrl . '/') . '"><span>Zur Startseite</span></a></p>'
-    . '</div></header>';
+$kpError    = theme_v4_error_context(get_defined_vars());
+$kpLocale   = theme_v4_locale($contentLocale ?? null);
+$kpDefaults = theme_v4_error_texts($kpError['code'], $kpLocale);
+$kpTitle    = $kpError['title'] !== '' ? $kpError['title'] : $kpDefaults['title'];
+$kpMessage  = $kpError['message'] !== '' ? $kpError['message'] : $kpDefaults['message'];
+$kpHome     = theme_v4_site_url() . '/';
+$kpBack     = $kpError['standalone'] ? '' : theme_v4_safe_back_url();
+$kpVersion  = defined('KOMPASS_THEME_VERSION') ? (string) KOMPASS_THEME_VERSION : '2.0.0';
 
-if (defined('CMS_THEME_HEADER_RENDERED')) {
-    echo $inner;
-    return;
+if ($kpError['standalone']) {
+    $kpThemeUrl = theme_v4_theme_url(__DIR__);
+    theme_v4_standalone_open(
+        $kpError['code'] . ' – ' . $kpTitle,
+        [
+            $kpThemeUrl . '/style.css?v=' . rawurlencode($kpVersion),
+            $kpThemeUrl . '/css/cms-v4.css?v=' . rawurlencode($kpVersion),
+        ],
+        $kpLocale,
+        'kompass is-error'
+    );
+    echo '<main id="main-content" class="kp-main">' . "\n";
 }
 ?>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex">
-    <title><?php echo $esc('Fehler ' . $errorCode . ' – ' . $siteName); ?></title>
-    <link rel="stylesheet" href="<?php echo $esc($siteUrl . '/themes/kompass/style.css'); ?>">
-</head>
-<body class="kompass is-error">
-<main id="main-content" class="kp-main">
-    <?php echo $inner; ?>
-</main>
-</body>
-</html>
+<header class="kp-pagehead kp-pagehead--center">
+    <div class="kp-container kp-notfound">
+        <p class="kp-eyebrow"><?php echo theme_v4_e(theme_v4_t('Fehler', 'Error', $kpLocale) . ' ' . $kpError['code']); ?></p>
+        <h1 class="kp-pagehead__title"><?php echo theme_v4_e($kpTitle); ?></h1>
+        <p class="kp-pagehead__lead"><?php echo theme_v4_e($kpMessage); ?></p>
+        <?php if ($kpError['retry_after'] > 0) : ?>
+            <p class="kp-pagehead__lead"><?php echo theme_v4_e(theme_v4_t(
+                'Bitte versuchen Sie es in etwa ' . max(1, (int) ceil($kpError['retry_after'] / 60)) . ' Minute(n) erneut.',
+                'Please try again in about ' . max(1, (int) ceil($kpError['retry_after'] / 60)) . ' minute(s).',
+                $kpLocale
+            )); ?></p>
+        <?php endif; ?>
+        <p class="kp-notfound__actions">
+            <a class="kp-button kp-button--primary" href="<?php echo theme_v4_e($kpHome); ?>"><span><?php echo theme_v4_e(theme_v4_t('Zur Startseite', 'Back to home', $kpLocale)); ?></span></a>
+            <?php if ($kpBack !== '') : ?>
+                <a class="kp-button kp-button--ghost" href="<?php echo theme_v4_e($kpBack); ?>"><span><?php echo theme_v4_e(theme_v4_t('Zurück', 'Back', $kpLocale)); ?></span></a>
+            <?php endif; ?>
+        </p>
+    </div>
+</header>
+<?php
+if ($kpError['standalone']) {
+    echo "</main>\n";
+    theme_v4_standalone_close();
+}

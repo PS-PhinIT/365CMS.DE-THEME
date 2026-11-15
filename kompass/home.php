@@ -34,6 +34,7 @@ $latest = $latestCount > 0 ? kompass_get_posts(['limit' => $latestCount]) : [];
 $faqs = kompass_flag('kp_faq', 'show_faq', true) ? kompass_faqs() : [];
 $faqMoreLabel = kompass_text('kp_faq', 'faq_more_label');
 $faqMoreUrl = kompass_safe_url(kompass_text('kp_faq', 'faq_more_url'), '');
+$faqMoreUrl = $faqMoreUrl !== '' && theme_v4_link_available(kompass_url($faqMoreUrl)) ? $faqMoreUrl : ''; // Standard /hilfe-und-faq
 ?>
 
 <section class="kp-hero" aria-labelledby="kp-hero-title">

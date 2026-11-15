@@ -4,10 +4,10 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: Barrierearmes Informations- und Service-Portal für Kommunen, Vereine, Verbände, Hilfe-Center und Wissensdatenbanken – Suche im Mittelpunkt, Themenkacheln, Schnellzugriffe, Hinweisbanner, Inhaltsverzeichnis, Themen A–Z, Schriftgrößen- und Kontrastumschaltung.
-Version: 1.0.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: kompass
 Tags: information, wissen, hilfe-center, kommune, verein, barrierefrei, faq, responsive
@@ -27,7 +27,7 @@ Tags: information, wissen, hilfe-center, kommune, verein, barrierefrei, faq, res
     --kp-border: #d3dbe6;
 
     --kp-font-head: "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    --kp-font-body: "Atkinson Hyperlegible", "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --kp-font-body: "Atkinson Hyperlegible", "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --kp-font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
     --kp-root-size: 112.5%;
     --kp-container: 1200px;
@@ -2678,4 +2678,65 @@ address {
         font-size: 0.8em;
         word-break: break-all;
     }
+}
+
+/* ==========================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die Kompass-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis, Login-Showcase). Die Werte verweisen auf die --kp-*-Tokens
+   und folgen damit Customizer und Kontrastmodus. Kompass hat keinen Dunkelmodus;
+   für den hohen Kontrast (data-contrast="high") gelten eigene Werte wie bei den
+   Theme-Buttons (Gelb auf Schwarz).
+   ========================================================================== */
+:root {
+    --tv4-primary: var(--kp-brand);
+    --tv4-primary-hover: var(--kp-brand-dark);
+    --tv4-on-primary: var(--kp-on-brand);
+    --tv4-link: var(--kp-link);
+    --tv4-text: var(--kp-text);
+    --tv4-muted: var(--kp-muted);
+    --tv4-bg: var(--kp-paper);
+    --tv4-surface: var(--kp-paper);
+    --tv4-surface-alt: var(--kp-surface);
+    --tv4-border: var(--kp-border);
+    --tv4-border-strong: var(--kp-muted);   /* 7,3:1 auf Weiß */
+    --tv4-radius: var(--kp-radius);
+    --tv4-btn-radius: var(--kp-radius);
+    --tv4-focus: var(--kp-ink);             /* 19,6:1 auf Weiß, wie der Fokus der Theme-Buttons */
+    --tv4-font-body: var(--kp-font-body);
+    --tv4-font-heading: var(--kp-font-head);
+    --tv4-hero-start: var(--kp-brand-dark);
+    --tv4-hero-end: var(--kp-brand);
+    --tv4-max: var(--kp-container);
+}
+
+:root[data-contrast="high"] {
+    --tv4-primary: #ffff00;
+    --tv4-primary-hover: #ffffff;
+    --tv4-on-primary: #000000;
+    --tv4-link: #ffff00;
+    --tv4-focus: #ffffff;
+    --tv4-hero-start: #ffff00;
+    --tv4-hero-end: #ffff00;
+}
+
+/* Core-Module (Knowledgebase, Newsletter) im Kompass-Rahmen; der Header ist nicht fixiert. */
+.theme-v4-module {
+    width: min(100% - 2 * var(--kp-gutter), var(--kp-container));
+    margin-inline: auto;
+    padding-block: 2.5rem 3.5rem;
+}
+
+/* Kontaktseite */
+.kp-contactpage {
+    padding-block: 2.5rem 3.5rem;
+}
+
+.theme-v4-contact__aside h2 {
+    font-family: var(--kp-font-head);
+}
+
+body.error-standalone .kp-main {
+    width: 100%;
 }
