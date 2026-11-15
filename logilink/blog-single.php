@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Beitrags-Detailseite
  *
- * Datenvertrag (365CMS 3.4, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image).
+ * Datenvertrag (365CMS 4.x, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image).
  */
 
 if (!defined('ABSPATH')) {
@@ -42,7 +42,7 @@ $postCat     = is_object($post) ? trim((string) ($post->category_name ?? '')) : 
 $postImage   = is_object($post) ? $safeUrl((string) ($post->featured_image ?? '')) : '';
 $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], static fn(string $v): bool => $v !== ''));
 ?>
-<main id="main" class="ll-main ll-prose-wrap" role="main">
+<main id="main" class="ll-main ll-prose-wrap">
     <div class="ll-container">
         <?php if (is_object($post)) : ?>
             <article class="ll-card ll-page-card">
@@ -53,14 +53,14 @@ $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], sta
                     <p class="cms-post-meta"><?php echo $safe(implode(' · ', $metaParts)); ?></p>
                 <?php endif; ?>
                 <?php if ($postImage !== '') : ?>
-                    <figure class="cms-post-image"><img src="<?php echo $safe($postImage); ?>" alt="<?php echo $safe($postTitle); ?>" loading="lazy" decoding="async"></figure>
+                    <figure class="cms-post-image"><?php echo theme_v4_img($postImage, $postTitle, ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 860px) 100vw, 860px']); ?></figure>
                 <?php endif; ?>
                 <?php if (trim($postContent) !== '') : ?>
                     <div class="ll-prose">
                         <?php echo $postContent; ?>
                     </div>
                 <?php endif; ?>
-                <p><a href="<?php echo $safe($blogUrl); ?>" class="ll-btn ll-btn-outline">← Alle Beiträge</a></p>
+                <p><a href="<?php echo $safe($blogUrl); ?>" class="ll-btn ll-btn-ghost"><span aria-hidden="true">←</span> Alle Beiträge</a></p>
             </article>
         <?php else : ?>
             <div class="ll-card-list-empty">

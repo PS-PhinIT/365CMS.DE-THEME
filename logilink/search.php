@@ -36,7 +36,7 @@ $query     = trim(strip_tags((string) ($query ?? '')));
 $query     = function_exists('mb_substr') ? mb_substr($query, 0, 120) : substr($query, 0, 120);
 $searchUrl = $siteUrl . '/search';
 ?>
-<main id="main" class="ll-main ll-prose-wrap" role="main">
+<main id="main" class="ll-main ll-prose-wrap">
     <div class="ll-container">
         <?php if ($query !== '') : ?>
             <h1>Suchergebnisse für „<?php echo $safe($query); ?>“<?php if ($results !== []) : ?> (<?php echo count($results); ?>)<?php endif; ?></h1>

@@ -29,23 +29,40 @@ $llCopyTpl    = (string) ll_get_setting(
     'copyright_text',
     '&copy; {year} {site_title}. Alle Rechte vorbehalten.'
 );
+// Copyright-Vorlage aus dem Customizer: Entities wie &copy; bleiben erhalten, Markup wird escaped.
 $llCopyright = str_replace(
     ['{year}', '{site_title}'],
     [gmdate('Y'), $llTitleEsc],
-    $llCopyTpl
+    htmlspecialchars($llCopyTpl, ENT_QUOTES, 'UTF-8', false)
 );
 
-$llTrackUrl    = $llSafe(theme_route_url('tracking'));
-$llPartnersUrl = $llSafe(theme_route_url('partners'));
-$llRoutesUrl   = $llSafe(theme_route_url('routes'));
-$llRegisterUrl = $llSafe(theme_route_url('register'));
-$llLoginUrl    = $llSafe(theme_route_url('login'));
-$llMemberUrl   = $llSafe(theme_route_url('member'));
+$llSiteUrl = ll_site_url();
+// Standardspalten: nur Ziele verlinken, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0).
+// /tracking, /partners und /routes sind Theme-Ziele ohne Core-Route.
+$llFooterColumns = [
+    'Service' => [
+        ['label' => 'Sendung verfolgen', 'url' => theme_route_url('tracking')],
+        ['label' => 'Spediteure', 'url' => theme_route_url('partners')],
+        ['label' => 'Routen', 'url' => theme_route_url('routes')],
+        ['label' => 'Downloads', 'url' => $llSiteUrl . '/downloads'],
+        ['label' => 'Wissensdatenbank', 'url' => $llSiteUrl . '/kb'],
+    ],
+    'Konto' => [
+        ['label' => 'Registrieren', 'url' => theme_route_url('register')],
+        ['label' => 'Anmelden', 'url' => theme_route_url('login')],
+        ['label' => 'Dashboard', 'url' => theme_route_url('member')],
+        ['label' => 'Newsletter', 'url' => $llSiteUrl . '/newsletter'],
+        ['label' => 'Kontakt', 'url' => $llSiteUrl . '/contact'],
+    ],
+];
+ob_start();
+theme_nav_menu('footer-nav');
+$llFooterNav = (string) ob_get_clean();
 $llHomeUrl     = $llSafe(theme_route_url('home'));
 ?>
     </div><!-- #content -->
 
-    <footer id="ll-footer" class="ll-footer" role="contentinfo">
+    <footer id="ll-footer" class="ll-footer">
         <div class="ll-container">
             <div class="ll-footer-widgets">
                 <div class="ll-footer-brand">
@@ -55,26 +72,26 @@ $llHomeUrl     = $llSafe(theme_route_url('home'));
                     </a>
                     <p><?php echo nl2br($llSafe($llFooterText)); ?></p>
                 </div>
-                <div>
-                    <h3>Service</h3>
+                <?php foreach ($llFooterColumns as $llColumnTitle => $llColumnLinks) :
+                    $llColumnLinks = theme_v4_filter_links($llColumnLinks);
+                    if ($llColumnLinks === []) {
+                        continue;
+                    } ?>
+                <nav aria-label="<?php echo $llSafe($llColumnTitle); ?>">
+                    <h2 class="ll-footer-heading"><?php echo $llSafe($llColumnTitle); ?></h2>
                     <ul>
-                        <li><a href="<?php echo $llTrackUrl; ?>">Sendung verfolgen</a></li>
-                        <li><a href="<?php echo $llPartnersUrl; ?>">Spediteure</a></li>
-                        <li><a href="<?php echo $llRoutesUrl; ?>">Routen</a></li>
+                        <?php foreach ($llColumnLinks as $llLink) : ?>
+                        <li><a href="<?php echo $llSafe($llLink['url']); ?>"><?php echo $llSafe($llLink['label']); ?></a></li>
+                        <?php endforeach; ?>
                     </ul>
-                </div>
-                <div>
-                    <h3>Konto</h3>
-                    <ul>
-                        <li><a href="<?php echo $llRegisterUrl; ?>">Registrieren</a></li>
-                        <li><a href="<?php echo $llLoginUrl; ?>">Anmelden</a></li>
-                        <li><a href="<?php echo $llMemberUrl; ?>">Dashboard</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h3>Navigation</h3>
-                    <?php theme_nav_menu('footer-nav'); ?>
-                </div>
+                </nav>
+                <?php endforeach; ?>
+                <?php if (trim($llFooterNav) !== '') : ?>
+                <nav aria-label="<?php echo $llSafe(theme_v4_t('Fußzeilen-Navigation', 'Footer navigation')); ?>">
+                    <h2 class="ll-footer-heading">Navigation</h2>
+                    <?php echo $llFooterNav; // theme_nav_menu(): escaped ?>
+                </nav>
+                <?php endif; ?>
             </div>
         </div>
 

@@ -4,10 +4,10 @@ Theme URI: https://phin.network
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phin.network
 Description: Logistik & Transport Theme – operative Klarheit, Status-System, Tracking-ID-Typografie. Für Speditionen, Kurierdienste, Lagerdienstleister und Last-Mile-Operatoren.
-Version: 1.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: logilink
 Tags: logistik, transport, tracking, dashboard, status-system, responsive
@@ -29,6 +29,7 @@ Tags: logistik, transport, tracking, dashboard, status-system, responsive
     --ll-accent:           #f59e0b;
     --ll-accent-hover:     #c2780b;
     --ll-accent-soft:      #fef3c7;
+    --ll-accent-text:      #92400e;   /* Amber als Textfarbe auf hellem Grund: 6,0:1 auf --ll-paper-alt (WCAG AA) */
 
     --ll-ink:              #0c1a2e;
     --ll-ink-soft:         #18243a;
@@ -60,8 +61,8 @@ Tags: logistik, transport, tracking, dashboard, status-system, responsive
     --status-returned-tint:    #ede9fe;
 
     /* Typography */
-    --ll-font-body:        -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --ll-font-heading:     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ll-font-body:        system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ll-font-heading:     system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --ll-font-mono:        ui-monospace, SFMono-Regular, "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
     --ll-font-size-base:   15px;
     --ll-line-height:      1.5;
@@ -96,8 +97,9 @@ Tags: logistik, transport, tracking, dashboard, status-system, responsive
     /* KPI grid */
     --ll-kpi-columns:      4;
 
-    /* Focus */
-    --focus-ring:          var(--ll-accent);
+    /* Focus: Stahlblau auf hellen Flächen (7,2:1 auf --ll-paper); Amber erreichte dort nur 2,0:1.
+       Dunkle Flächen setzen --focus-ring weiter unten auf Amber (8,1:1 auf --ll-ink). */
+    --focus-ring:          var(--ll-primary-hover);
 }
 
 /* ================================================================
@@ -156,6 +158,15 @@ ul { list-style: none; }
 }
 
 /* ===== Focus ===== */
+/* Dunkle Flächen: Amber-Fokus (WCAG 1.4.11 ≥ 3:1 gegen --ll-ink / --ll-ink-soft) */
+.ll-site-header,
+.ll-mobile-drawer,
+.ll-search-panel,
+.ll-hero,
+.ll-section-dark,
+.ll-section--network-cta,
+.ll-kpi-card,
+.ll-footer { --focus-ring: var(--ll-accent); }
 :focus:not(:focus-visible) { outline: none; }
 *:focus-visible {
     outline: 3px solid var(--focus-ring);
@@ -204,7 +215,7 @@ ul { list-style: none; }
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.18em;
-    color: var(--ll-accent-hover);
+    color: var(--ll-accent-text);   /* vorher --ll-accent-hover: 3,2:1 bzw. 3,0:1 auf --ll-paper-alt */
     margin-bottom: 1rem;
 }
 .ll-eyebrow::before {
@@ -336,7 +347,7 @@ ul { list-style: none; }
     cursor: pointer;
     transition: background .2s ease;
 }
-.ll-tracking-quick button:hover { background: var(--ll-accent-hover); color: #fff; }
+.ll-tracking-quick button:hover { background: var(--ll-accent-hover); color: var(--ll-ink); } /* Weiß: 3,5:1 */
 .ll-tracking-quick input:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--ll-accent);
@@ -397,16 +408,18 @@ ul { list-style: none; }
 .ll-mobile-drawer {
     position: fixed;
     top: 0; left: -100%;
-    width: 320px; height: 100vh;
+    width: min(320px, 100vw); height: 100vh;
+    /* Geschlossen nicht fokussierbar/vorlesbar; visibility wechselt nach der Schiebe-Animation */
+    visibility: hidden;
     background: var(--ll-ink);
     color: var(--ll-text-on-dark);
     z-index: 999;
     overflow-y: auto;
-    transition: left .3s ease;
+    transition: left .3s ease, visibility 0s linear .3s;
     padding: 5rem 0 2rem;
     box-shadow: 4px 0 30px rgba(0,0,0,0.35);
 }
-.ll-mobile-drawer.is-open { left: 0; }
+.ll-mobile-drawer.is-open { left: 0; visibility: visible; transition: left .3s ease, visibility 0s; }
 .ll-mobile-drawer ul {
     list-style: none;
     padding: 0; margin: 0;
@@ -520,7 +533,7 @@ ul { list-style: none; }
 .ll-btn-accent:hover   {
     background: var(--ll-accent-hover);
     border-color: var(--ll-accent-hover);
-    color: #fff;
+    color: var(--ll-ink);   /* Weiß erreichte auf --ll-accent-hover nur 3,5:1, Ink 5,0:1 */
 }
 .ll-btn-outline  {
     background: transparent;
@@ -993,8 +1006,9 @@ ul { list-style: none; }
     font-size: 0.75rem;
     font-weight: 700;
 }
-.ll-kpi-delta--up   { color: var(--status-delivered); }
-.ll-kpi-delta--down { color: var(--status-delayed); }
+/* Auf --ll-ink: hellere Statustöne (vorher 3,5:1 bzw. 2,7:1) */
+.ll-kpi-delta--up   { color: #4ade80; }
+.ll-kpi-delta--down { color: #f87171; }
 .ll-kpi-delta--flat { color: var(--ll-text-on-dark-mute); }
 
 /* Dashboard-Modus = kompaktere Cards */
@@ -1076,8 +1090,9 @@ body.has-dashboard-mode .ll-kpi-card .ll-kpi-number { font-size: 1.625rem; }
 .ll-form-field input:focus-visible,
 .ll-form-field select:focus-visible {
     outline: none;
-    border-color: var(--ll-accent);
-    box-shadow: 0 0 0 3px rgba(245,158,11,0.22);
+    /* vorher Amber-Rand mit 22 % Schatten (2,2:1 auf Weiß) */
+    border-color: var(--focus-ring);
+    box-shadow: 0 0 0 2px var(--focus-ring);
 }
 .ll-capacity-form .ll-form-actions {
     grid-column: 1 / -1;
@@ -1169,7 +1184,9 @@ body.has-dashboard-mode .ll-kpi-card .ll-kpi-number { font-size: 1.625rem; }
     color: var(--ll-footer-text);
     padding: 3.5rem 0 0;
 }
-.ll-footer h3 {
+.ll-footer h3,
+.ll-footer .ll-footer-heading {
+    font-family: var(--ll-font-heading);
     color: #fff;
     font-size: 0.75rem;
     font-weight: 700;
@@ -1262,7 +1279,8 @@ body.has-dashboard-mode .ll-kpi-card .ll-kpi-number { font-size: 1.625rem; }
     font-family: var(--ll-font-mono);
     font-size: 5rem;
     font-weight: 800;
-    color: var(--ll-accent);
+    color: var(--ll-accent-hover);   /* große Schrift: 3,5:1 auf Weiß (Amber 2,2:1) */
+    margin: 0;
     line-height: 1;
     letter-spacing: -0.04em;
 }
@@ -1360,11 +1378,51 @@ body.has-dashboard-mode .ll-kpi-card .ll-kpi-number { font-size: 1.625rem; }
 body.no-sticky-header .ll-site-header { position: static; }
 body.no-sticky-header .ll-site-content { padding-top: 0; }
 
-/* ── 365CMS 3.4: gemeinsame Template-Bausteine (Beitrag, Suche, Pagination) ── */
+/* ── 365CMS: gemeinsame Template-Bausteine (Beitrag, Suche, Pagination) ── */
 .cms-visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .cms-post-meta { margin: 0 0 1.25rem; font-size: .9rem; opacity: .75; }
 .cms-post-image { margin: 0 0 1.5rem; }
 .cms-post-image img { display: block; width: 100%; height: auto; border-radius: 8px; }
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
-form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
-form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+.ll-search-form { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
+.ll-search-form input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+
+/* ================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die LogiLink-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites, Inhaltsverzeichnis).
+   LogiLink hat keinen Dark Mode.
+   ================================================================ */
+:root {
+    --tv4-primary:        var(--ll-primary);
+    --tv4-primary-hover:  var(--ll-primary-hover);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--ll-primary-hover);
+    --tv4-text:           var(--ll-text);
+    --tv4-muted:          var(--ll-text-mute);
+    --tv4-bg:             var(--ll-paper);
+    --tv4-surface:        var(--ll-surface);
+    --tv4-surface-alt:    var(--ll-paper-alt);
+    --tv4-border:         var(--ll-rule);
+    --tv4-border-strong:  #94a3b8;
+    --tv4-radius:         var(--ll-radius);
+    --tv4-btn-radius:     var(--ll-btn-radius);
+    --tv4-focus:          var(--focus-ring);
+    --tv4-font-body:      var(--ll-font-body);
+    --tv4-font-heading:   var(--ll-font-heading);
+    --tv4-hero-start:     var(--ll-ink);
+    --tv4-hero-end:       var(--ll-ink-soft);
+    --tv4-max:            var(--ll-max-width);
+}
+.ll-footer .ll-footer-heading { font-size: 0.75rem; }
+/* Core-Module (Knowledgebase, Newsletter) im Theme-Rahmen; der fixe Header ist über .ll-site-content abgezogen */
+.theme-v4-module {
+    max-width: var(--ll-max-width);
+    margin-inline: auto;
+    padding: var(--ll-section-pad) var(--ll-content-pad);
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content { padding-top: 0; }
+.ll-contact-wrap .ll-container { max-width: var(--ll-max-width); }
+.ll-contact-wrap .ll-page-card h1 { margin-bottom: 0.75rem; }
+.theme-v4-error .ll-error-card { margin-inline: auto; }
