@@ -53,7 +53,7 @@ $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], sta
                     <p class="cms-post-meta"><?php echo $safe(implode(' · ', $metaParts)); ?></p>
                 <?php endif; ?>
                 <?php if ($postImage !== '') : ?>
-                    <figure class="cms-post-image"><img src="<?php echo $safe($postImage); ?>" alt="<?php echo $safe($postTitle); ?>" loading="lazy" decoding="async"></figure>
+                    <figure class="cms-post-image"><?php echo theme_v4_img($postImage, $postTitle, ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 900px) 100vw, 900px']); ?></figure>
                 <?php endif; ?>
                 <?php if (trim($postContent) !== '') : ?>
                     <div class="ac-page-body">

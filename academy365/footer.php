@@ -26,7 +26,7 @@ $copyrightLine = str_replace(
 );
 ?>
 </div><!-- #content .ac-site-content -->
-<footer id="colophon" class="ac-site-footer" role="contentinfo">
+<footer id="colophon" class="ac-site-footer">
     <div class="ac-footer-inner ac-container">
         <div class="ac-footer-brand">
             <a href="<?php echo $safe($siteUrl); ?>" class="ac-footer-logo">
@@ -34,42 +34,50 @@ $copyrightLine = str_replace(
             </a>
             <p class="ac-footer-tagline"><?php echo $safe((string) $footerText); ?></p>
         </div>
+        <?php
+        // Standardspalten: nur Ziele verlinken, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0).
+        $acFooterColumns = [
+            'Für Lernende' => [
+                ['label' => 'Alle Kurse', 'url' => $siteUrl . '/courses'],
+                ['label' => 'Kategorien', 'url' => $siteUrl . '/categories'],
+                ['label' => 'Zertifikate', 'url' => $siteUrl . '/certificates'],
+                ['label' => 'Wissensdatenbank', 'url' => $siteUrl . '/kb'],
+                ['label' => 'Downloads', 'url' => $siteUrl . '/downloads'],
+            ],
+            'Für Tutoren' => [
+                ['label' => 'Tutor werden', 'url' => $siteUrl . '/tutor-register'],
+                ['label' => 'Tutor-Leitfaden', 'url' => $siteUrl . '/tutor-guide'],
+                ['label' => 'FAQ Tutoren', 'url' => $siteUrl . '/tutor-faq'],
+            ],
+            'Unternehmen' => [
+                ['label' => 'Business-Plan', 'url' => $siteUrl . '/business'],
+                ['label' => 'Enterprise', 'url' => $siteUrl . '/enterprise'],
+                ['label' => 'Partner werden', 'url' => $siteUrl . '/partner'],
+            ],
+            'Plattform' => [
+                ['label' => 'Über uns', 'url' => $siteUrl . '/about'],
+                ['label' => 'Blog', 'url' => $siteUrl . '/blog'],
+                ['label' => 'Newsletter', 'url' => $siteUrl . '/newsletter'],
+                ['label' => 'Kontakt', 'url' => $siteUrl . '/contact'],
+                ['label' => 'Barrierefreiheit', 'url' => $siteUrl . '/barrierefreiheit'],
+            ],
+        ];
+        ?>
         <nav class="ac-footer-nav" aria-label="Fußzeilen-Navigation">
+            <?php foreach ($acFooterColumns as $acColumnTitle => $acColumnLinks) :
+                $acColumnLinks = theme_v4_filter_links($acColumnLinks);
+                if ($acColumnLinks === []) {
+                    continue;
+                } ?>
             <div class="ac-footer-col">
-                <h4>Für Lernende</h4>
+                <h2 class="ac-footer-heading"><?php echo $safe($acColumnTitle); ?></h2>
                 <ul>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/courses', $siteUrl)); ?>">Alle Kurse</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/categories', $siteUrl)); ?>">Kategorien</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/certificates', $siteUrl)); ?>">Zertifikate</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/pro', $siteUrl)); ?>">Academy365 Pro</a></li>
+                    <?php foreach ($acColumnLinks as $acLink) : ?>
+                    <li><a href="<?php echo $safe(academy365_safe_url($acLink['url'], $siteUrl)); ?>"><?php echo $safe($acLink['label']); ?></a></li>
+                    <?php endforeach; ?>
                 </ul>
             </div>
-            <div class="ac-footer-col">
-                <h4>Für Tutoren</h4>
-                <ul>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/tutor-register', $siteUrl)); ?>">Tutor werden</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/tutor-guide', $siteUrl)); ?>">Tutor-Leitfaden</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/earnings', $siteUrl)); ?>">Verdienst-Rechner</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/tutor-faq', $siteUrl)); ?>">FAQ Tutoren</a></li>
-                </ul>
-            </div>
-            <div class="ac-footer-col">
-                <h4>Unternehmen</h4>
-                <ul>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/business', $siteUrl)); ?>">Business-Plan</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/enterprise', $siteUrl)); ?>">Enterprise</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/partner', $siteUrl)); ?>">Partner werden</a></li>
-                </ul>
-            </div>
-            <div class="ac-footer-col">
-                <h4>Plattform</h4>
-                <ul>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/about', $siteUrl)); ?>">Über uns</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/blog', $siteUrl)); ?>">Blog</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/contact', $siteUrl)); ?>">Kontakt</a></li>
-                    <li><a href="<?php echo $safe(academy365_safe_url($siteUrl . '/help', $siteUrl)); ?>">Hilfe</a></li>
-                </ul>
-            </div>
+            <?php endforeach; ?>
         </nav>
     </div>
     <div class="ac-footer-bottom">

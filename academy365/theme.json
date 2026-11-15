@@ -1,15 +1,53 @@
 {
   "name": "Academy365",
   "slug": "academy365",
-  "version": "3.1.0",
-  "requires_cms": "3.4.00",
+  "version": "4.0.0",
+  "requires_cms": "4.0.0",
+  "tested_up_to": "4.1.0",
+  "requires_php": "8.4.1",
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "Bildung & Weiterbildung Theme – Inspirierend, motivierend, modern. Für Weiterbildungsinstitute, Hochschulen und E-Learning-Anbieter.",
-  "tags": ["bildung", "elearning", "kurse", "hochschule", "coaching", "responsive", "cms"],
-  "supports": ["dark-mode", "custom-logo", "sticky-header", "custom-css", "lms", "certificates", "progress-tracking"],
-
+  "tags": [
+    "bildung",
+    "elearning",
+    "kurse",
+    "hochschule",
+    "coaching",
+    "responsive",
+    "cms"
+  ],
+  "supports": [
+    "custom-logo",
+    "sticky-header",
+    "custom-css",
+    "lms",
+    "certificates",
+    "progress-tracking"
+  ],
+  "templates": {
+    "home": "home.php",
+    "page": "page.php",
+    "blog-single": "blog-single.php",
+    "search": "search.php",
+    "contact": "contact.php",
+    "404": "404.php",
+    "error": "error.php"
+  },
+  "login_page": {
+    "colors": {
+      "background_start": "#faf5ff",
+      "background_end": "#ede9fe",
+      "card_background": "#ffffff",
+      "text_color": "#1e1b4b",
+      "muted_color": "#5b5f6b",
+      "primary_color": "#7c3aed",
+      "primary_text_color": "#ffffff",
+      "link_color": "#6d28d9",
+      "input_background": "#ffffff",
+      "input_border": "#a78bfa"
+    }
+  },
   "customization": {
-
     "colors": {
       "label": "Farben",
       "description": "Inspirierende Farbpalette – Violett für Wissen, lebendig und motivierend.",
@@ -112,7 +150,6 @@
         }
       }
     },
-
     "typography": {
       "label": "Typografie",
       "description": "Moderne, ansprechende Schriften für Bildungsinhalte.",
@@ -182,7 +219,6 @@
         }
       }
     },
-
     "layout": {
       "label": "Layout",
       "description": "Kurs-optimiertes Layout mit Grid-Darstellungen.",
@@ -242,7 +278,6 @@
         }
       }
     },
-
     "header": {
       "label": "Header",
       "description": "Moderner Header mit Kurs-Suche und Kategorie-Navigation.",
@@ -298,7 +333,6 @@
         }
       }
     },
-
     "footer": {
       "label": "Footer",
       "description": "Footer mit Kurs-Kategorien, Referenzen und Akkreditierungen.",
@@ -341,7 +375,6 @@
         }
       }
     },
-
     "buttons": {
       "label": "Buttons",
       "description": "Motivierende, klickfreudige Buttons.",
@@ -389,7 +422,6 @@
         }
       }
     },
-
     "learning_hero": {
       "label": "Hero-Bereich",
       "description": "Texte für den Lernplattform-Einstiegsbereich.",
@@ -444,7 +476,6 @@
         }
       }
     },
-
     "learning_courses": {
       "label": "Kurs-Darstellung",
       "description": "Einstellungen für Kurs-Cards, Katalog und Lernfortschritt.",
@@ -517,7 +548,6 @@
         }
       }
     },
-
     "learning_content": {
       "label": "Seiteninhalte / Texte",
       "description": "Weitere Texte für Dozenten-Profile, Events und Zertifikate.",
@@ -566,7 +596,6 @@
         }
       }
     },
-
     "advanced": {
       "label": "Erweitert",
       "description": "Custom CSS und LMS-Einstellungen.",
@@ -590,7 +619,33 @@
           "description": "Punkte, Abzeichen und Bestenlisten für Lernmotivation (erfordert Plugin)"
         }
       }
+    },
+    "contact": {
+      "label": "Kontakt",
+      "description": "Kontaktdaten neben dem Core-Kontaktformular (/contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse"
+        },
+        "contact_phone": {
+          "label": "Telefon",
+          "type": "text",
+          "default": ""
+        },
+        "contact_address": {
+          "label": "Adresse",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Erreichbarkeit",
+          "type": "textarea",
+          "default": ""
+        }
+      }
     }
-
   }
 }

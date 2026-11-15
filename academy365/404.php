@@ -25,7 +25,10 @@ try {
         <h1><?php echo $safe($notFoundTitle); ?></h1>
         <p class="ac-muted"><?php echo $safe($notFoundMessage); ?></p>
         <div class="ac-error-actions">
+            <?php if (theme_v4_link_available($siteUrl . '/courses')) : ?>
             <a href="<?php echo $safe(academy365_safe_url($siteUrl . '/courses', $siteUrl)); ?>" class="ac-btn ac-btn-primary"><?php echo $safe($notFoundCta); ?></a>
+            <?php endif; ?>
+            <a href="<?php echo $safe(academy365_safe_url($siteUrl . '/search', $siteUrl)); ?>" class="ac-btn ac-btn-ghost">Suche öffnen</a>
             <a href="<?php echo $safe($siteUrl); ?>" class="ac-btn ac-btn-ghost">Zur Startseite</a>
         </div>
     </div>
