@@ -4,10 +4,10 @@ Theme URI: https://phinit.de/themes/buildbase
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: Bau- & Handwerk-Theme für 365CMS – robust, solide, handwerklich. Mit Notfall-Banner, Gewerk-Badges, Portfolio-Grid und industrieller Typografie.
-Version: 3.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 4.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: buildbase
 Tags: bau, handwerk, portfolio, directory, robust, industrial
@@ -35,16 +35,16 @@ Tags: bau, handwerk, portfolio, directory, robust, industrial
     --section-dark:         #292524;
     --text-primary:         #1c1917;
     --text-secondary:       #44403c;
-    --muted-color:          #78716c;
+    --muted-color:          #6b645f;   /* 5,3:1 auf --bg-secondary (bisher #78716c: 4,4:1) */
     --border-color:         #d6d3d1;
 
     --shadow-sm:            0 1px 2px rgba(146, 64, 14, .08);
     --shadow-md:            0 4px 12px rgba(146, 64, 14, .12);
     --shadow-lg:            0 12px 32px rgba(146, 64, 14, .16);
 
-    --font-body:            Roboto, sans-serif;
-    --font-heading:         "Roboto Condensed", sans-serif;
-    --font-condensed:       Oswald, sans-serif;
+    --font-body:            Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-heading:         "Roboto Condensed", "Arial Narrow", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-condensed:       Oswald, "Arial Narrow", system-ui, -apple-system, "Segoe UI", sans-serif;
 
     --font-xs:              .75rem;
     --font-sm:              .875rem;
@@ -94,7 +94,10 @@ Tags: bau, handwerk, portfolio, directory, robust, industrial
     --line-height-base:     1.6;
     --font-weight-heading:  800;
 
-    --focus-ring:           #d97706;
+    /* Fokus: Dunkelbraun auf hellen Flächen (6,8:1; Akzent-Gold #d97706 nur 3,1:1),
+       Sicherheits-Amber auf dunklen Flächen (7,1:1 auf Header/Hero-Start, 8,1:1 auf Footer) */
+    --focus-ring:           #92400e;
+    --focus-ring-on-dark:   #f59e0b;
 }
 
 /* ================================================================
@@ -139,6 +142,19 @@ h1, h2, h3, h4, h5, h6 {
     position: absolute; width: 1px; height: 1px;
     overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap;
 }
+
+/* Dunkle Flächen: Header, Hero, dunkle Sektionen, Footer */
+.bb-site-header :focus-visible,
+.bb-hero :focus-visible,
+.bb-section--dark :focus-visible,
+.bb-footer :focus-visible,
+.bb-skip-link:focus-visible {
+    outline-color: var(--focus-ring-on-dark);
+}
+/* Notfall-Banner liegt auf Sicherheits-Amber: Rahmen in Textfarbe (8,1:1) */
+.bb-emergency-banner :focus-visible { outline-color: var(--text-primary); }
+/* Suchpanel ist hell, obwohl es im Header sitzt */
+.bb-search-panel :focus-visible { outline-color: var(--focus-ring); }
 
 .bb-focus-shadow:focus-visible {
     box-shadow: 0 0 0 .2rem color-mix(in srgb, var(--focus-ring) 35%, transparent);
@@ -244,11 +260,14 @@ h1, h2, h3, h4, h5, h6 {
     letter-spacing: .5px;
     transition: color .2s, background .2s;
 }
-.main-navigation a:hover {
+.main-navigation a:hover,
+.main-navigation .current-menu-item > a,
+.main-navigation a[aria-current="page"] {
     color: var(--safety-color);
     background: rgba(255, 255, 255, .06);
     text-decoration: none;
 }
+.main-navigation a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--safety-color); }
 
 .bb-header-actions { display: flex; align-items: center; gap: .75rem; }
 
@@ -460,6 +479,16 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
     opacity: .9;
 }
 .bb-hero > * { position: relative; z-index: 1; }
+/* Outline-Button auf dunklem Hero: Amber statt Braun (#b45309 auf #44403c: 2,1:1 → 4,8:1) */
+.bb-hero .bb-btn-outline {
+    color: var(--safety-color);
+    border-color: var(--safety-color);
+}
+.bb-hero .bb-btn-outline:hover {
+    background: var(--safety-color);
+    border-color: var(--safety-color);
+    color: var(--text-primary);
+}
 
 .bb-hero h1 {
     font-family: var(--font-heading);
@@ -717,7 +746,8 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
     gap: 2rem;
     padding-bottom: var(--spacing-xl);
 }
-.bb-footer h3 {
+.bb-footer h3,
+.bb-footer .bb-footer-heading {
     font-family: var(--font-heading);
     color: #fff;
     margin-bottom: .75rem;
@@ -732,9 +762,12 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
     border-top: 1px solid rgba(255, 255, 255, .12);
     padding: 1.25rem 0;
     font-size: var(--font-sm);
-    color: rgba(255, 255, 255, .55);
+    color: rgba(255, 255, 255, .65);
     text-align: center;
 }
+.bb-footer-legal { margin-top: .5rem; }
+.bb-footer-legal ul { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; justify-content: center; }
+.bb-footer-legal li { margin: 0; }
 
 /* ================================================================
    11. Responsive Touch-Ups
@@ -756,10 +789,12 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
    12. Animation guards (entry observer + reduced motion)
    ================================================================ */
 .bb-card { opacity: 1; }
+/* Nur mit laufendem navigation.js (Klasse .bb-js): ohne Script – etwa auf der eigenständigen
+   Wartungs-/Fehlerseite – blieben die Karten sonst unsichtbar. */
 @media (prefers-reduced-motion: no-preference) {
-    .bb-card { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease, box-shadow .2s, border-top-color .2s; }
-    .bb-card.is-visible { opacity: 1; transform: translateY(0); }
-    .bb-card.is-visible:hover { transform: translateY(-2px); }
+    .bb-js .bb-card { opacity: 0; transform: translateY(8px); transition: opacity .35s ease, transform .35s ease, box-shadow .2s, border-top-color .2s; }
+    .bb-js .bb-card.is-visible { opacity: 1; transform: translateY(0); }
+    .bb-js .bb-card.is-visible:hover { transform: translateY(-2px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -792,3 +827,43 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
 form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
 form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+
+/* ================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die BuildBase-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis). Das Theme hat keinen Dark Mode.
+   ================================================================ */
+:root {
+    --tv4-primary:        var(--primary-color);
+    --tv4-primary-hover:  var(--primary-dark);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--link-color);
+    --tv4-text:           var(--text-primary);
+    --tv4-muted:          var(--muted-color);
+    --tv4-bg:             var(--bg-primary);
+    --tv4-surface:        var(--bg-card);
+    --tv4-surface-alt:    var(--bg-secondary);
+    --tv4-border:         var(--border-color);
+    --tv4-border-strong:  #78716c;
+    --tv4-radius:         var(--radius-sm, 4px);
+    --tv4-btn-radius:     var(--btn-radius, 4px);
+    --tv4-focus:          var(--focus-ring, #92400e);
+    --tv4-font-body:      var(--font-body);
+    --tv4-font-heading:   var(--font-heading);
+    --tv4-hero-start:     var(--hero-gradient-start);
+    --tv4-hero-end:       var(--hero-gradient-end);
+    --tv4-max:            var(--container-max, 1200px);
+}
+
+/* Core-Module (Knowledgebase, Newsletter) im Theme-Rahmen; .bb-site-content hält den Abstand zum fixen Header. */
+.theme-v4-module {
+    max-width: var(--container-max, 1200px);
+    margin-inline: auto;
+    padding: 2.5rem 1.25rem 3.5rem;
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content {
+    padding-top: 0;
+}
+.bb-footer .bb-footer-heading { font-size: var(--font-lg); }

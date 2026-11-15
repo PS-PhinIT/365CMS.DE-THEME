@@ -4,10 +4,10 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: HR- & Personalvermittlungs-Theme – warmes Amber-Anker-System, redaktionelle Klarheit, semantische Pipeline-Status-Tokens (Beworben → Screening → Interview → Angebot → Eingestellt). Für Personalagenturen, Recruiting-Plattformen und Karriere-Portale.
-Version: 1.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: personalflow
 Tags: hr, recruitment, jobs, careers, applicant-tracking, pipeline, warm, editorial, cms
@@ -49,9 +49,10 @@ Tags: hr, recruitment, jobs, careers, applicant-tracking, pipeline, warm, editor
     --pf-paper-alt:      #fef6e7;
     --pf-surface:        #ffffff;
     --pf-ink:            #1c1917;
-    --pf-text-mute:      #78716c;
+    --pf-text-mute:      #6b645f;   /* vorher #78716c: 4,5:1 auf --pf-paper-alt knapp verfehlt, 4,3:1 auf Stage-Flächen */
     --pf-rule:           #f5e7c4;
     --pf-rule-strong:    #e7d39a;
+    --pf-input-border:   #9c8a5a;   /* Formularfelder: 3,4:1 auf Weiß (WCAG 1.4.11); --pf-rule-strong nur 1,5:1 */
     --pf-link:           #92400e;
     --pf-link-hover:     #451a03;
 
@@ -73,8 +74,8 @@ Tags: hr, recruitment, jobs, careers, applicant-tracking, pipeline, warm, editor
     --pf-footer-link:    #fde68a;
 
     /* Typografie */
-    --pf-font-body:      "Nunito Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-    --pf-font-heading:   Nunito, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --pf-font-body:      "Nunito Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    --pf-font-heading:   Nunito, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     --pf-font-stats:     "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --pf-font-size-base: 16px;
     --pf-line-height:    1.6;
@@ -112,9 +113,13 @@ Tags: hr, recruitment, jobs, careers, applicant-tracking, pipeline, warm, editor
     --pf-btn-weight:    700;
     --pf-btn-transform: none;
 
-    /* Focus */
-    --focus-ring:        #b45309;
-    --focus-ring-shadow: 0 0 0 .2rem rgba(180, 83, 9, .22);
+    /* Focus: voller Ring (vorher Schatten mit 22 % Deckkraft, praktisch unsichtbar).
+       #92400e: 6,9:1 auf --pf-paper; Amber-/dunkle Flächen setzen --focus-ring weiter unten um. */
+    --focus-ring:        #92400e;
+    --pf-focus-gap:      #ffffff;
+    /* Nur Fallback/Doku: die Regeln setzen den Ring direkt mit var(--focus-ring), damit
+       Bereichs-Overrides von --focus-ring wirken (Custom Properties werden am :root aufgelöst). */
+    --focus-ring-shadow: 0 0 0 2px #ffffff, 0 0 0 5px #92400e;
 }
 
 /* ================================================================
@@ -174,9 +179,12 @@ h3 { font-size: var(--pf-font-xl); }
 }
 .pf-focus-shadow:focus-visible {
     outline: none;
-    box-shadow: var(--focus-ring-shadow);
+    box-shadow: 0 0 0 2px var(--pf-focus-gap), 0 0 0 5px var(--focus-ring);
     border-radius: var(--pf-radius-sm);
 }
+/* Amber-CTA und Footer: weißer bzw. heller Fokusrahmen (≥ 5:1 gegen den Grund) */
+.pf-cta-section { --focus-ring: #ffffff; --pf-focus-gap: transparent; }
+.pf-footer      { --focus-ring: var(--pf-footer-link); --pf-focus-gap: var(--pf-footer-bg); }
 
 /* ================================================================
    3. Layout helpers
@@ -344,7 +352,7 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
 .pf-search-form input[type="search"] {
     flex: 1;
     padding: .65rem 1rem;
-    border: 1px solid var(--pf-rule-strong);
+    border: 1px solid var(--pf-input-border);
     border-radius: var(--pf-radius-sm);
     font-family: var(--pf-font-body);
     font-size: var(--pf-font-md);
@@ -352,7 +360,7 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
     color: var(--pf-ink);
     min-height: 44px;
 }
-.pf-search-form input[type="search"]:focus-visible { outline: none; box-shadow: var(--focus-ring-shadow); }
+.pf-search-form input[type="search"]:focus-visible { outline: none; border-color: var(--focus-ring); box-shadow: 0 0 0 2px var(--focus-ring); }
 .pf-search-form button {
     background: var(--pf-primary);
     color: #fff;
@@ -367,18 +375,20 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
 /* Mobile drawer + overlay */
 .pf-mobile-drawer {
     position: fixed; top: var(--pf-header-height); left: 0; right: 0;
+    /* Geschlossen nicht fokussierbar/vorlesbar (vorher nur opacity:0 + aria-hidden mit fokussierbaren Links) */
+    visibility: hidden;
     background: var(--pf-surface);
     border-top: 1px solid var(--pf-rule);
     border-bottom: 2px solid var(--pf-rule);
     padding: 1rem 1.5rem 1.5rem;
     transform: translateY(-12px); opacity: 0;
-    transition: transform .2s ease, opacity .2s ease;
+    transition: transform .2s ease, opacity .2s ease, visibility 0s linear .2s;
     pointer-events: none;
     z-index: 999;
     max-height: calc(100vh - var(--pf-header-height));
     overflow-y: auto;
 }
-.pf-mobile-drawer.is-open { transform: translateY(0); opacity: 1; pointer-events: auto; }
+.pf-mobile-drawer.is-open { transform: translateY(0); opacity: 1; pointer-events: auto; visibility: visible; transition: transform .2s ease, opacity .2s ease, visibility 0s; }
 .pf-mobile-drawer ul { display: flex; flex-direction: column; gap: .25rem; }
 .pf-mobile-drawer a {
     display: block; padding: .85rem .75rem;
@@ -422,7 +432,7 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
 }
 .pf-btn:hover { text-decoration: none; transform: translateY(-1px); }
 .pf-btn:active { transform: translateY(0); }
-.pf-btn:focus-visible { box-shadow: var(--focus-ring-shadow); }
+.pf-btn:focus-visible { box-shadow: 0 0 0 2px var(--pf-focus-gap), 0 0 0 5px var(--focus-ring); }
 
 .pf-btn-primary { background: var(--pf-primary); color: #fff; box-shadow: 0 2px 8px rgba(180, 83, 9, .25); }
 .pf-btn-primary:hover { background: var(--pf-primary-hover); color: #fff; }
@@ -866,7 +876,9 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
     grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: var(--pf-space-lg);
 }
-.pf-footer-widget h3 {
+.pf-footer-widget h3,
+.pf-footer-widget .pf-footer-heading {
+    font-family: var(--pf-font-heading);
     color: var(--pf-footer-link);
     font-size: var(--pf-font-sm);
     font-weight: 700;
@@ -947,11 +959,62 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
     body.pf-body { padding-top: 0; background: #fff; color: #000; }
 }
 
-/* ── 365CMS 3.4: gemeinsame Template-Bausteine (Beitrag, Suche, Pagination) ── */
+/* ── 365CMS: gemeinsame Template-Bausteine (Beitrag, Suche, Pagination) ── */
 .cms-visually-hidden { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .cms-post-meta { margin: 0 0 1.25rem; font-size: .9rem; opacity: .75; }
 .cms-post-image { margin: 0 0 1.5rem; }
 .cms-post-image img { display: block; width: 100%; height: auto; border-radius: 8px; }
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
-form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
-form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+/* Suchformular der Suchseite (vorher form[role="search"]: verschob auch das Header-Suchpanel) */
+.pf-page-shell .pf-search-form { flex-wrap: wrap; margin: 1rem 0 2rem; }
+.pf-page-shell .pf-search-form input[type="search"] { flex: 1 1 260px; min-width: 0; }
+.pf-page-shell .pf-search-form button { color: #fff; font-weight: 700; }
+
+/* ================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die PersonalFlow-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites, Inhaltsverzeichnis).
+   PersonalFlow hat keinen Dark Mode.
+   ================================================================ */
+:root {
+    --tv4-primary:        var(--pf-primary);
+    --tv4-primary-hover:  var(--pf-primary-hover);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--pf-link);
+    --tv4-text:           var(--pf-ink);
+    --tv4-muted:          var(--pf-text-mute);
+    --tv4-bg:             var(--pf-paper);
+    --tv4-surface:        #ffffff;
+    --tv4-surface-alt:    var(--pf-paper-alt);
+    --tv4-border:         var(--pf-rule);
+    --tv4-border-strong:  var(--pf-input-border);
+    --tv4-radius:         var(--pf-radius);
+    --tv4-btn-radius:     var(--pf-btn-radius);
+    --tv4-focus:          var(--focus-ring);
+    --tv4-font-body:      var(--pf-font-body);
+    --tv4-font-heading:   var(--pf-font-heading);
+    --tv4-hero-start:     var(--pf-primary);
+    --tv4-hero-end:       var(--pf-primary-hover);
+    --tv4-max:            var(--pf-max-width);
+}
+.pf-footer-widget .pf-footer-heading { line-height: 1.3; }
+/* Core-Module (Knowledgebase, Newsletter) im Theme-Rahmen; der fixe Header ist über body padding-top abgezogen */
+.theme-v4-module {
+    max-width: var(--pf-max-width);
+    margin-inline: auto;
+    padding: var(--pf-section-pad) 1.5rem;
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content { padding-top: 0; }
+.pf-contact-shell .pf-section-eyebrow {
+    display: inline-block;
+    font-family: var(--pf-font-stats);
+    font-size: var(--pf-font-xs);
+    font-weight: 700;
+    color: var(--pf-primary);
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    margin-bottom: .65rem;
+}
+.pf-contact-shell h1 { font-size: clamp(1.75rem, 3.5vw, var(--pf-font-3xl)); margin-bottom: .75rem; }
+.theme-v4-error .pf-error-card { margin-inline: auto; }

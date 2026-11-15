@@ -1,8 +1,10 @@
 {
   "name": "MedCare Pro",
   "slug": "medcarepro",
-  "version": "1.1.0",
-  "requires_cms": "3.4.00",
+  "version": "2.0.0",
+  "requires_cms": "4.0.0",
+  "requires_php": "8.4.1",
+  "tested_up_to": "4.1.0",
 
   "templates": {
     "home":         "home.php",
@@ -13,85 +15,100 @@
     "blog":         "blog.php",
     "blog-single":  "blog-single.php",
     "search":       "search.php",
+    "contact":      "contact.php",
     "login":        "login.php",
     "register":     "register.php"
+  },
+  "login_page": {
+    "colors": {
+      "background_start":   "#f6f8fa",
+      "background_end":     "#e3edf0",
+      "card_background":    "#ffffff",
+      "text_color":         "#0f1f25",
+      "muted_color":        "#5b6b73",
+      "primary_color":      "#0e5b6b",
+      "primary_text_color": "#ffffff",
+      "link_color":         "#107585",
+      "input_background":   "#ffffff",
+      "input_border":       "#8796a0"
+    }
   },
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "Gesundheitswesen & Medizin Theme – Vertrauensvoll, beruhigend, klar. Für Arztpraxen, Kliniken, Therapeuten und Pflegedienste.",
   "tags": ["medizin", "gesundheit", "arzt", "klinik", "dsgvo", "barrierefrei", "cms"],
-  "supports": ["dark-mode", "custom-logo", "sticky-header", "custom-css", "booking", "accessibility", "dsgvo-medical"],
+  "supports": ["custom-logo", "sticky-header", "custom-css", "booking", "accessibility", "dsgvo-medical"],
 
   "customization": {
 
     "colors": {
       "label": "Farben",
-      "description": "Beruhigende Farbpalette – helles Blau für Vertrauen, viel Weißraum.",
+      "description": "Ruhige Klinik-Palette – tiefes Teal als Marken-Anker, Grün für Bestätigung, Rot nur für Notfälle. Alle Standardwerte erfüllen WCAG 2.1 AA (Text ≥ 4,5:1).",
       "settings": {
         "primary_color": {
           "label": "Primärfarbe",
           "type": "color",
-          "default": "#0ea5e9",
-          "description": "Helles Blau – Reinheit und Vertrauen"
+          "default": "#0e5b6b",
+          "description": "Klinik-Teal – Buttons, Links, Fokusrahmen (7,7:1 mit weißer Schrift)"
         },
         "secondary_color": {
           "label": "Sekundärfarbe",
           "type": "color",
-          "default": "#0284c7",
-          "description": "Mittleres Blau für Hover-Zustände"
+          "default": "#0c4f5d",
+          "description": "Dunkleres Teal für Hover-Zustände"
         },
         "accent_color": {
           "label": "Akzentfarbe",
           "type": "color",
-          "default": "#10b981",
-          "description": "Grün für Gesundheit, Erfolg und positive Befunde"
+          "default": "#047857",
+          "description": "Grün für Bestätigung und positive Befunde (mit weißer Schrift mind. 4,5:1 wählen)"
         },
         "warning_color": {
           "label": "Warnfarbe",
           "type": "color",
-          "default": "#f59e0b",
-          "description": "Amber für Hinweise und Warnungen"
+          "default": "#b45309",
+          "description": "Amber für Hinweise und Warnungen (als Textfarbe mind. 4,5:1 auf Weiß)"
         },
         "urgent_color": {
           "label": "Dringend-Farbe",
           "type": "color",
-          "default": "#ef4444",
-          "description": "Rot für Notfälle und kritische Hinweise"
+          "default": "#b91c1c",
+          "description": "Rot ausschließlich für Notfälle und kritische Hinweise"
         },
         "specialty_general": {
           "label": "Fachbereich: Allgemein",
           "type": "color",
-          "default": "#0ea5e9",
+          "default": "#0e5b6b",
           "description": "Farbe für Allgemeinmedizin-Badges"
         },
         "specialty_dental": {
           "label": "Fachbereich: Zahnmedizin",
           "type": "color",
-          "default": "#f59e0b",
+          "default": "#b45309",
           "description": "Farbe für Zahnmedizin-Badges"
         },
         "specialty_surgery": {
           "label": "Fachbereich: Chirurgie",
           "type": "color",
-          "default": "#8b5cf6",
+          "default": "#7c3aed",
           "description": "Farbe für Chirurgie-Badges"
         },
         "specialty_therapy": {
           "label": "Fachbereich: Therapie",
           "type": "color",
-          "default": "#10b981",
+          "default": "#047857",
           "description": "Farbe für Therapie-Badges"
         },
         "text_color": {
           "label": "Textfarbe",
           "type": "color",
-          "default": "#0f172a",
+          "default": "#0f1f25",
           "description": "Klare, gut lesbare Textfarbe"
         },
         "bg_color": {
           "label": "Hintergrundfarbe",
           "type": "color",
-          "default": "#f0f9ff",
-          "description": "Sehr helles Blau-Weiß – sauber und klinisch"
+          "default": "#f6f8fa",
+          "description": "Sehr helles Grau-Weiß – sauber und klinisch"
         },
         "card_bg_color": {
           "label": "Card-Hintergrundfarbe",
@@ -102,20 +119,20 @@
         "link_color": {
           "label": "Linkfarbe",
           "type": "color",
-          "default": "#0284c7",
-          "description": "Mittelblau für Links"
+          "default": "#107585",
+          "description": "Teal für Links (5,4:1 auf Weiß)"
         },
         "muted_color": {
           "label": "Gedämpfte Textfarbe",
           "type": "color",
-          "default": "#64748b",
+          "default": "#5b6b73",
           "description": "Sekundärer Text für Labels und Meta-Infos"
         },
         "border_color": {
           "label": "Rahmenfarbe",
           "type": "color",
-          "default": "#bae6fd",
-          "description": "Zartes Hellblau für Rahmen"
+          "default": "#e1e6ec",
+          "description": "Zarte Linie für Rahmen"
         }
       }
     },
@@ -261,13 +278,13 @@
         "header_text_color": {
           "label": "Header-Textfarbe",
           "type": "color",
-          "default": "#0f172a",
+          "default": "#0f1f25",
           "description": "Dunkle Textfarbe für hellen Header"
         },
         "header_border_color": {
           "label": "Header Trennlinie",
           "type": "color",
-          "default": "#bae6fd",
+          "default": "#e1e6ec",
           "description": "Dezente Trennlinie unter dem Header"
         },
         "header_height": {
@@ -318,20 +335,20 @@
         "footer_bg_color": {
           "label": "Footer-Hintergrund",
           "type": "color",
-          "default": "#0c4a6e",
-          "description": "Dunkles Blau für seriösen Abschluss"
+          "default": "#082f38",
+          "description": "Tiefes Teal für einen ruhigen Abschluss"
         },
         "footer_text_color": {
           "label": "Footer-Textfarbe",
           "type": "color",
-          "default": "#bae6fd",
-          "description": "Hellblau für Footer-Text"
+          "default": "#b9d3da",
+          "description": "Helles Teal für Footer-Text"
         },
         "footer_link_color": {
           "label": "Footer-Linkfarbe",
           "type": "color",
-          "default": "#e0f2fe",
-          "description": "Sehr helles Blau für Footer-Links"
+          "default": "#e0f1f5",
+          "description": "Sehr helles Teal für Footer-Links"
         },
         "footer_text": {
           "label": "Footer-Beschreibung",
@@ -649,6 +666,35 @@
           "type": "textarea",
           "default": "",
           "description": "Zusätzliches CSS das am Ende angehängt wird."
+        }
+      }
+    },
+
+    "contact": {
+      "label": "Kontakt",
+      "description": "Praxiskontakt neben dem Core-Kontaktformular (/kontakt, /contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse"
+        },
+        "contact_phone": {
+          "label": "Telefon",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Termin-Telefonnummer aus dem Bereich Header"
+        },
+        "contact_address": {
+          "label": "Adresse",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Sprechzeiten",
+          "type": "textarea",
+          "default": ""
         }
       }
     }

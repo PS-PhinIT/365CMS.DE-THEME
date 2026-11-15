@@ -16,24 +16,36 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('KOMPASS_THEME_VERSION')) {
-    define('KOMPASS_THEME_VERSION', '1.0.0');
+    define('KOMPASS_THEME_VERSION', '2.0.0');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 final class Kompass_Theme
 {
     public const SLUG = 'kompass';
 
     /**
-     * Schriftwahl → [CSS-Stack, Google-Fonts-Familie (leer = keine Webfont), Font-Manager-Slug].
+     * Schriftwahl → [CSS-Stack, Font-Manager-Slug (leer = Systemschrift)].
      *
-     * @var array<string, array{0:string,1:string,2:string}>
+     * Webfonts liefert ausschließlich die Core-Schriftverwaltung (Filter local_font_slugs); ohne lokale
+     * Schriftdatei greift der System-Fallback des Stacks. Keine Requests an Google Fonts.
+     *
+     * @var array<string, array{0:string,1:string}>
      */
     private const FONTS = [
-        'public-sans' => ['"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'Public+Sans:ital,wght@0,400..800;1,400', 'public-sans'],
-        'atkinson'    => ['"Atkinson Hyperlegible", "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif', 'Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700', 'atkinson-hyperlegible'],
-        'source-sans' => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif', 'Source+Sans+3:ital,wght@0,400..700;1,400', 'source-sans'],
-        'inter'       => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'Inter:wght@400;500;600;700', 'inter'],
-        'system'      => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', '', ''],
+        'public-sans' => ['"Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'public-sans'],
+        'atkinson'    => ['"Atkinson Hyperlegible", "Public Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'atkinson-hyperlegible'],
+        'source-sans' => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'source-sans'],
+        'inter'       => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'inter'],
+        'system'      => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', ''],
     ];
 
     private static ?self $instance = null;
@@ -49,22 +61,30 @@ final class Kompass_Theme
 
     private function __construct()
     {
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Shell und löst ebenfalls `head` aus:
+        // dort keine Frontend-Assets, nur die Kompass-Palette als --member-*-Variablen.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'], 1);
         \CMS\Hooks::addAction('head', [$this, 'outputPreferenceBootstrap'], 2);
-        \CMS\Hooks::addAction('head', [$this, 'outputFonts'], 5);
-        \CMS\Hooks::addAction('head', [$this, 'outputSeoTags'], 8);
+        \CMS\Hooks::addAction('head', [$this, 'outputCustomHeaderCode'], 8);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'], 10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 16);
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
-
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
-        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
     }
 
     public function enqueueStyles(): void
     {
-        $href = $this->themeUrl() . '/style.css?v=' . rawurlencode(KOMPASS_THEME_VERSION);
-        echo '<link rel="stylesheet" href="' . kompass_e($href) . '">' . "\n";
+        $version = rawurlencode(KOMPASS_THEME_VERSION);
+        echo '<link rel="stylesheet" href="' . kompass_e($this->themeUrl() . '/style.css?v=' . $version) . '">' . "\n";
+        // Gemeinsame 4.x-Integrationsstile (Downloads, Feeds, Formulare, KB, Newsletter) nach dem Theme-Stylesheet.
+        echo '<link rel="stylesheet" href="' . kompass_e($this->themeUrl() . '/css/cms-v4.css?v=' . $version) . '">' . "\n";
     }
 
     public function enqueueScripts(): void
@@ -98,30 +118,9 @@ final class Kompass_Theme
         echo '<script' . theme_csp_nonce_attr() . '>(function(){' . $js . '})();</script>' . "\n";
     }
 
-    public function outputFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet über local_font_slugs lokal gespeicherte Schriften ein (DSGVO).
-        }
-
-        $families = [];
-        foreach ($this->selectedFontKeys() as $key) {
-            $family = self::FONTS[$key][1] ?? '';
-            if ($family !== '') {
-                $families[$family] = true;
-            }
-        }
-        if ($families === []) {
-            return;
-        }
-
-        $url = 'https://fonts.googleapis.com/css2?family=' . implode('&family=', array_keys($families)) . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . kompass_e($url) . '">' . "\n";
-    }
-
     /**
+     * Lokale Schriften der Core-Schriftverwaltung für die gewählten Schriften (keine Google-Fonts-Requests).
+     *
      * @param mixed $slugs
      * @return array<int, string>
      */
@@ -129,7 +128,7 @@ final class Kompass_Theme
     {
         $slugs = is_array($slugs) ? $slugs : [];
         foreach ($this->selectedFontKeys() as $key) {
-            $slug = self::FONTS[$key][2] ?? '';
+            $slug = self::FONTS[$key][1] ?? '';
             if ($slug !== '') {
                 $slugs[] = $slug;
             }
@@ -138,30 +137,39 @@ final class Kompass_Theme
         return array_values(array_unique(array_map('strval', $slugs)));
     }
 
-    public function outputSeoTags(): void
+    /**
+     * Eigener Header-Code aus SEO → Technik (Altbestand; laut Core weiterhin in jedem <head>).
+     * Beschreibung, Robots, Canonical, Open Graph und JSON-LD gibt header.php über theme_v4_head_tags() aus.
+     */
+    public function outputCustomHeaderCode(): void
     {
-        $html = '';
         try {
             if (class_exists('\\CMS\\Services\\SEOService')) {
-                $seo = \CMS\Services\SEOService::getInstance();
-                $html = (string) $seo->renderCurrentHeadTags();
-                $custom = trim((string) $seo->getCustomHeaderCode());
+                $custom = trim((string) \CMS\Services\SEOService::getInstance()->getCustomHeaderCode());
                 if ($custom !== '') {
-                    $html .= $custom . "\n";
+                    echo $custom . "\n"; // Vom Administrator gepflegter Head-Code, bewusst unverändert.
                 }
             }
         } catch (\Throwable) {
-            $html = '';
         }
+    }
 
-        if (trim($html) === '') {
-            $description = kompass_site_description();
-            if ($description !== '') {
-                $html = '<meta name="description" content="' . kompass_e($description) . '">' . "\n";
-            }
-        }
+    /** Memberbereich (inkl. Newsletter-Widget) in der Kompass-Palette (das Theme hat keinen Dunkelmodus). */
+    public function outputMemberTokens(): void
+    {
+        $c = static fn(string $key, string $default): string => kompass_css_color((string) kompass_setting('colors', $key, $default), $default);
 
-        echo $html;
+        echo theme_v4_member_tokens_style([
+            'primary'    => $c('brand_color', '#1a4d8f'),
+            'accent'     => $c('brand_dark', '#10345f'),
+            'bg'         => $c('surface_color', '#f2f5f9'),
+            'card_bg'    => $c('paper_color', '#ffffff'),
+            'text'       => $c('text_color', '#1b2430'),
+            'text_muted' => $c('muted_color', '#4b5868'),
+            'border'     => $c('border_color', '#d3dbe6'),
+            'radius'     => kompass_css_number(kompass_setting('layout', 'border_radius', 8), 8, 0, 20) . 'px',
+            'font'       => $this->fontStack((string) kompass_setting('typography', 'font_body', 'atkinson'), 'atkinson'),
+        ]);
     }
 
     public function outputMetaTags(): void
@@ -789,16 +797,28 @@ if (!function_exists('kompass_categories')) {
             return $cache;
         }
 
+        // Eine Abfrage: Beitragszahl je Kategorie (Hauptkategorie oder Zuordnung in post_category_rel) als
+        // vorab gruppierte Zähltabelle statt einer Unterabfrage je Kategorie; nur veröffentlichte Beiträge
+        // (4.1.0: `pending` zählt nicht). Kategorien ohne eigene Beiträge bleiben für den Themenbaum erhalten.
         try {
             $db = \CMS\Database::instance();
             $prefix = $db->getPrefix();
+            $published = cms_post_publication_where('p');
             $rows = $db->get_results(
-                "SELECT c.id, c.name, c.slug, c.description, c.parent_id,
-                        (SELECT COUNT(*) FROM {$prefix}posts p
-                          WHERE (p.category_id = c.id OR EXISTS (SELECT 1 FROM {$prefix}post_category_rel pcr WHERE pcr.post_id = p.id AND pcr.category_id = c.id))
-                            AND " . cms_post_publication_where('p') . ") AS post_count
+                "SELECT c.id, c.name, c.slug, c.description, c.parent_id, COALESCE(pc.post_count, 0) AS post_count
                  FROM {$prefix}post_categories c
-                 ORDER BY c.sort_order ASC, c.name ASC"
+                 LEFT JOIN (
+                     SELECT x.category_id, COUNT(DISTINCT x.post_id) AS post_count
+                     FROM (
+                         SELECT p.id AS post_id, p.category_id FROM {$prefix}posts p WHERE {$published}
+                         UNION
+                         SELECT pcr.post_id, pcr.category_id FROM {$prefix}post_category_rel pcr
+                         INNER JOIN {$prefix}posts p ON p.id = pcr.post_id WHERE {$published}
+                     ) x
+                     GROUP BY x.category_id
+                 ) pc ON pc.category_id = c.id
+                 ORDER BY c.sort_order ASC, c.name ASC",
+                []
             ) ?: [];
         } catch (\Throwable) {
             return $cache = [];
@@ -924,7 +944,8 @@ if (!function_exists('kompass_quick_links')) {
         for ($i = 1; $i <= 6; $i++) {
             $label = kompass_text('kp_quick', 'quick_' . $i . '_label');
             $url = kompass_safe_url(kompass_text('kp_quick', 'quick_' . $i . '_url'), '');
-            if ($label !== '' && $url !== '') {
+            // Standardziele (z. B. /hilfe-und-faq, /ueber-uns) nur zeigen, wenn die Seite bzw. Route existiert.
+            if ($label !== '' && $url !== '' && theme_v4_link_available(kompass_url($url))) {
                 $links[] = ['label' => $label, 'url' => kompass_url($url), 'icon' => kompass_text('kp_quick', 'quick_' . $i . '_icon', 'info')];
             }
         }
@@ -991,9 +1012,15 @@ if (!function_exists('kompass_alpha_groups')) {
 
 if (!function_exists('kompass_nav_menu')) {
     /**
+     * Menü als Liste. Ohne gepflegtes Menü greift $fallback; Standardlinks erscheinen nur, wenn ihr Ziel als
+     * Route oder veröffentlichte Seite existiert (365CMS 4.0.0).
+     *
+     * Mit `$mainNavContext` folgen direkt nach den Menüeinträgen die Einträge der Core-Module
+     * (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) – auch bei leerem Menü.
+     *
      * @param array<int, array{label:string,url:string}> $fallback
      */
-    function kompass_nav_menu(string $location, string $class = '', array $fallback = []): void
+    function kompass_nav_menu(string $location, string $class = '', array $fallback = [], string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
@@ -1001,9 +1028,16 @@ if (!function_exists('kompass_nav_menu')) {
             $items = [];
         }
         if (!is_array($items) || $items === []) {
-            $items = $fallback;
+            $items = theme_v4_filter_links($fallback);
         }
-        if ($items === []) {
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
@@ -1036,6 +1070,7 @@ if (!function_exists('kompass_nav_menu')) {
 
             echo '<li><a href="' . kompass_e($href) . '"' . $attrs . '>' . kompass_e($label) . ($external ? '<span class="kp-visually-hidden"> (externer Link)</span>' : '') . '</a></li>';
         }
+        echo $coreItems; // Core-HTML aus theme_v4_main_nav() (Links des Cores, bereits escaped)
         echo '</ul>';
     }
 }
@@ -1057,6 +1092,7 @@ if (!function_exists('kompass_default_menu')) {
                 ['label' => 'Themen A–Z', 'url' => kompass_archive_url('tag')],
                 ['label' => 'Aktuelles', 'url' => '/blog'],
                 ['label' => 'Suche', 'url' => '/search'],
+                ['label' => 'Newsletter', 'url' => '/newsletter'],
                 ['label' => 'Sitemap', 'url' => '/sitemap'],
             ],
             'footer-legal' => [
@@ -1115,6 +1151,23 @@ if (!function_exists('kompass_icon')) {
     }
 }
 
+if (!function_exists('kompass_img')) {
+    /**
+     * Bild über theme_v4_img(): width/height (echte Maße lokaler Uploads, sonst die Layout-Maße),
+     * `loading="lazy"` bzw. für das LCP-Bild `fetchpriority="high"` und Fokus-Punkt (4.1.0).
+     *
+     * @param array{class?:string,lcp?:bool,item?:mixed,sizes?:string} $options
+     */
+    function kompass_img(string $src, string $alt, array $options = [], int $width = 0, int $height = 0): string
+    {
+        if ($width > 0 && $height > 0) {
+            [$options['width'], $options['height']] = theme_v4_image_dimensions($src) ?? [$width, $height];
+        }
+
+        return theme_v4_img($src, $alt, $options);
+    }
+}
+
 if (!function_exists('kompass_news_item')) {
     /** Listeneintrag „Aktuelle Informationen“ mit Datumsblock, Thema und Kurztext. */
     function kompass_news_item(object|array $post, string $headingTag = 'h3', bool $withExcerpt = true, bool $withImage = false): void
@@ -1149,7 +1202,7 @@ if (!function_exists('kompass_news_item')) {
                 <?php endif; ?>
             </div>
             <?php if ($image !== '') : ?>
-                <img class="kp-newsitem__image" src="<?php echo kompass_e($image); ?>" alt="" width="240" height="160" loading="lazy" decoding="async">
+                <?php echo kompass_img($image, '', ['class' => 'kp-newsitem__image', 'item' => $item], 240, 160); ?>
             <?php endif; ?>
         </li>
         <?php
@@ -1345,6 +1398,7 @@ if (!function_exists('kompass_service_box')) {
         $service = kompass_service();
         $ctaLabel = kompass_text('kp_service', 'cta_label');
         $ctaUrl = kompass_safe_url(kompass_text('kp_service', 'cta_url'), '');
+        $ctaUrl = $ctaUrl !== '' && theme_v4_link_available(kompass_url($ctaUrl)) ? $ctaUrl : ''; // Standard /kontakt (Core-Route)
         $headingTag = in_array($headingTag, ['h2', 'h3'], true) ? $headingTag : 'h2';
         ?>
         <section class="kp-service" aria-labelledby="kp-service-title">
@@ -1386,6 +1440,7 @@ if (!function_exists('kompass_help_card')) {
         }
         $ctaLabel = kompass_text('kp_service', 'cta_label');
         $ctaUrl = kompass_safe_url(kompass_text('kp_service', 'cta_url'), '');
+        $ctaUrl = $ctaUrl !== '' && theme_v4_link_available(kompass_url($ctaUrl)) ? $ctaUrl : ''; // Standard /kontakt (Core-Route)
         ?>
         <section class="kp-helpcard" aria-labelledby="kp-helpcard-title">
             <h2 class="kp-helpcard__title" id="kp-helpcard-title"><?php echo kompass_icon('help'); ?>Fragen? Wir helfen weiter.</h2>
@@ -1465,8 +1520,16 @@ if (!function_exists('kompass_feedback')) {
 }
 
 if (!function_exists('kompass_page_title')) {
+    /**
+     * Dokumenttitel: übergebener Seitentitel (`$title` der Core-Module, Kontakt- und Fehlerseiten),
+     * sonst SEO-Titel für Inhalte, sonst „Bezeichnung – Seitentitel“ (über den Filter page_title).
+     */
     function kompass_page_title(array $context): string
     {
+        if (isset($context['title']) && is_string($context['title']) && trim($context['title']) !== '') {
+            return theme_v4_document_title($context['title']);
+        }
+
         $site = kompass_site_title();
         $label = '';
 
@@ -1526,25 +1589,13 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /**
+     * true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL).
+     * Kompass lädt in keinem Fall Google Fonts; die Funktion bleibt für Plugins/Child-Code erhalten.
+     */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

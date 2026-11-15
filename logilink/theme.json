@@ -1,15 +1,53 @@
 {
   "name": "LogiLink",
   "slug": "logilink",
-  "version": "1.1.0",
-  "requires_cms": "3.4.00",
+  "version": "2.0.0",
+  "requires_cms": "4.0.0",
+  "requires_php": "8.4.1",
+  "tested_up_to": "4.1.0",
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "Logistik & Transport Theme – Schnell, präzise, international. Für Speditionen, Kurierdienste und Logistik-Dienstleister.",
-  "tags": ["logistik", "transport", "tracking", "dashboard", "responsive", "cms"],
-  "supports": ["dark-mode", "custom-logo", "sticky-header", "custom-css", "tracking", "live-map", "status-stepper"],
-
+  "tags": [
+    "logistik",
+    "transport",
+    "tracking",
+    "dashboard",
+    "responsive",
+    "cms"
+  ],
+  "supports": [
+    "custom-logo",
+    "sticky-header",
+    "custom-css",
+    "tracking",
+    "live-map",
+    "status-stepper"
+  ],
+  "templates": {
+    "home": "home.php",
+    "page": "page.php",
+    "index": "index.php",
+    "blog-single": "blog-single.php",
+    "search": "search.php",
+    "contact": "contact.php",
+    "404": "404.php",
+    "error": "error.php"
+  },
+  "login_page": {
+    "colors": {
+      "background_start": "#f3f5f8",
+      "background_end": "#e8edf3",
+      "card_background": "#ffffff",
+      "text_color": "#0f172a",
+      "muted_color": "#5b6b80",
+      "primary_color": "#0e6ba8",
+      "primary_text_color": "#ffffff",
+      "link_color": "#0a558a",
+      "input_background": "#ffffff",
+      "input_border": "#94a3b8"
+    }
+  },
   "customization": {
-
     "colors": {
       "label": "Farben",
       "description": "Operative Farbpalette mit aussagekräftigem Status-System für Echtzeit-Tracking.",
@@ -17,13 +55,13 @@
         "primary_color": {
           "label": "Primärfarbe",
           "type": "color",
-          "default": "#0284c7",
+          "default": "#0e6ba8",
           "description": "Sky Blue – Hauptfarbe für Effizienz und Klarheit"
         },
         "secondary_color": {
           "label": "Sekundärfarbe",
           "type": "color",
-          "default": "#0369a1",
+          "default": "#0a558a",
           "description": "Dunkleres Blau für Hover-Zustände"
         },
         "accent_color": {
@@ -41,37 +79,37 @@
         "status_warehouse": {
           "label": "Status: Eingelagert",
           "type": "color",
-          "default": "#94a3b8",
+          "default": "#475569",
           "description": "Grau – Ware im Lager"
         },
         "status_picked": {
           "label": "Status: Kommissioniert",
           "type": "color",
-          "default": "#f59e0b",
+          "default": "#b45309",
           "description": "Amber – Ware wird kommissioniert"
         },
         "status_transit": {
           "label": "Status: In Transit",
           "type": "color",
-          "default": "#8b5cf6",
+          "default": "#1d4ed8",
           "description": "Violet – Ware in Zustellung"
         },
         "status_delivered": {
           "label": "Status: Geliefert",
           "type": "color",
-          "default": "#16a34a",
+          "default": "#15803d",
           "description": "Grün – erfolgreich geliefert"
         },
         "status_delayed": {
           "label": "Status: Verzögert",
           "type": "color",
-          "default": "#ef4444",
+          "default": "#b91c1c",
           "description": "Rot – Lieferverzug"
         },
         "status_returned": {
           "label": "Status: Retoure",
           "type": "color",
-          "default": "#64748b",
+          "default": "#6d28d9",
           "description": "Blau-Grau – Rücksendung"
         },
         "text_color": {
@@ -83,7 +121,7 @@
         "bg_color": {
           "label": "Hintergrundfarbe",
           "type": "color",
-          "default": "#f0f9ff",
+          "default": "#f3f5f8",
           "description": "Leicht bläulicher Hintergrund"
         },
         "card_bg_color": {
@@ -95,18 +133,17 @@
         "muted_color": {
           "label": "Gedämpfte Textfarbe",
           "type": "color",
-          "default": "#64748b",
+          "default": "#5b6b80",
           "description": "Sekundärer Text"
         },
         "border_color": {
           "label": "Rahmenfarbe",
           "type": "color",
-          "default": "#bae6fd",
+          "default": "#d4dbe3",
           "description": "Hellblauer Rahmen"
         }
       }
     },
-
     "typography": {
       "label": "Typografie",
       "description": "Klare, operative Schriften für schnelle Informationsaufnahme.",
@@ -174,7 +211,6 @@
         }
       }
     },
-
     "layout": {
       "label": "Layout",
       "description": "Weites Layout für datenreiche Logistik-Dashboards.",
@@ -234,7 +270,6 @@
         }
       }
     },
-
     "header": {
       "label": "Header",
       "description": "Kompakter, operativer Header mit schnellem Tracking-Zugriff.",
@@ -286,7 +321,6 @@
         }
       }
     },
-
     "footer": {
       "label": "Footer",
       "description": "Footer mit Service-Informationen und internationalem Fokus.",
@@ -323,7 +357,6 @@
         }
       }
     },
-
     "buttons": {
       "label": "Buttons",
       "description": "Operative, klare Buttons – schnelle Interaktion zählt.",
@@ -371,7 +404,6 @@
         }
       }
     },
-
     "logistics_hero": {
       "label": "Hero-Bereich",
       "description": "Texte für den Startseiten-Hero (Spediteur-Profil oder Tracking-Einstieg).",
@@ -408,7 +440,6 @@
         }
       }
     },
-
     "logistics_tracking": {
       "label": "Tracking & Status",
       "description": "Bezeichnungen für das Sendungs-Status-System.",
@@ -463,7 +494,6 @@
         }
       }
     },
-
     "logistics_content": {
       "label": "Seiteninhalte / Texte",
       "description": "Texte für Service-Seiten, KPI-Dashboard und Buchungsformulare.",
@@ -524,7 +554,6 @@
         }
       }
     },
-
     "advanced": {
       "label": "Erweitert",
       "description": "Custom CSS und technische Einstellungen.",
@@ -542,7 +571,33 @@
           "description": "Fahrzeug-Tracking auf OpenStreetMap-Karte (erfordert API-Integration)"
         }
       }
+    },
+    "contact": {
+      "label": "Kontakt",
+      "description": "Kontaktdaten neben dem Core-Kontaktformular (/contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse"
+        },
+        "contact_phone": {
+          "label": "Telefon (Disposition)",
+          "type": "text",
+          "default": ""
+        },
+        "contact_address": {
+          "label": "Adresse / Depot",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Erreichbarkeit der Disposition",
+          "type": "textarea",
+          "default": ""
+        }
+      }
     }
-
   }
 }

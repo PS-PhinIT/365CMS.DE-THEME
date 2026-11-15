@@ -1,5 +1,47 @@
 # Changelog
 
+## 4.0.0 – 2026-11-15
+
+### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
+
+Setzt 365CMS 4.0.0 und PHP 8.4.1 voraus (`requires_cms`, `tested_up_to: 4.1.0`, `requires_php`).
+
+#### Core-Verträge 4.0.0
+- `error.php` wertet `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`, `$error_standalone` und `$error_retry_after` aus (bisher nur `$GLOBALS['error_code']`). 403-, 429- und 503-Seiten antworten mit ihrem Status; eigenständige Fehler- und Wartungsseiten sind vollständige Dokumente mit Theme-Stylesheet und genau einem `<main>` (ohne Header, Hooks, Datenbank, Customizer); im normalen Fall kein zweites `<main>`, weil `header.php` es öffnet. Der Fatal-Handler lädt nur noch `includes/cms-v4-compat.php`.
+- Desktop-Navigation und Mobil-Drawer lösen den Core-Hook `main_nav` direkt nach den Menüeinträgen aus (Kontexte `desktop` und `mobile`), auch bei leerem Menü.
+- Menüeinträge zeigen die Beschriftung aus `title` (der Core liefert `title`, das Theme las nur `label`); aktive Einträge tragen `aria-current="page"`. Anker-Einträge (`/#…`) gelten nicht mehr gleichzeitig als aktiv.
+- `ThemeManager::registerMenuLocation()` (entfernt) wird nicht mehr aufgerufen; Menüpositionen nur über `register_menu_locations`. Die Standardmenüs wurden bisher bei jedem Request (`cms_init`) in die Datenbank geschrieben; sie gelten jetzt nur zur Laufzeit, solange kein Menü gepflegt ist, und verlinken nur vorhandene Seiten und Routen (z. B. Impressum, Datenschutz, AGB).
+- `theme_use_local_fonts()` liest `privacy_use_local_fonts` über den OptionStore statt per SQL; `getConfig()` liest `theme.json` relativ zum Theme-Ordner statt über `THEME_PATH . 'business/'`.
+
+#### Vorlagen und Core-Module
+- Neu: `contact.php` gibt das Core-Formular (`$contactFormHtml`) mit Kontaktdaten aus dem neuen Customizer-Bereich „Kontakt“ aus (E-Mail-Fallback `ADMIN_EMAIL`).
+- Neu: `knowledgebase/archive.php`, `knowledgebase/single.php`, `newsletter/page.php`, `newsletter/action.php`, `newsletter/issue.php` binden die Core-Views im Theme-Rahmen ein (kein zweites `<main>`, Skip-Link-Ziel `#main-content`).
+- Neu: `css/cms-v4.css` und `includes/cms-v4-compat.php` (gemeinsam mit allen Public Themes) sowie die Token-Brücke `--tv4-*` in `style.css`.
+- `page.php` gibt das gerenderte Core-HTML unverändert aus; `biz_sanitize_content_html()` entfernte bisher `<picture>`, `<form>`, `<button>`, `<input>`, `<svg>` und `style`-Attribute (Editor.js-Bilder mit WebP/AVIF, Formular-, Download- und Feed-Blöcke). `page.php` läuft auch für Downloads und Feeds (`id` 0) in voller Inhaltsbreite; eine fehlende Seite bindet `404.php` ein, statt den kompletten Seitenrahmen erneut zu rendern.
+- Kontakt: Header-, Drawer- und 404-Buttons führen auf `/contact`; die Startseiten-CTA nutzt die Customizer-Kontaktdaten statt der Platzhalter `mailto:info@example.com` und `tel:+491234567890`. Die Social-Icons im Footer verlinkten fest auf `#` und sind entfernt.
+- Fußzeile: Standardlinks nur zu vorhandenen Zielen, leere Spalten entfallen, neue Links Newsletter und Downloads (nur wenn aktiv).
+- Blog: Blätter-Buttons nutzten `btn-biz-outline` (weiße Schrift) auf weißem Grund und waren unsichtbar.
+- Logo-Fallback `site_logo` (mit Bildmaßen), Favicon `site_favicon`.
+
+#### 4.1.0
+- Memberbereich und Newsletter-Widget übernehmen die Business-Palette über `member_head` (`--member-*`, Primär dunkles Kupfer); Theme-Stylesheet und Scripts werden in der Member-Shell nicht mehr geladen.
+- Login: Farbvorschlag `login_page.colors` in `theme.json` für die Core-Loginseite.
+- Beitragsbild mit Fokus-Punkt (`object-position`).
+- Vorschau-Links (`$isPreview`) und nicht veröffentlichte Inhalte: `noindex, nofollow`, keine JSON-LD-Ausgabe, Hinweisleiste.
+
+#### Sicherheit, Datenschutz, Performance
+- Keine Google-Fonts-Requests mehr (Inter, Source Sans 3, Source Serif 4); Schriften aus der Core-Schriftverwaltung, sonst System-Stack. Die Font-Stacks wurden HTML-escaped (`&quot;`) in den `<style>`-Block geschrieben und waren damit ungültig.
+- Core-SEO-Ausgabe (`theme_v4_head_tags()`) statt eigener `description`, `og:url` und `robots` (bisher fest `index,follow`, auch in der Vorschau); Seitentitel aus Modulen (`$title`) statt immer Site-Titel – `header.php` überschrieb `$title`.
+- `cms_csp_runtime_tags(true)` als erstes Script nach `<meta charset>`; Theme-Script per `defer`.
+- Beitragsbild als LCP-Bild mit `width`/`height` und `fetchpriority="high"` statt `loading="lazy"`; Über-uns-Bild lazy mit Maßen.
+
+#### Barrierefreiheit
+- Kontraste (Standardpalette): Links und Eyebrows auf hellen Flächen im dunklen Kupfer `#8a5f17` (helles Kupfer `#c08a2e`: 3,0:1 auf Weiß, 2,8:1 auf Papier → 5,6:1 / 5,2:1); Primär-Button-Hover weiße Schrift auf `#a16f1e` 4,4:1 → auf `#8a5f17` 5,6:1 (`primary_hover`-Standard angepasst); Rahmen des Outline-Buttons 2,9:1 → 5,3:1.
+- Fokusrahmen: auf hellen Flächen dunkles Kupfer (5,2–5,6:1 statt 2,8–3,0:1), auf Header, Hero, dunklen Sektionen, CTA und Footer helles Kupfer (5,1–6,1:1).
+- Fußzeilen-Überschriften `h2` statt `h4` (kein Sprung unter `h1`); Seiten ohne Titel und „Beitrag nicht gefunden“ mit `h1`.
+- Geschlossener Mobil-Drawer ist `inert` (Links waren unsichtbar per Tab erreichbar), beim Öffnen erhält der erste Link den Fokus; Escape schließt nur ein offenes Menü und gibt den Fokus an den Schalter zurück (bisher bei jedem Escape ausgelöst). Anker-Sprünge übergeben den Fokus an das Ziel.
+- `html lang` nach Inhaltssprache, Skip-Link-Ziel `#main-content` auf allen Seiten, Dekor-Pfeile `aria-hidden`.
+
 ## 3.1.0 – 2026-09-26
 
 ### Kompatibilität mit 365CMS 3.4.00 (CSP, Trusted Types, Layout-Hooks)

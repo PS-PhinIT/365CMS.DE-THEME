@@ -1,5 +1,49 @@
 # Changelog
 
+## 2.0.0 – 2026-11-15
+
+### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
+
+Setzt 365CMS 4.0.0 und PHP 8.4.1 voraus (`requires_cms`, `tested_up_to: 4.1.0`, `requires_php`). Der Theme-Ordner heißt weiterhin `newspaper`, der Marketplace-Slug bleibt `cms-newspaper`.
+
+#### Core-Verträge 4.0.0
+- `error.php` wertet `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`, `$error_standalone` und `$error_retry_after` aus. Bisher las die Seite nur `$GLOBALS['error_code']`, zeigte immer „Etwas ist schiefgelaufen“ und lud im Fatal-Handler `functions.php` samt Datenbankzugriffen nach. 403-, 429- und 503-Seiten behalten ihren Status, bei 429/503 mit `Retry-After`; eigenständige Fehler- und Wartungsseiten sind vollständige Dokumente mit `style.css` und `css/cms-v4.css`, im Seitenrahmen entsteht kein zweites `<main>`.
+- Hauptnavigation (`desktop`) und Mobil-Drawer (`mobile`) lösen den Core-Hook `main_nav` direkt nach den Menüeinträgen aus, auch bei leerem Menü.
+- Menüeinträge zeigen die Beschriftung aus `title` (der Core liefert `title`, das Theme las nur `label` – Einträge blieben leer); aktive Einträge tragen `aria-current="page"`, die Erkennung berücksichtigt Installationen im Unterverzeichnis und markiert `/blog` nicht mehr bei `/blogger`.
+- Entfernt: `ThemeManager::registerMenuLocation()` auf `init`/`cms_init`; Menü-Positionen nur noch über `register_menu_locations` (ohne Doppelungen).
+- `theme_use_local_fonts()` liest über den `OptionStore` statt per SQL. Theme-URLs über den Theme-Ordner statt `getThemeUrl('cms-newspaper')`.
+
+#### Vorlagen und Core-Module
+- Neu: `contact.php` gibt das Core-Formular (`$contactFormHtml`) mit Redaktionskontakt aus dem neuen Customizer-Bereich „Kontakt“ aus.
+- Neu: `knowledgebase/archive.php`, `knowledgebase/single.php`, `newsletter/page.php`, `newsletter/action.php`, `newsletter/issue.php` (Core-Views im Theme-Rahmen, Skip-Link-Ziel `#main-content`).
+- Neu: `includes/cms-v4-compat.php` und `css/cms-v4.css` (gemeinsam mit allen Public Themes), Token-Brücke `--tv4-*` und Rahmen `.theme-v4-module` in `style.css`.
+- `page.php` gibt das vom Core gerenderte HTML unverändert aus. Bisher entfernte `strip_tags()` u. a. `<form>`, `<button>`, `<input>`, `<picture>`, `<svg>` und `<nav>` – Downloads, Feeds, Formulare und WebP/AVIF-Bilder (4.1.0) waren dadurch kaputt.
+- Footer-Spalten „Ressourcen“ und „Portal“ zeigen nur vorhandene Routen bzw. veröffentlichte Seiten (neu: Downloads, Newsletter; Knowledge Base auf `/kb`), leere Spalten und die Themen-/Rechtsmenüs ohne Einträge entfallen. Das Ausblenden der vierten Footer-Spalte auf Tablet-Breite (Impressum/Datenschutz) entfällt.
+- Startseite: Demo-Kacheln, Info-Box-Links und Feed-Einträge verlinken nur noch vorhandene Ziele (bisher `/artikel/…`, `/playbooks`, `#`). „Alle Beiträge“ in `index.php` zeigt auf `/blog` statt auf die nicht vorhandene Route `/archiv`.
+- Utility-Bar: Social-Profile aus dem Customizer (`social_*_url`) statt drei Platzhalter-Links auf `#`.
+- Logo nur als lokale URL, Fallback `site_logo`, mit `width`/`height`; Favicon aus `site_favicon`.
+
+#### 4.1.0
+- Memberbereich und Newsletter-Widget übernehmen die Newspaper-Palette über `member_head` (`--member-*`); Stylesheet, Customizer-Variablen und Script werden in der Member-Shell nicht mehr geladen.
+- Farbvorschlag `login_page.colors` in `theme.json`.
+- Beitragsbild mit Fokus-Punkt (`object-position`).
+- Vorschau-Links und nicht veröffentlichte Inhalte: `noindex, nofollow`, keine JSON-LD-Ausgabe, Hinweisleiste.
+
+#### Sicherheit, Datenschutz, Performance
+- Keine Google-Fonts-Requests mehr (bisher bei ausgeschalteter Option „Schriften lokal einbinden“). Der Prototyp `newspaper.html` (Google Fonts, Bilder von picsum.photos, öffentlich abrufbar) ist entfernt. Font-Stacks enden auf System-Schriften.
+- SEO über `theme_v4_head_tags()` (Core-SEO). Entfernt: site-weite Meta-Description, `og:url` = Startseite und `robots: index,follow` auf allen Seiten. Dokumenttitel nach Beitrag/Seite/Modul statt immer nur Site-Titel.
+- `cms_csp_runtime_tags(true)` direkt nach `<meta charset>` (bisher nach dem Viewport); `navigation.js` weiter mit `defer`, `preload` des Stylesheets entfällt (doppelte Anfrage).
+- Customizer-Werte im CSS-Block werden validiert (Farben, geklemmte Zahlen, Auswahlwerte) statt nur HTML-escaped. Die Font-Stacks werden nicht mehr HTML-escaped: `&quot;` im `<style>`-Block machte `--news-font-*` ungültig, die gewählten Schriften griffen nie.
+- Menü-URLs über `news_safe_url()` (nur Pfad, Anker, `http(s)`, `mailto:`, `tel:`); `FILTER_VALIDATE_URL` ließ z. B. `javascript://…` durch.
+- Beitragsbild als LCP mit `fetchpriority="high"` statt `loading="lazy"`, Demo-Bilder mit `width`/`height`.
+
+#### Barrierefreiheit
+- Kontraste: Signal-Rot `#c22510` statt `#e32d12` (4,3:1 → 5,6:1 auf Papier), Meta-Grau `#6f7071` statt `#9a9b9c` (2,6:1 → 4,7:1), Akzent auf Ink-Flächen `--news-accent-on-dark` (4,4:1 → 6,7:1), Footer-Copy und Partner-Leiste `#8a8a8a` statt `#444`/`#555` (2,2/2,8:1 → 6,1:1), Footer-Überschriften 6,3:1 statt 4,5:1. Fokusrahmen auf dunklen Flächen hell.
+- Footer-Überschriften `h2` statt `h4`, Footer-Spalten als `<nav>` mit Überschrift.
+- Mobil-Drawer: geschlossen `hidden` (bisher nur `aria-hidden`, Links blieben per Tab erreichbar), Fokus auf den ersten Link beim Öffnen und zurück zum Schalter beim Schließen. Suchpanel ohne redundantes `aria-hidden`.
+- `html lang` nach Inhaltssprache, Skip-Link und Bedienelemente zweisprachig, redundante Landmark-Rollen entfernt.
+- `supports` ohne `dark-mode`: Das Theme hat keinen Dark Mode.
+
 ## 1.1.0 – 2026-09-26
 
 ### Kompatibilität mit 365CMS 3.4.00 (CSP, Trusted Types, Layout-Hooks)

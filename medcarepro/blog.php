@@ -21,6 +21,8 @@ $posts      = isset($posts) && is_array($posts) ? $posts : [];
 $page       = max(1, (int) ($currentPage ?? 1));
 $total      = (int) ($total ?? count($posts));
 $totalPages = max(1, (int) ($totalPages ?? 1));
+// Pagination auf dem aktuellen Pfad (Kategorie-/Schlagwort-Archive), bisher immer /blog.
+$pageBase   = $safe(theme_v4_site_url(theme_v4_request_path()));
 ?>
 <main id="main" class="mc-main mc-blog-archive" role="main">
     <div class="mc-section mc-section--blog">
@@ -37,19 +39,22 @@ $totalPages = max(1, (int) ($totalPages ?? 1));
             <?php if (!empty($posts)) : ?>
             <div class="mc-grid mc-grid--blog">
                 <?php foreach ($posts as $p) :
+                    $p        = is_array($p) ? (object) $p : $p;
                     $url      = $safe(theme_post_url($p));
                     $title    = $safe((string) ($p->title ?? ''));
                     $excerpt  = $safe((string) ($p->excerpt ?? ''));
-                    $date     = isset($p->created_at) ? date('d.m.Y', strtotime((string) $p->created_at)) : '';
+                    $rawDate  = (string) ($p->published_at ?? $p->created_at ?? '');
+                    $date     = mc_format_date($rawDate);
+                    $dateIso  = mc_format_date($rawDate, 'Y-m-d');
                     $author   = $safe((string) ($p->author_name ?? ''));
                     $category = $safe((string) ($p->category_name ?? ''));
-                    $imgUrl   = $safe((string) ($p->thumbnail_url ?? $p->featured_image ?? ''));
+                    $imgRaw   = mc_media_url($p->thumbnail_url ?? $p->featured_image ?? '');
                     $postId   = (int) ($p->id ?? 0);
                 ?>
                 <article class="mc-card mc-post-card" aria-labelledby="post-<?php echo $postId; ?>">
-                    <?php if ($imgUrl !== '') : ?>
+                    <?php if ($imgRaw !== '') : ?>
                     <a href="<?php echo $url; ?>" class="mc-post-card__media" tabindex="-1" aria-hidden="true">
-                        <img src="<?php echo $imgUrl; ?>" alt="" class="mc-post-card__img">
+                        <?php echo theme_v4_img($imgRaw, '', ['class' => 'mc-post-card__img', 'item' => $p]); // lazy, width/height, Fokus-Punkt ?>
                     </a>
                     <?php endif; ?>
 
@@ -67,7 +72,7 @@ $totalPages = max(1, (int) ($totalPages ?? 1));
 
                         <footer class="mc-post-card__meta">
                             <?php if ($author !== '') : ?><span class="mc-post-card__author"><?php echo $author; ?></span><?php endif; ?>
-                            <?php if ($date !== '') : ?><time class="mc-post-card__date" datetime="<?php echo $safe($date); ?>"><?php echo $date; ?></time><?php endif; ?>
+                            <?php if ($date !== '') : ?><time class="mc-post-card__date" datetime="<?php echo $safe($dateIso); ?>"><?php echo $safe($date); ?></time><?php endif; ?>
                             <a href="<?php echo $url; ?>" class="mc-btn mc-btn-outline mc-btn-sm mc-post-card__more">
                                 Weiterlesen
                             </a>
@@ -88,11 +93,11 @@ $totalPages = max(1, (int) ($totalPages ?? 1));
             <?php if ($totalPages > 1) : ?>
             <nav class="mc-pagination" aria-label="Seitennavigation">
                 <?php if ($page > 1) : ?>
-                    <a href="<?php echo $blogUrl; ?>?p=<?php echo $page - 1; ?>" class="mc-btn mc-btn-outline mc-btn-sm" rel="prev">← Zurück</a>
+                    <a href="<?php echo $pageBase; ?>?p=<?php echo $page - 1; ?>" class="mc-btn mc-btn-outline mc-btn-sm" rel="prev">← Zurück</a>
                 <?php endif; ?>
                 <span class="mc-pagination__status">Seite <?php echo $page; ?> von <?php echo (int) $totalPages; ?></span>
                 <?php if ($page < $totalPages) : ?>
-                    <a href="<?php echo $blogUrl; ?>?p=<?php echo $page + 1; ?>" class="mc-btn mc-btn-outline mc-btn-sm" rel="next">Weiter →</a>
+                    <a href="<?php echo $pageBase; ?>?p=<?php echo $page + 1; ?>" class="mc-btn mc-btn-outline mc-btn-sm" rel="next">Weiter →</a>
                 <?php endif; ?>
             </nav>
             <?php endif; ?>

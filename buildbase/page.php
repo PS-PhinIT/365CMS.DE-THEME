@@ -7,6 +7,7 @@ if (!defined('ABSPATH')) {
 
 
 // Der Core übergibt die Seite als Array ($page); 'content' ist bereits gerendertes, sanitiertes HTML.
+// Auch Core-Module rendern über page.php (Downloads, Feeds: `id` 0, ohne weitere Felder).
 $page = isset($page) && is_array($page) && $page !== [] ? (object) $page : null;
 $safe    = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 $siteUrl = buildbase_safe_url((string) SITE_URL, '/');
@@ -19,12 +20,12 @@ $siteUrl = buildbase_safe_url((string) SITE_URL, '/');
                     <h1><?php echo $safe((string) $page->title); ?></h1>
                 <?php endif; ?>
                 <?php if (!empty($page->content)) : ?>
-                    <div class="prose"><?php echo (string) $page->content; ?></div>
+                    <div class="prose"><?php echo (string) $page->content; // Core-HTML unverändert (bereits bereinigt) ?></div>
                 <?php endif; ?>
             </article>
         <?php else : ?>
             <div class="bb-card bb-error-card">
-                <p class="bb-error-text">Seite nicht gefunden.</p>
+                <h1 class="bb-error-title">Seite nicht gefunden</h1>
                 <div class="bb-error-actions">
                     <a href="<?php echo $safe($siteUrl); ?>" class="bb-btn bb-btn-primary">Zur Startseite</a>
                 </div>

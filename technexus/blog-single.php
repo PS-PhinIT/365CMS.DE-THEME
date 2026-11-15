@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Beitrags-Detailseite
  *
- * Datenvertrag (365CMS 3.4, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image).
+ * Datenvertrag (365CMS 4.x, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image).
  */
 
 if (!defined('ABSPATH')) {
@@ -42,7 +42,7 @@ $postCat     = is_object($post) ? trim((string) ($post->category_name ?? '')) : 
 $postImage   = is_object($post) ? $safeUrl((string) ($post->featured_image ?? '')) : '';
 $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], static fn(string $v): bool => $v !== ''));
 ?>
-<main id="main" class="site-main tn-section" role="main">
+<main id="main" class="site-main tn-section">
     <div class="container container--narrow">
         <?php if (is_object($post)) : ?>
             <article class="page-content tech-card tn-prose-card">
@@ -53,14 +53,14 @@ $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], sta
                     <p class="cms-post-meta"><?php echo $safe(implode(' · ', $metaParts)); ?></p>
                 <?php endif; ?>
                 <?php if ($postImage !== '') : ?>
-                    <figure class="cms-post-image"><img src="<?php echo $safe($postImage); ?>" alt="<?php echo $safe($postTitle); ?>" loading="lazy" decoding="async"></figure>
+                    <figure class="cms-post-image"><?php echo theme_v4_img($postImage, $postTitle, ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 832px) 100vw, 832px']); ?></figure>
                 <?php endif; ?>
                 <?php if (trim($postContent) !== '') : ?>
                     <div class="page-body prose">
                         <?php echo $postContent; ?>
                     </div>
                 <?php endif; ?>
-                <p><a href="<?php echo $safe($blogUrl); ?>" class="btn btn-outline">← Alle Beiträge</a></p>
+                <p><a href="<?php echo $safe($blogUrl); ?>" class="btn btn-outline"><span aria-hidden="true">←</span> Alle Beiträge</a></p>
             </article>
         <?php else : ?>
             <div class="tech-card tech-card--placeholder">

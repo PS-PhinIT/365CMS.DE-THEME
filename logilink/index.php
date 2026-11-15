@@ -15,7 +15,7 @@ $posts = isset($posts) && is_array($posts) ? $posts : [];
 
 $safe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 ?>
-<main id="main" class="ll-main ll-prose-wrap" role="main">
+<main id="main" class="ll-main ll-prose-wrap">
     <div class="ll-container">
         <header class="ll-section-header">
             <span class="ll-eyebrow">Beiträge</span>

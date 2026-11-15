@@ -15,29 +15,41 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('FEDER_THEME_VERSION')) {
-    define('FEDER_THEME_VERSION', '1.0.0');
+    define('FEDER_THEME_VERSION', '2.0.0');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 final class Feder_Theme
 {
     public const SLUG = 'feder';
 
     /**
-     * Schriftwahl → [CSS-Stack, Google-Fonts-Familie (leer = keine Webfont), Font-Manager-Slug].
+     * Schriftwahl → [CSS-Stack, Font-Manager-Slug (leer = Systemschrift)].
      *
-     * @var array<string, array{0:string,1:string,2:string}>
+     * Webfonts liefert ausschließlich die Core-Schriftverwaltung (Filter local_font_slugs); ohne lokale
+     * Schriftdatei greift der System-Fallback des Stacks. Keine Requests an Google Fonts.
+     *
+     * @var array<string, array{0:string,1:string}>
      */
     private const FONTS = [
-        'fraunces'         => ['"Fraunces", Georgia, "Times New Roman", serif', 'Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700', 'fraunces'],
-        'playfair-display' => ['"Playfair Display", Georgia, serif', 'Playfair+Display:ital,wght@0,400..800;1,400..800', 'playfair-display'],
-        'literata'         => ['"Literata", Georgia, "Times New Roman", serif', 'Literata:ital,opsz,wght@0,7..72,400..700;1,7..72,400..700', 'literata'],
-        'source-serif'     => ['"Source Serif 4", Georgia, serif', 'Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700', 'source-serif-4'],
-        'lora'             => ['"Lora", Georgia, serif', 'Lora:ital,wght@0,400..700;1,400..700', 'lora'],
-        'merriweather'     => ['"Merriweather", Georgia, serif', 'Merriweather:ital,wght@0,400;0,700;1,400', 'merriweather'],
-        'inter'            => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'Inter:wght@400;500;600;700', 'inter'],
-        'source-sans'      => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif', 'Source+Sans+3:wght@400;600;700', 'source-sans'],
-        'system-serif'     => ['ui-serif, Charter, "Bitstream Charter", Cambria, Georgia, serif', '', ''],
-        'system'           => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', '', ''],
+        'fraunces'         => ['"Fraunces", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'fraunces'],
+        'playfair-display' => ['"Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'playfair-display'],
+        'literata'         => ['"Literata", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'literata'],
+        'source-serif'     => ['"Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'source-serif-4'],
+        'lora'             => ['"Lora", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'lora'],
+        'merriweather'     => ['"Merriweather", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'merriweather'],
+        'inter'            => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'inter'],
+        'source-sans'      => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'source-sans'],
+        'system-serif'     => ['ui-serif, Charter, "Bitstream Charter", Cambria, Georgia, serif', ''],
+        'system'           => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', ''],
     ];
 
     private static ?self $instance = null;
@@ -53,24 +65,32 @@ final class Feder_Theme
 
     private function __construct()
     {
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Shell und löst ebenfalls `head` aus:
+        // dort keine Frontend-Assets, nur die Feder-Palette als --member-*-Variablen.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'], 1);
         \CMS\Hooks::addAction('head', [$this, 'outputColorSchemeBootstrap'], 2);
-        \CMS\Hooks::addAction('head', [$this, 'outputFonts'], 5);
-        \CMS\Hooks::addAction('head', [$this, 'outputSeoTags'], 8);
+        \CMS\Hooks::addAction('head', [$this, 'outputCustomHeaderCode'], 8);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'], 10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 16);
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
-
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
-        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
 
     public function enqueueStyles(): void
     {
-        $href = $this->themeUrl() . '/style.css?v=' . rawurlencode(FEDER_THEME_VERSION);
-        echo '<link rel="stylesheet" href="' . feder_e($href) . '">' . "\n";
+        $version = rawurlencode(FEDER_THEME_VERSION);
+        echo '<link rel="stylesheet" href="' . feder_e($this->themeUrl() . '/style.css?v=' . $version) . '">' . "\n";
+        // Gemeinsame 4.x-Integrationsstile (Downloads, Feeds, Formulare, KB, Newsletter) nach dem Theme-Stylesheet.
+        echo '<link rel="stylesheet" href="' . feder_e($this->themeUrl() . '/css/cms-v4.css?v=' . $version) . '">' . "\n";
     }
 
     public function enqueueScripts(): void
@@ -93,31 +113,9 @@ final class Feder_Theme
             . 'if(s==="dark"||s==="light"){document.documentElement.setAttribute("data-theme",s);}}catch(e){}})();</script>' . "\n";
     }
 
-    public function outputFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet über local_font_slugs lokal gespeicherte Schriften ein (DSGVO).
-        }
-
-        $families = [];
-        foreach ($this->selectedFontKeys() as $key) {
-            $family = self::FONTS[$key][1] ?? '';
-            if ($family !== '') {
-                $families[$family] = true;
-            }
-        }
-
-        if ($families === []) {
-            return;
-        }
-
-        $url = 'https://fonts.googleapis.com/css2?family=' . implode('&family=', array_keys($families)) . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . feder_e($url) . '">' . "\n";
-    }
-
     /**
+     * Lokale Schriften der Core-Schriftverwaltung für die gewählten Schriften (keine Google-Fonts-Requests).
+     *
      * @param mixed $slugs
      * @return array<int, string>
      */
@@ -125,7 +123,7 @@ final class Feder_Theme
     {
         $slugs = is_array($slugs) ? $slugs : [];
         foreach ($this->selectedFontKeys() as $key) {
-            $slug = self::FONTS[$key][2] ?? '';
+            $slug = self::FONTS[$key][1] ?? '';
             if ($slug !== '') {
                 $slugs[] = $slug;
             }
@@ -134,31 +132,45 @@ final class Feder_Theme
         return array_values(array_unique(array_map('strval', $slugs)));
     }
 
-    /** SEO-Metadaten (Description, Canonical, Open Graph, Schema) aus dem Core-SEO-Modul. */
-    public function outputSeoTags(): void
+    /**
+     * Eigener Header-Code aus SEO → Technik (Altbestand; laut Core weiterhin in jedem <head>).
+     * Beschreibung, Robots, Canonical, Open Graph und JSON-LD gibt header.php über theme_v4_head_tags() aus.
+     */
+    public function outputCustomHeaderCode(): void
     {
-        $html = '';
         try {
             if (class_exists('\\CMS\\Services\\SEOService')) {
-                $seo = \CMS\Services\SEOService::getInstance();
-                $html = (string) $seo->renderCurrentHeadTags();
-                $custom = trim((string) $seo->getCustomHeaderCode());
+                $custom = trim((string) \CMS\Services\SEOService::getInstance()->getCustomHeaderCode());
                 if ($custom !== '') {
-                    $html .= $custom . "\n";
+                    echo $custom . "\n"; // Vom Administrator gepflegter Head-Code, bewusst unverändert.
                 }
             }
         } catch (\Throwable) {
-            $html = '';
         }
+    }
 
-        if (trim($html) === '') {
-            $description = trim((string) \CMS\ThemeManager::instance()->getSiteDescription());
-            if ($description !== '') {
-                $html = '<meta name="description" content="' . feder_e($description) . '">' . "\n";
-            }
-        }
+    /**
+     * Memberbereich (inkl. Newsletter-Widget) in der Feder-Palette.
+     *
+     * Bewusst nur die helle Palette: Die Tabler-Shell des Cores hat keinen Dunkelmodus (ihre light-dark()-Farben
+     * bleiben ohne `color-scheme: dark` hell). Dunkle --member-*-Flächen ergäben dort z. B. `.text-secondary`
+     * mit rund 3,6:1 – unter WCAG AA. Den Fokusrahmen leitet der Core aus --member-primary ab.
+     */
+    public function outputMemberTokens(): void
+    {
+        $c = static fn(string $key, string $default): string => feder_css_color((string) feder_setting('colors', $key, $default), $default);
 
-        echo $html;
+        echo theme_v4_member_tokens_style([
+            'primary'    => $c('accent_color', '#8e2c3a'),
+            'accent'     => $c('accent_hover', '#6e1f2b'),
+            'bg'         => $c('paper_color', '#fbf8f3'),
+            'card_bg'    => $c('surface_color', '#ffffff'),
+            'text'       => $c('text_color', '#322b26'),
+            'text_muted' => $c('muted_color', '#6d6258'),
+            'border'     => $c('border_color', '#e6ddd0'),
+            'radius'     => feder_css_number(feder_setting('layout', 'border_radius', 6), 6, 0, 18) . 'px',
+            'font'       => $this->fontStack((string) feder_setting('typography', 'font_ui', 'inter'), 'inter'),
+        ]);
     }
 
     public function outputMetaTags(): void
@@ -184,43 +196,43 @@ final class Feder_Theme
         $n = static fn(string $group, string $key, float $default, float $min, float $max): string => feder_css_number(feder_setting($group, $key, $default), $default, $min, $max);
 
         $light = [
-            '--fd-accent'  => $c('accent_color', '#8e2c3a'),
-            '--fd-accent-hover' => $c('accent_hover', '#6e1f2b'),
-            '--fd-ink'     => $c('ink_color', '#211c19'),
-            '--fd-text'    => $c('text_color', '#322b26'),
-            '--fd-muted'   => $c('muted_color', '#6d6258'),
-            '--fd-paper'   => $c('paper_color', '#fbf8f3'),
-            '--fd-surface' => $c('surface_color', '#ffffff'),
-            '--fd-border'  => $c('border_color', '#e6ddd0'),
+            '--fdr-accent'  => $c('accent_color', '#8e2c3a'),
+            '--fdr-accent-hover' => $c('accent_hover', '#6e1f2b'),
+            '--fdr-ink'     => $c('ink_color', '#211c19'),
+            '--fdr-text'    => $c('text_color', '#322b26'),
+            '--fdr-muted'   => $c('muted_color', '#6d6258'),
+            '--fdr-paper'   => $c('paper_color', '#fbf8f3'),
+            '--fdr-surface' => $c('surface_color', '#ffffff'),
+            '--fdr-border'  => $c('border_color', '#e6ddd0'),
         ];
         $dark = [
-            '--fd-accent'  => $c('dark_accent_color', '#e8909b'),
-            '--fd-accent-hover' => $c('dark_accent_color', '#e8909b'),
-            '--fd-ink'     => $c('dark_text_color', '#ece4d8'),
-            '--fd-text'    => $c('dark_text_color', '#ece4d8'),
-            '--fd-muted'   => $c('dark_muted_color', '#a99d8f'),
-            '--fd-paper'   => $c('dark_paper_color', '#15120f'),
-            '--fd-surface' => $c('dark_surface_color', '#1f1a16'),
-            '--fd-border'  => $c('dark_border_color', '#352d27'),
+            '--fdr-accent'  => $c('dark_accent_color', '#e8909b'),
+            '--fdr-accent-hover' => $c('dark_accent_color', '#e8909b'),
+            '--fdr-ink'     => $c('dark_text_color', '#ece4d8'),
+            '--fdr-text'    => $c('dark_text_color', '#ece4d8'),
+            '--fdr-muted'   => $c('dark_muted_color', '#a99d8f'),
+            '--fdr-paper'   => $c('dark_paper_color', '#15120f'),
+            '--fdr-surface' => $c('dark_surface_color', '#1f1a16'),
+            '--fdr-border'  => $c('dark_border_color', '#352d27'),
         ];
 
         $root = $light + [
-            '--fd-font-heading' => $this->fontStack((string) feder_setting('typography', 'font_heading', 'fraunces'), 'fraunces'),
-            '--fd-font-body'    => $this->fontStack((string) feder_setting('typography', 'font_body', 'literata'), 'literata'),
-            '--fd-font-ui'      => $this->fontStack((string) feder_setting('typography', 'font_ui', 'inter'), 'inter'),
-            '--fd-size-body'    => $n('typography', 'font_size_base', 19, 16, 22) . 'px',
-            '--fd-leading'      => $n('typography', 'line_height_base', 1.72, 1.4, 2.0),
-            '--fd-measure'      => $n('layout', 'content_width', 690, 580, 820) . 'px',
-            '--fd-wide'         => $n('layout', 'wide_width', 1120, 900, 1320) . 'px',
-            '--fd-radius'       => $n('layout', 'border_radius', 6, 0, 18) . 'px',
+            '--fdr-font-heading' => $this->fontStack((string) feder_setting('typography', 'font_heading', 'fraunces'), 'fraunces'),
+            '--fdr-font-body'    => $this->fontStack((string) feder_setting('typography', 'font_body', 'literata'), 'literata'),
+            '--fdr-font-ui'      => $this->fontStack((string) feder_setting('typography', 'font_ui', 'inter'), 'inter'),
+            '--fdr-size-body'    => $n('typography', 'font_size_base', 19, 16, 22) . 'px',
+            '--fdr-leading'      => $n('typography', 'line_height_base', 1.72, 1.4, 2.0),
+            '--fdr-measure'      => $n('layout', 'content_width', 690, 580, 820) . 'px',
+            '--fdr-wide'         => $n('layout', 'wide_width', 1120, 900, 1320) . 'px',
+            '--fdr-radius'       => $n('layout', 'border_radius', 6, 0, 18) . 'px',
             // Core-Variablen (editorjs-content.css) nach dem Core-Customizer-Block erneut an die Palette binden.
-            '--primary-color'   => 'var(--fd-accent)',
-            '--accent'          => 'var(--fd-accent)',
-            '--border-color'    => 'var(--fd-border)',
-            '--bg-primary'      => 'var(--fd-paper)',
-            '--bg-secondary'    => 'var(--fd-surface)',
-            '--text-primary'    => 'var(--fd-text)',
-            '--text-secondary'  => 'var(--fd-muted)',
+            '--primary-color'   => 'var(--fdr-accent)',
+            '--accent'          => 'var(--fdr-accent)',
+            '--border-color'    => 'var(--fdr-border)',
+            '--bg-primary'      => 'var(--fdr-paper)',
+            '--bg-secondary'    => 'var(--fdr-surface)',
+            '--text-primary'    => 'var(--fdr-text)',
+            '--text-secondary'  => 'var(--fdr-muted)',
         ];
 
         $declarations = static function (array $vars): string {
@@ -246,7 +258,7 @@ final class Feder_Theme
         }
 
         if (feder_flag('header', 'enable_sticky_header', false)) {
-            $css .= '.fd-header{position:sticky;top:0;}';
+            $css .= '.fdr-header{position:sticky;top:0;}';
         }
 
         $css .= feder_sanitize_custom_css((string) feder_setting('advanced', 'custom_css', ''));
@@ -806,17 +818,24 @@ if (!function_exists('feder_get_categories')) {
      */
     function feder_get_categories(int $limit = 0): array
     {
-        try {
-            $db = \CMS\Database::instance();
-            $prefix = $db->getPrefix();
-            $rows = $db->get_results(
-                "SELECT c.id, c.name, c.slug, c.description,
-                        (SELECT COUNT(*) FROM {$prefix}posts p WHERE p.category_id = c.id AND " . cms_post_publication_where('p') . ") AS post_count
-                 FROM {$prefix}post_categories c
-                 ORDER BY c.sort_order ASC, c.name ASC"
-            ) ?: [];
-        } catch (\Throwable) {
-            return [];
+        // Eine Abfrage je Request (Startseite, Suche und Fallback-Übersicht teilen das Ergebnis):
+        // JOIN + GROUP BY statt einer Zählabfrage je Kategorie; nur veröffentlichte Beiträge (4.1.0: `pending` zählt nicht).
+        static $rows = null;
+        if ($rows === null) {
+            try {
+                $db = \CMS\Database::instance();
+                $prefix = $db->getPrefix();
+                $rows = $db->get_results(
+                    "SELECT c.id, c.name, c.slug, c.description, c.sort_order, COUNT(p.id) AS post_count
+                     FROM {$prefix}post_categories c
+                     INNER JOIN {$prefix}posts p ON p.category_id = c.id AND " . cms_post_publication_where('p') . "
+                     GROUP BY c.id, c.name, c.slug, c.description, c.sort_order
+                     ORDER BY c.sort_order ASC, c.name ASC",
+                    []
+                ) ?: [];
+            } catch (\Throwable) {
+                $rows = [];
+            }
         }
 
         $items = [];
@@ -905,11 +924,15 @@ if (!function_exists('feder_related_posts')) {
 
 if (!function_exists('feder_nav_menu')) {
     /**
-     * Gibt ein Menü als Liste aus. Ohne gepflegtes Menü greift $fallback (Label → URL).
+     * Gibt ein Menü als Liste aus. Ohne gepflegtes Menü greift $fallback (Label → URL); Standardlinks
+     * erscheinen nur, wenn ihr Ziel als Route oder veröffentlichte Seite existiert (365CMS 4.0.0).
+     *
+     * Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den Menüeinträgen die Einträge der
+     * Core-Module (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) – auch bei leerem Menü.
      *
      * @param array<int, array{label:string,url:string}> $fallback
      */
-    function feder_nav_menu(string $location, string $class = '', array $fallback = []): void
+    function feder_nav_menu(string $location, string $class = '', array $fallback = [], string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
@@ -917,9 +940,16 @@ if (!function_exists('feder_nav_menu')) {
             $items = [];
         }
         if (!is_array($items) || $items === []) {
-            $items = $fallback;
+            $items = theme_v4_filter_links($fallback);
         }
-        if ($items === []) {
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'is-active']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
@@ -955,6 +985,7 @@ if (!function_exists('feder_nav_menu')) {
 
             echo '<li' . ($isActive ? ' class="is-active"' : '') . '><a href="' . feder_e($href) . '"' . $attrs . '>' . feder_e($label) . '</a></li>';
         }
+        echo $coreItems; // Core-HTML aus theme_v4_main_nav() (Links des Cores, bereits escaped)
         echo '</ul>';
     }
 }
@@ -975,6 +1006,8 @@ if (!function_exists('feder_default_menu')) {
                 ['label' => 'Themen', 'url' => feder_archive_url('category')],
                 ['label' => 'Schlagwörter', 'url' => feder_archive_url('tag')],
                 ['label' => 'Suche', 'url' => '/search'],
+                ['label' => 'Newsletter', 'url' => '/newsletter'],
+                ['label' => 'Kontakt', 'url' => '/kontakt'],
             ],
             'footer-legal' => [
                 ['label' => 'Impressum', 'url' => '/impressum'],
@@ -1042,7 +1075,7 @@ if (!function_exists('feder_icon')) {
             return '';
         }
 
-        return '<svg class="fd-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $body . '</svg>';
+        return '<svg class="fdr-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $body . '</svg>';
     }
 }
 
@@ -1073,15 +1106,15 @@ if (!function_exists('feder_pagination')) {
         $pages = array_values(array_unique($pages));
         sort($pages);
 
-        echo '<nav class="fd-pagination" aria-label="Seitennavigation">';
+        echo '<nav class="fdr-pagination" aria-label="Seitennavigation">';
         if ($current > 1) {
-            echo '<a class="fd-pagination__step" href="' . feder_e($build($current - 1)) . '" rel="prev">' . feder_icon('arrow-left') . '<span>Neuere</span></a>';
+            echo '<a class="fdr-pagination__step" href="' . feder_e($build($current - 1)) . '" rel="prev">' . feder_icon('arrow-left') . '<span>Neuere</span></a>';
         }
-        echo '<ol class="fd-pagination__pages">';
+        echo '<ol class="fdr-pagination__pages">';
         $last = 0;
         foreach ($pages as $number) {
             if ($last > 0 && $number - $last > 1) {
-                echo '<li class="fd-pagination__gap" aria-hidden="true">…</li>';
+                echo '<li class="fdr-pagination__gap" aria-hidden="true">…</li>';
             }
             if ($number === $current) {
                 echo '<li><span aria-current="page">' . $number . '</span></li>';
@@ -1092,7 +1125,7 @@ if (!function_exists('feder_pagination')) {
         }
         echo '</ol>';
         if ($current < $total) {
-            echo '<a class="fd-pagination__step" href="' . feder_e($build($current + 1)) . '" rel="next"><span>Ältere</span>' . feder_icon('arrow') . '</a>';
+            echo '<a class="fdr-pagination__step" href="' . feder_e($build($current + 1)) . '" rel="next"><span>Ältere</span>' . feder_icon('arrow') . '</a>';
         }
         echo '</nav>';
     }
@@ -1102,19 +1135,26 @@ if (!function_exists('feder_search_form')) {
     function feder_search_form(string $id, string $value = '', string $class = ''): void
     {
         ?>
-        <form role="search" method="get" action="<?php echo feder_e(feder_search_url()); ?>" class="fd-searchform<?php echo $class !== '' ? ' ' . feder_e($class) : ''; ?>">
-            <label for="<?php echo feder_e($id); ?>" class="fd-visually-hidden">Suchbegriff</label>
+        <form role="search" method="get" action="<?php echo feder_e(feder_search_url()); ?>" class="fdr-searchform<?php echo $class !== '' ? ' ' . feder_e($class) : ''; ?>">
+            <label for="<?php echo feder_e($id); ?>" class="fdr-visually-hidden">Suchbegriff</label>
             <input id="<?php echo feder_e($id); ?>" type="search" name="q" value="<?php echo feder_e($value); ?>" placeholder="Wonach suchen Sie?" maxlength="120" autocomplete="off">
-            <button type="submit" class="fd-button"><?php echo feder_icon('search'); ?><span>Suchen</span></button>
+            <button type="submit" class="fdr-button"><?php echo feder_icon('search'); ?><span>Suchen</span></button>
         </form>
         <?php
     }
 }
 
 if (!function_exists('feder_page_title')) {
-    /** Dokumenttitel: SEO-Titel für Inhalte, sonst „Bezeichnung – Seitentitel“ (über den Filter page_title). */
+    /**
+     * Dokumenttitel: übergebener Seitentitel (`$title` der Core-Module, Kontakt- und Fehlerseiten),
+     * sonst SEO-Titel für Inhalte, sonst „Bezeichnung – Seitentitel“ (über den Filter page_title).
+     */
     function feder_page_title(array $context): string
     {
+        if (isset($context['title']) && is_string($context['title']) && trim($context['title']) !== '') {
+            return theme_v4_document_title($context['title']);
+        }
+
         $site = feder_site_title();
         $label = '';
 
@@ -1159,6 +1199,23 @@ if (!function_exists('feder_page_title')) {
     }
 }
 
+if (!function_exists('feder_img')) {
+    /**
+     * Bild über theme_v4_img(): width/height (echte Maße lokaler Uploads, sonst die Layout-Maße),
+     * `loading="lazy"` bzw. für das LCP-Bild `fetchpriority="high"` und Fokus-Punkt (4.1.0).
+     *
+     * @param array{class?:string,lcp?:bool,item?:mixed,sizes?:string} $options
+     */
+    function feder_img(string $src, string $alt, array $options = [], int $width = 0, int $height = 0): string
+    {
+        if ($width > 0 && $height > 0) {
+            [$options['width'], $options['height']] = theme_v4_image_dimensions($src) ?? [$width, $height];
+        }
+
+        return theme_v4_img($src, $alt, $options);
+    }
+}
+
 if (!function_exists('feder_body_class')) {
     function feder_body_class(string ...$extra): string
     {
@@ -1191,25 +1248,13 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /**
+     * true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL).
+     * Feder lädt in keinem Fall Google Fonts; die Funktion bleibt für Plugins/Child-Code erhalten.
+     */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

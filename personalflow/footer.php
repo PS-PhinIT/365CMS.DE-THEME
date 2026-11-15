@@ -23,57 +23,74 @@ $pfShowPipelineLinks = filter_var(pf_get_setting('footer', 'show_pipeline_links'
 $pfShowEmployerLinks = filter_var(pf_get_setting('footer', 'show_employer_links', true), FILTER_VALIDATE_BOOLEAN);
 $pfCopyrightTpl      = (string) pf_get_setting('footer', 'copyright_text', '&copy; {year} {site_title}. Alle Rechte vorbehalten.');
 
+// Copyright-Vorlage aus dem Customizer: Entities wie &copy; bleiben erhalten, Markup wird escaped.
 $pfCopyright = str_replace(
     ['{year}', '{site_title}'],
     [gmdate('Y'), $pfTitleEsc],
-    $pfCopyrightTpl
+    htmlspecialchars($pfCopyrightTpl, ENT_QUOTES, 'UTF-8', false)
 );
-$pfHomeUrl       = htmlspecialchars(theme_route_url('home'),       ENT_QUOTES, 'UTF-8');
-$pfJobsUrl       = htmlspecialchars(theme_route_url('jobs'),       ENT_QUOTES, 'UTF-8');
-$pfCandidatesUrl = htmlspecialchars(theme_route_url('candidates'), ENT_QUOTES, 'UTF-8');
-$pfEmployersUrl  = htmlspecialchars(theme_route_url('employers'),  ENT_QUOTES, 'UTF-8');
-$pfPipelineUrl   = htmlspecialchars(theme_route_url('pipeline'),   ENT_QUOTES, 'UTF-8');
-$pfPricingUrl    = htmlspecialchars(theme_route_url('pricing'),    ENT_QUOTES, 'UTF-8');
-$pfRegisterUrl   = htmlspecialchars(theme_route_url('register'),   ENT_QUOTES, 'UTF-8');
+$pfSafe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+
+// Standardspalten: nur Ziele verlinken, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0).
+// /jobs, /kandidaten, /arbeitgeber, /pipeline und /preise sind Theme-Ziele ohne Core-Route.
+$pfFooterColumns = [];
+if ($pfShowPipelineLinks) {
+    $pfFooterColumns['Für Kandidaten'] = [
+        ['label' => 'Offene Stellen', 'url' => theme_route_url('jobs')],
+        ['label' => 'Profil anlegen', 'url' => theme_route_url('register') . '?type=candidate'],
+        ['label' => 'Bewerbungs-Pipeline', 'url' => theme_route_url('pipeline')],
+    ];
+}
+if ($pfShowEmployerLinks) {
+    $pfFooterColumns['Für Arbeitgeber'] = [
+        ['label' => 'Talente entdecken', 'url' => theme_route_url('candidates')],
+        ['label' => 'Arbeitgeber-Login', 'url' => theme_route_url('employers')],
+        ['label' => 'Preise & Pakete', 'url' => theme_route_url('pricing')],
+    ];
+}
+$pfFooterColumns['Wissen & Kontakt'] = [
+    ['label' => 'Downloads', 'url' => pf_site_url() . '/downloads'],
+    ['label' => 'Wissensdatenbank', 'url' => pf_site_url() . '/kb'],
+    ['label' => 'Newsletter', 'url' => pf_site_url() . '/newsletter'],
+    ['label' => 'Kontakt', 'url' => pf_site_url() . '/contact'],
+];
+ob_start();
+theme_nav_menu('footer-nav');
+$pfFooterNav = (string) ob_get_clean();
 ?>
     </div><!-- #content .pf-site-content -->
 
-    <footer id="pfFooter" class="pf-footer" role="contentinfo" aria-label="Fußbereich">
+    <footer id="pfFooter" class="pf-footer">
         <div class="pf-footer-content">
             <div class="pf-footer-container">
                 <div class="pf-footer-widgets">
 
                     <div class="pf-footer-widget">
-                        <h3><?php echo $pfTitleEsc; ?></h3>
+                        <h2 class="pf-footer-heading"><?php echo $pfTitleEsc; ?></h2>
                         <p><?php echo nl2br(htmlspecialchars($pfFooterText, ENT_QUOTES, 'UTF-8')); ?></p>
                     </div>
 
-                    <?php if ($pfShowPipelineLinks) : ?>
-                        <div class="pf-footer-widget">
-                            <h3>Für Kandidaten</h3>
+                    <?php foreach ($pfFooterColumns as $pfColumnTitle => $pfColumnLinks) :
+                        $pfColumnLinks = theme_v4_filter_links($pfColumnLinks);
+                        if ($pfColumnLinks === []) {
+                            continue;
+                        } ?>
+                        <nav class="pf-footer-widget" aria-label="<?php echo $pfSafe($pfColumnTitle); ?>">
+                            <h2 class="pf-footer-heading"><?php echo $pfSafe($pfColumnTitle); ?></h2>
                             <ul>
-                                <li><a href="<?php echo $pfJobsUrl; ?>">Offene Stellen</a></li>
-                                <li><a href="<?php echo $pfRegisterUrl; ?>?type=candidate">Profil anlegen</a></li>
-                                <li><a href="<?php echo $pfPipelineUrl; ?>">Bewerbungs-Pipeline</a></li>
+                                <?php foreach ($pfColumnLinks as $pfLink) : ?>
+                                <li><a href="<?php echo $pfSafe($pfLink['url']); ?>"><?php echo $pfSafe($pfLink['label']); ?></a></li>
+                                <?php endforeach; ?>
                             </ul>
-                        </div>
-                    <?php endif; ?>
+                        </nav>
+                    <?php endforeach; ?>
 
-                    <?php if ($pfShowEmployerLinks) : ?>
-                        <div class="pf-footer-widget">
-                            <h3>Für Arbeitgeber</h3>
-                            <ul>
-                                <li><a href="<?php echo $pfCandidatesUrl; ?>">Talente entdecken</a></li>
-                                <li><a href="<?php echo $pfEmployersUrl; ?>">Arbeitgeber-Login</a></li>
-                                <li><a href="<?php echo $pfPricingUrl; ?>">Preise &amp; Pakete</a></li>
-                            </ul>
-                        </div>
+                    <?php if (trim($pfFooterNav) !== '') : ?>
+                    <nav class="pf-footer-widget" aria-label="Service">
+                        <h2 class="pf-footer-heading">Service</h2>
+                        <?php echo $pfFooterNav; // theme_nav_menu(): escaped ?>
+                    </nav>
                     <?php endif; ?>
-
-                    <div class="pf-footer-widget">
-                        <h3>Service</h3>
-                        <?php theme_nav_menu('footer-nav'); ?>
-                    </div>
 
                 </div>
             </div>

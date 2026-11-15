@@ -15,6 +15,10 @@ if (defined('CMS_THEME_HEADER_RENDERED')) {
 }
 define('CMS_THEME_HEADER_RENDERED', true);
 
+// header.php erhält die Render-Daten des Routers ($title, $page, $post, $isPreview, $contentLocale …).
+$tnLocale    = theme_v4_locale($contentLocale ?? null);
+$tnIsPreview = theme_v4_is_preview(get_defined_vars());
+
 $tnTitle     = tn_site_title();
 $tnTitleEsc  = tn_html_attr($tnTitle);
 $tnBodyClass = tn_body_class();
@@ -24,7 +28,8 @@ $tnRegUrl    = tn_html_attr(theme_route_url('register'));
 $tnMemberUrl = tn_html_attr(theme_route_url('member'));
 $tnSearchUrl = tn_html_attr(theme_route_url('search'));
 
-$tnLogoUrl        = (string) tn_get_setting('header', 'logo_url', '');
+$tnLogoUrl        = theme_v4_site_logo((string) tn_get_setting('header', 'logo_url', ''));
+$tnLogoDims       = $tnLogoUrl !== '' ? theme_v4_image_dimensions($tnLogoUrl) : null;
 $tnShowStatus     = filter_var(tn_get_setting('header', 'show_status_dot', true), FILTER_VALIDATE_BOOLEAN);
 $tnBlurHeader     = filter_var(tn_get_setting('header', 'enable_blur_header', true), FILTER_VALIDATE_BOOLEAN);
 $tnShowDarkToggle = filter_var(tn_get_setting('advanced', 'enable_dark_mode_toggle', true), FILTER_VALIDATE_BOOLEAN);
@@ -32,36 +37,39 @@ $tnIsLoggedIn     = theme_is_logged_in();
 
 $tnPrefersDark = filter_var(tn_get_setting('advanced', 'prefers_dark_mode', false), FILTER_VALIDATE_BOOLEAN);
 $tnHtmlTheme   = $tnPrefersDark ? 'dark' : 'light';
-?>
-<!DOCTYPE html>
-<html lang="de" data-theme="<?php echo tn_html_attr($tnHtmlTheme); ?>">
+?><!DOCTYPE html>
+<html lang="<?php echo tn_html_attr($tnLocale); ?>" data-theme="<?php echo tn_html_attr($tnHtmlTheme); ?>">
 <head>
     <meta charset="UTF-8">
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
-    <title><?php echo $tnTitleEsc; ?></title>
+    <title><?php echo tn_html_attr(theme_v4_document_title($title ?? null)); ?></title>
+    <?php echo theme_v4_head_tags($tnIsPreview, \CMS\ThemeManager::instance()->getSiteDescription()); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
 
-<body class="<?php echo $tnBodyClass; ?>">
+<body class="<?php echo $tnBodyClass; ?><?php echo $tnIsPreview ? ' is-preview' : ''; ?>">
 <div id="page" class="site">
-    <a class="skip-link tn-focus-shadow" href="#main">Zum Inhalt springen</a>
+    <a class="skip-link tn-focus-shadow" href="#main"><?php echo tn_html_attr(theme_v4_t('Zum Inhalt springen', 'Skip to content', $tnLocale)); ?></a>
+    <?php if ($tnIsPreview) : ?>
+    <p class="theme-v4-preview-banner" role="status"><?php echo tn_html_attr(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $tnLocale)); ?></p>
+    <?php endif; ?>
 
     <header id="masthead"
-            class="site-header<?php echo $tnBlurHeader ? ' blur-enabled' : ''; ?>"
-            role="banner">
+            class="site-header<?php echo $tnBlurHeader ? ' blur-enabled' : ''; ?>">
         <div class="header-container">
             <div class="header-inner">
 
                 <div class="site-branding">
                     <div class="site-logo">
-                        <a href="<?php echo $tnHomeUrl; ?>/"
+                        <a href="<?php echo $tnHomeUrl; ?>"
                            class="tn-focus-shadow"
-                           aria-label="<?php echo $tnTitleEsc; ?>">
+                           aria-label="<?php echo $tnTitleEsc; ?> – <?php echo tn_html_attr(theme_v4_t('Startseite', 'Home', $tnLocale)); ?>">
                             <?php if ($tnLogoUrl !== '') : ?>
                                 <img src="<?php echo tn_html_attr($tnLogoUrl); ?>"
-                                     alt="<?php echo $tnTitleEsc; ?>"
-                                     class="site-logo-img">
+                                     alt=""
+                                     class="site-logo-img"<?php echo $tnLogoDims !== null ? ' width="' . (int) $tnLogoDims[0] . '" height="' . (int) $tnLogoDims[1] . '"' : ''; ?>>
                             <?php else : ?>
                                 <svg class="site-logo-mark" viewBox="0 0 60 60" fill="none"
                                      xmlns="http://www.w3.org/2000/svg"
@@ -82,7 +90,7 @@ $tnHtmlTheme   = $tnPrefersDark ? 'dark' : 'light';
                     </div>
                     <div class="site-identity">
                         <span class="site-title">
-                            <a href="<?php echo $tnHomeUrl; ?>/" rel="home" class="tn-focus-shadow">
+                            <a href="<?php echo $tnHomeUrl; ?>" rel="home" class="tn-focus-shadow">
                                 <?php echo $tnTitleEsc; ?>
                             </a>
                         </span>
@@ -94,9 +102,9 @@ $tnHtmlTheme   = $tnPrefersDark ? 'dark' : 'light';
 
                 <nav id="site-navigation"
                      class="main-navigation"
-                     role="navigation"
-                     aria-label="Hauptmenü">
-                    <?php theme_nav_menu('primary'); ?>
+                     aria-label="<?php echo tn_html_attr(theme_v4_t('Hauptmenü', 'Main menu', $tnLocale)); ?>">
+                    <?php // Eine responsive Navigation für Desktop und Mobil (Schalter #mobileMenuToggle): main_nav einmal (Kontext desktop), sonst doppelte Einträge. ?>
+                    <?php theme_nav_menu('primary', 'desktop'); ?>
                 </nav>
 
                 <div class="header-actions">
@@ -104,7 +112,8 @@ $tnHtmlTheme   = $tnPrefersDark ? 'dark' : 'light';
                         <button class="theme-toggle tn-icon-btn tn-focus-shadow"
                                 id="themeToggle"
                                 type="button"
-                                aria-label="Farbschema umschalten">
+                                aria-pressed="<?php echo $tnPrefersDark ? 'true' : 'false'; ?>"
+                                aria-label="<?php echo tn_html_attr(theme_v4_t('Dunkelmodus', 'Dark mode', $tnLocale)); ?>">
                             <span class="theme-toggle-icon dark-icon" aria-hidden="true">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" focusable="false" aria-hidden="true">
                                     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -165,9 +174,9 @@ $tnHtmlTheme   = $tnPrefersDark ? 'dark' : 'light';
         </div>
     </header>
 
-    <div id="searchPanel" class="search-panel" hidden role="search" aria-label="Suche">
+    <div id="searchPanel" class="search-panel" hidden>
         <div class="search-panel-inner">
-            <form action="<?php echo $tnSearchUrl; ?>" method="get" class="search-form">
+            <form action="<?php echo $tnSearchUrl; ?>" method="get" class="search-form" role="search" aria-label="<?php echo tn_html_attr(theme_v4_t('Suche', 'Search', $tnLocale)); ?>">
                 <label for="tn-search-input" class="tn-visually-hidden">Suche</label>
                 <input id="tn-search-input"
                        type="search"

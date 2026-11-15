@@ -2,8 +2,8 @@
  * MedCare Pro Theme – Navigation, Accessibility Toggles & UI
  *
  * - Sticky header scroll state
- * - Mobile menu drawer (aria-expanded / aria-hidden / aria-controls)
- * - Search panel (aria-hidden / focus restore / outside-click / Escape)
+ * - Mobile menu drawer (aria-expanded / aria-controls, Fokus auf ersten Link / zurück zum Schalter)
+ * - Search panel (hidden / focus restore / outside-click / Escape)
  * - Font-size + High-contrast toggles (persisted via localStorage, pre-paint)
  * - IntersectionObserver-based reveal (motion-allowed only) with
  *   immediate-visibility fallback when motion is reduced or API missing.
@@ -47,37 +47,36 @@
     }
 
     // ── Mobile menu drawer ─────────────────────────────────────────────
-    let mobileOpener = null;
+    // Die Navigation ist auf dem Desktop immer sichtbar und mobil per CSS (display: none) zugeklappt.
+    // Kein aria-hidden mehr: Es wurde beim Laden auch auf dem Desktop gesetzt und versteckte die
+    // Hauptnavigation dort vor Screenreadern.
+    const isEnglish  = (document.documentElement.getAttribute('lang') || '').toLowerCase().indexOf('en') === 0;
+    const labelOpen  = isEnglish ? 'Open menu' : 'Menü öffnen';
+    const labelClose = isEnglish ? 'Close menu' : 'Menü schließen';
 
     function openMobile() {
         if (!nav || !mToggle) return;
-        mobileOpener = document.activeElement;
         nav.classList.add('is-open');
-        nav.setAttribute('aria-hidden', 'false');
         mToggle.classList.add('is-active');
         mToggle.setAttribute('aria-expanded', 'true');
-        mToggle.setAttribute('aria-label', 'Menü schließen');
+        mToggle.setAttribute('aria-label', labelClose);
+        const firstLink = nav.querySelector('a[href], button');
+        if (firstLink) firstLink.focus();
     }
 
-    function closeMobile() {
-        if (!nav || !mToggle) return;
+    function closeMobile(restoreFocus) {
+        if (!nav || !mToggle || !nav.classList.contains('is-open')) return;
         nav.classList.remove('is-open');
-        nav.setAttribute('aria-hidden', 'true');
         mToggle.classList.remove('is-active');
         mToggle.setAttribute('aria-expanded', 'false');
-        mToggle.setAttribute('aria-label', 'Menü öffnen');
-        if (mobileOpener && typeof mobileOpener.focus === 'function') {
-            mobileOpener.focus();
-        } else {
-            mToggle.focus();
-        }
+        mToggle.setAttribute('aria-label', labelOpen);
+        if (restoreFocus) mToggle.focus();
     }
 
     if (mToggle && nav) {
-        nav.setAttribute('aria-hidden', 'true');
         mToggle.addEventListener('click', function () {
             if (nav.classList.contains('is-open')) {
-                closeMobile();
+                closeMobile(true);
             } else {
                 openMobile();
             }
@@ -85,7 +84,7 @@
         document.addEventListener('click', function (e) {
             if (!nav.classList.contains('is-open')) return;
             if (nav.contains(e.target) || mToggle.contains(e.target)) return;
-            closeMobile();
+            closeMobile(false);
         });
     }
 
@@ -96,7 +95,6 @@
         if (!srchPnl || !srchBtn) return;
         searchOpener = document.activeElement;
         srchPnl.removeAttribute('hidden');
-        srchPnl.setAttribute('aria-hidden', 'false');
         srchBtn.setAttribute('aria-expanded', 'true');
         const input = srchPnl.querySelector('input[type="search"]');
         if (input) input.focus();
@@ -105,7 +103,6 @@
     function closeSearch() {
         if (!srchPnl || !srchBtn) return;
         srchPnl.setAttribute('hidden', '');
-        srchPnl.setAttribute('aria-hidden', 'true');
         srchBtn.setAttribute('aria-expanded', 'false');
         if (searchOpener && typeof searchOpener.focus === 'function') {
             searchOpener.focus();
@@ -136,7 +133,7 @@
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
         if (srchPnl && !srchPnl.hasAttribute('hidden')) closeSearch();
-        if (nav && nav.classList.contains('is-open')) closeMobile();
+        if (nav && nav.classList.contains('is-open')) closeMobile(true);
     });
 
     // ── Accessibility: font-size toggle ────────────────────────────────

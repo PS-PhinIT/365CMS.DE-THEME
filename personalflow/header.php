@@ -15,6 +15,10 @@ if (defined('CMS_THEME_HEADER_RENDERED')) {
 }
 define('CMS_THEME_HEADER_RENDERED', true);
 
+// header.php erhält die Render-Daten des Routers ($title, $page, $post, $isPreview, $contentLocale …).
+$pfLocale    = theme_v4_locale($contentLocale ?? null);
+$pfIsPreview = theme_v4_is_preview(get_defined_vars());
+
 $pfTitle       = pf_site_title();
 $pfTitleEsc    = htmlspecialchars($pfTitle, ENT_QUOTES, 'UTF-8');
 $pfBodyCls     = pf_body_class();
@@ -26,24 +30,29 @@ $pfLoginUrl    = htmlspecialchars(theme_route_url('login'),    ENT_QUOTES, 'UTF-
 $pfRegisterUrl = htmlspecialchars(theme_route_url('register'), ENT_QUOTES, 'UTF-8');
 $pfMemberUrl   = htmlspecialchars(theme_route_url('member'),   ENT_QUOTES, 'UTF-8');
 
-$pfLogoUrl     = (string) pf_get_setting('header', 'logo_url', '');
+$pfLogoUrl     = theme_v4_site_logo((string) pf_get_setting('header', 'logo_url', ''));
+$pfLogoDims    = $pfLogoUrl !== '' ? theme_v4_image_dimensions($pfLogoUrl) : null;
 $pfShowSearch  = filter_var(pf_get_setting('header', 'show_search', true), FILTER_VALIDATE_BOOLEAN);
 $pfSearchPh    = (string) pf_get_setting('header', 'search_placeholder', 'Kandidaten, Jobs oder Unternehmen suchen …');
-?>
-<!DOCTYPE html>
-<html lang="de">
+?><!DOCTYPE html>
+<html lang="<?php echo theme_v4_e($pfLocale); ?>">
 <head>
     <meta charset="UTF-8">
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
-    <title><?php echo $pfTitleEsc; ?></title>
+    <title><?php echo theme_v4_e(theme_v4_document_title($title ?? null)); ?></title>
+    <?php echo theme_v4_head_tags($pfIsPreview, \CMS\ThemeManager::instance()->getSiteDescription()); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
-<body class="<?php echo $pfBodyCls; ?>">
-<a class="pf-skip-link" href="#main">Zum Inhalt springen</a>
+<body class="<?php echo $pfBodyCls; ?><?php echo $pfIsPreview ? ' is-preview' : ''; ?>">
+<a class="pf-skip-link" href="#main"><?php echo theme_v4_e(theme_v4_t('Zum Inhalt springen', 'Skip to content', $pfLocale)); ?></a>
+<?php if ($pfIsPreview) : ?>
+<p class="theme-v4-preview-banner" role="status"><?php echo theme_v4_e(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $pfLocale)); ?></p>
+<?php endif; ?>
 <div id="page" class="pf-page-wrapper">
 
-<header id="masthead" class="pf-site-header" role="banner">
+<header id="masthead" class="pf-site-header">
     <div class="pf-header-inner">
 
         <div class="pf-site-branding">
@@ -51,7 +60,7 @@ $pfSearchPh    = (string) pf_get_setting('header', 'search_placeholder', 'Kandid
                aria-label="<?php echo $pfTitleEsc; ?> – Startseite">
                 <?php if ($pfLogoUrl !== '') : ?>
                     <img src="<?php echo htmlspecialchars($pfLogoUrl, ENT_QUOTES, 'UTF-8'); ?>"
-                         alt="<?php echo $pfTitleEsc; ?>" width="160" height="44" loading="eager">
+                         alt="<?php echo $pfTitleEsc; ?>"<?php echo $pfLogoDims !== null ? ' width="' . (int) $pfLogoDims[0] . '" height="' . (int) $pfLogoDims[1] . '"' : ''; ?>>
                 <?php else : ?>
                     <span class="pf-logo-text">
                         <span class="pf-logo-mark" aria-hidden="true">P</span>
@@ -61,8 +70,8 @@ $pfSearchPh    = (string) pf_get_setting('header', 'search_placeholder', 'Kandid
             </a>
         </div>
 
-        <nav id="site-navigation" class="main-navigation" aria-label="Hauptnavigation">
-            <?php theme_nav_menu('primary-nav'); ?>
+        <nav id="site-navigation" class="main-navigation" aria-label="<?php echo theme_v4_e(theme_v4_t('Hauptnavigation', 'Main navigation', $pfLocale)); ?>">
+            <?php theme_nav_menu('primary-nav', 'desktop'); ?>
         </nav>
 
         <div class="pf-header-actions">
@@ -100,7 +109,7 @@ $pfSearchPh    = (string) pf_get_setting('header', 'search_placeholder', 'Kandid
     </div>
 
     <?php if ($pfShowSearch) : ?>
-    <div id="pfSearchPanel" class="pf-search-panel" hidden aria-hidden="true">
+    <div id="pfSearchPanel" class="pf-search-panel" hidden>
         <div class="pf-header-inner pf-search-panel-inner">
             <form role="search" method="get" action="<?php echo $pfSearchUrl; ?>" class="pf-search-form">
                 <label for="pf-search" class="pf-visually-hidden">Suche</label>
@@ -120,18 +129,18 @@ $pfSearchPh    = (string) pf_get_setting('header', 'search_placeholder', 'Kandid
             <button id="pfSearchClose"
                     type="button"
                     class="pf-icon-btn pf-focus-shadow"
-                    aria-label="Suche schließen">✕</button>
+                    aria-label="Suche schließen"><span aria-hidden="true">✕</span></button>
         </div>
     </div>
     <?php endif; ?>
 </header><!-- #masthead -->
 
 <div id="pfMobileOverlay" class="pf-mobile-overlay" aria-hidden="true"></div>
+<?php // Geschlossen per CSS visibility:hidden – die Links sind dann weder fokussierbar noch vorlesbar. ?>
 <nav id="pfMobileDrawer"
      class="pf-mobile-drawer"
-     aria-label="Mobile Navigation"
-     aria-hidden="true">
-    <?php theme_nav_menu('primary-nav'); ?>
+     aria-label="<?php echo theme_v4_e(theme_v4_t('Mobile Navigation', 'Mobile navigation', $pfLocale)); ?>">
+    <?php theme_nav_menu('primary-nav', 'mobile'); ?>
     <?php if (!$pfIsLoggedIn) : ?>
         <div class="pf-cta-group pf-mobile-drawer-cta">
             <a href="<?php echo $pfLoginUrl; ?>"    class="pf-btn pf-btn-ghost">Anmelden</a>

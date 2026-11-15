@@ -3,9 +3,10 @@ Theme Name: PTC – Personalvermittlung & Schulungen
 Theme URI: https://365cms.de/themes/ptc
 Author: 365CMS
 Description: Branchentheme für Personalvermittlung und berufliche Weiterbildung. Vertrauen, Kompetenz, Entwicklung – zentral per Design-Tokens anpassbar.
-Version: 3.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
+Version: 4.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GNU General Public License v2 or later
 */
 
@@ -27,8 +28,8 @@ License: GNU General Public License v2 or later
     --color-bg-alt:      #F1F5F9;
     --color-border:     #E2E8F0;
     --color-border:     #CBD5E1;
-    --color-muted:     #94A3B8;
-    --color-secondary:        #607D8B;
+    --color-muted:     #5B6B78;   /* 5,0:1 auf --color-bg-alt (bisher #94A3B8: 2,4:1) */
+    --color-secondary:        #546E7A;   /* 5,4:1 auf Weiß (bisher #607D8B: 4,4:1) */
     --color-text:         #1A1A2E;
     --color-text-muted:   #475569;
 
@@ -52,8 +53,11 @@ License: GNU General Public License v2 or later
     --transition-base:         all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast:    all 0.15s ease;
 
-    /* Typography */
-    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* Typography – Customizer-Schrift (--font-body), sonst System-Stack; keine externen Schriften */
+    --font-sans: var(--font-body, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif);
+
+    /* Fokusrahmen auf dunklen Flächen (Header-Animation, Hero, CTA, Footer): 5,4:1 auf #1a4d5c, 8,4:1 auf #0f2d38 */
+    --focus-ring-on-dark: #8FD3B8;
 
     /* Z-Index Scale */
     --z-header:       1000;
@@ -139,6 +143,21 @@ a:hover {
     outline: 3px solid var(--focus-ring, var(--color-accent));
     outline-offset: 2px;
     border-radius: 3px;
+}
+
+/* Dunkle Flächen: Akzent-Grün erreicht dort nur 1,8–2,8:1 (WCAG 1.4.11 verlangt 3:1) */
+.ptc-page-hero :focus-visible,
+.ptc-blog-hero :focus-visible,
+.ptc-cta-section :focus-visible,
+.ptc-section-navy :focus-visible,
+.ptc-footer :focus-visible,
+.ptc-network-bar :focus-visible,
+.skip-link:focus-visible {
+    outline-color: var(--focus-ring-on-dark);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading, var(--font-sans));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -435,9 +454,16 @@ a:hover {
     margin-top: 0;
 }
 
-.ptc-nav li.has-children:hover > .ptc-submenu {
+.ptc-nav li.has-children:hover > .ptc-submenu,
+.ptc-nav li.has-children:focus-within > .ptc-submenu {
     opacity: 1;
     visibility: visible;
+}
+
+/* Escape schließt das per Tastatur geöffnete Untermenü (js/navigation.js) */
+.ptc-nav li.has-children.is-collapsed > .ptc-submenu {
+    opacity: 0;
+    visibility: hidden;
 }
 
 .ptc-submenu li a {
@@ -471,7 +497,7 @@ a:hover {
 .ptc-mobile-drawer .ptc-submenu li a {
     font-size: 0.85rem;
     padding: 0.4rem 0;
-    color: rgba(255,255,255,0.6);
+    color: var(--color-text-muted); /* Drawer ist weiß – bisher weiße Schrift (1,0:1) */
 }
 
 .ptc-mobile-drawer .ptc-submenu li a:hover {
@@ -643,17 +669,18 @@ a:hover {
     border-color: var(--color-primary);
 }
 
+/* Hover bisher auf --color-primary-light mit weißer Schrift (1,1:1) */
 .btn-ptc-primary:hover {
-    background: var(--color-primary-light);
-    border-color: var(--color-primary-light);
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
     color: var(--color-on-dark);
     box-shadow: var(--shadow-md);
 }
 
-/* Accent (Gold) */
+/* Accent – weiße Schrift (5,2:1); bisher --color-primary-hover auf Grün: 2,4:1 */
 .btn-ptc-accent {
     background: var(--color-accent);
-    color: var(--color-primary-hover);
+    color: var(--color-on-dark);
     border-color: var(--color-accent);
     font-weight: 700;
 }
@@ -702,7 +729,7 @@ a:hover {
 .btn-ptc-white:hover {
     background: var(--color-accent);
     border-color: var(--color-accent);
-    color: var(--color-primary-hover);
+    color: var(--color-on-dark);
     box-shadow: var(--shadow-accent);
 }
 
@@ -852,7 +879,7 @@ a:hover {
     color: var(--color-on-dark);
 }
 .ptc-section-navy .ptc-section-tag {
-    color: var(--color-accent);
+    color: var(--focus-ring-on-dark); /* Akzent auf Primärblau: 1,8:1 → 5,4:1 */
 }
 
 .ptc-section-cta {
@@ -1061,7 +1088,8 @@ a:hover {
     font-size: 1.1rem;
 }
 
-.ptc-event-card h4 {
+.ptc-event-card h4,
+.ptc-event-card .ptc-event-title {
     font-size: 1rem;
     font-weight: 600;
     color: var(--color-primary);
@@ -1241,7 +1269,7 @@ a:hover {
 
 .ptc-hero-overline {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.45);
+    color: rgba(255, 255, 255, 0.75); /* 6,0:1 auf --color-primary (bisher 0.45: 3,2:1) */
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin-bottom: 0.5rem;
@@ -1385,11 +1413,11 @@ a:hover {
     justify-content: center;
     align-items: center;
     font-size: 0.875rem;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.75); /* 6,0:1 (bisher 0.5: 3,6:1) */
 }
 .ptc-blog-hero__meta a {
-    color: var(--color-accent);
-    text-decoration: none;
+    color: var(--focus-ring-on-dark); /* Akzent-Grün auf Primärblau: 1,8:1 → 5,4:1 */
+    text-decoration: underline;
 }
 .ptc-blog-hero__meta a:hover {
     text-decoration: underline;
@@ -1591,7 +1619,8 @@ a:hover {
     border-radius: var(--layout-radius);
     padding: 1.25rem;
 }
-.ptc-blog-sidebar__widget h3 {
+.ptc-blog-sidebar__widget h3,
+.ptc-blog-sidebar__widget .ptc-blog-sidebar__title {
     font-size: 0.95rem;
     font-weight: 700;
     color: var(--color-primary);
@@ -1918,7 +1947,7 @@ a:hover {
    ============================================================================ */
 .ptc-footer {
     background: var(--footer-bg, var(--color-primary));
-    color: rgba(255, 255, 255, 0.8);
+    color: var(--footer-text, rgba(255, 255, 255, 0.8));
     padding: 4rem 0 0;
 }
 
@@ -1977,10 +2006,11 @@ a:hover {
 
 .ptc-social a:hover {
     background: var(--color-accent);
-    color: var(--color-primary-hover);
+    color: var(--color-on-dark);
 }
 
-.ptc-footer-col h4 {
+.ptc-footer-col h4,
+.ptc-footer-col .ptc-footer-heading {
     font-size: 0.9rem;
     font-weight: 700;
     color: var(--color-on-dark);
@@ -1997,12 +2027,12 @@ a:hover {
 
 .ptc-footer-col a {
     font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--footer-link, rgba(255, 255, 255, 0.6));
     transition: var(--transition-fast);
 }
 
 .ptc-footer-col a:hover {
-    color: var(--color-accent);
+    color: var(--focus-ring-on-dark); /* Akzent auf dunklem Footer: 2,8:1 */
 }
 
 /* Footer Bottom Bar */
@@ -2013,7 +2043,7 @@ a:hover {
     padding: 1.25rem 0;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.7); /* 7,8:1 auf #0f2d38 (bisher 0.4: 3,6:1) */
 }
 
 .ptc-footer-legal ul {
@@ -2024,11 +2054,11 @@ a:hover {
 
 .ptc-footer-legal a {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .ptc-footer-legal a:hover {
-    color: var(--color-accent);
+    color: var(--focus-ring-on-dark); /* Akzent auf dunklem Footer: 2,8:1 */
 }
 
 /* Network Bar */
@@ -2036,7 +2066,7 @@ a:hover {
     background: var(--color-network-bar-bg, #000d1a);
     padding: 0.75rem 0;
     font-size: 0.75rem;
-    color: var(--color-network-bar-text, rgba(255, 255, 255, 0.35));
+    color: var(--color-network-bar-text, rgba(255, 255, 255, 0.7));
     border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -2050,7 +2080,7 @@ a:hover {
 
 .ptc-network-label {
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.75);
     letter-spacing: 0.02em;
 }
 
@@ -2061,14 +2091,14 @@ a:hover {
 }
 
 .ptc-network-links a {
-    color: rgba(255, 255, 255, 0.35);
+    color: rgba(255, 255, 255, 0.75); /* bisher 0.35: 3,0:1 */
     font-size: 0.75rem;
     transition: var(--transition-fast);
     text-decoration: none;
 }
 
 .ptc-network-links a:hover {
-    color: var(--color-accent);
+    color: var(--focus-ring-on-dark); /* Akzent auf dunklem Footer: 2,8:1 */
 }
 
 .ptc-network-links a::before {
@@ -2795,6 +2825,11 @@ a:hover {
     margin-right: auto;
 }
 
+/* Core-Module über page.php (Downloads, Feeds): volle Containerbreite */
+.ptc-prose--module {
+    max-width: none;
+}
+
 .ptc-logo-img--footer {
     max-height: 40px;
 }
@@ -2853,4 +2888,93 @@ a:hover {
     .ptc-pipeline-steps {
         grid-template-columns: 1fr;
     }
+}
+
+/* ============================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die PTC-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis, Login-Showcase). Das Theme hat keinen Dark Mode.
+   ============================================================================ */
+:root {
+    --tv4-primary:        var(--color-primary);
+    --tv4-primary-hover:  var(--color-primary-hover);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--color-primary);
+    --tv4-text:           var(--color-text);
+    --tv4-muted:          var(--color-text-muted);
+    --tv4-bg:             var(--color-bg);
+    --tv4-surface:        #ffffff;
+    --tv4-surface-alt:    var(--color-bg-alt);
+    --tv4-border:         var(--color-border);
+    --tv4-border-strong:  var(--color-secondary);
+    --tv4-radius:         var(--layout-radius, 10px);
+    --tv4-btn-radius:     var(--btn-radius, var(--layout-radius, 10px));
+    --tv4-focus:          var(--focus-ring, var(--color-accent));
+    --tv4-font-body:      var(--font-sans);
+    --tv4-font-heading:   var(--font-heading, var(--font-sans));
+    --tv4-hero-start:     var(--color-primary);
+    --tv4-hero-end:       var(--color-primary-hover);
+    --tv4-max:            var(--layout-container, 1240px);
+}
+
+/* Core-Module (Knowledgebase, Newsletter) im Theme-Rahmen; header.php öffnet <main>, .ptc-content
+   hält bereits den Abstand zum fixen Header. */
+.theme-v4-module {
+    max-width: var(--layout-container, 1240px);
+    margin-inline: auto;
+    padding: 2.5rem 1.5rem 4rem;
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content {
+    padding-top: 0;
+}
+
+/* Fußzeilen- und Sidebar-Überschriften (h2 statt h4/h3, ohne Ebenensprung) */
+.ptc-footer-col .ptc-footer-heading,
+.ptc-blog-sidebar__widget .ptc-blog-sidebar__title {
+    font-family: var(--font-sans);
+}
+
+/* Abmelden als POST-Formular (theme_v4_logout_form) im Profil-Dropdown und im Mobil-Drawer */
+.ptc-profile-logout-form {
+    display: block;
+}
+.ptc-profile-logout {
+    display: block;
+    width: 100%;
+    padding: 0.625rem 1rem;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font: inherit;
+    font-size: 0.875rem;
+    text-align: left;
+    cursor: pointer;
+}
+.ptc-profile-logout:hover {
+    background: var(--color-bg-alt);
+    color: var(--color-primary);
+}
+.ptc-drawer-logout {
+    display: block;
+}
+.ptc-drawer-logout .ptc-drawer-btn {
+    width: 100%;
+}
+
+/* Login-Showcase (Legacy-Modus) neben/unter der Karte */
+.ptc-auth-wrap .cms-auth-showcase {
+    margin-top: 1.5rem;
+}
+
+/* Eigenständige Fehler-/Wartungsseite (error.php ohne Header/Footer) */
+.ptc-error-standalone {
+    width: 100%;
+    align-self: stretch;
+}
+
+/* Sprungziel des Skip-Links ohne sichtbaren Fokusrahmen um den ganzen Inhalt */
+#main-content:focus {
+    outline: none;
 }

@@ -2,7 +2,7 @@
  * CMS Newspaper Theme – Navigation & UI
  *
  * - Sticky-Header scroll state class
- * - Mobile drawer toggle (aria-expanded / aria-hidden)
+ * - Mobile drawer toggle (aria-expanded, hidden, Fokus auf ersten Link / zurück zum Schalter)
  * - Outside-click + Escape close
  * - Optional search panel toggle with focus restore
  * - Optional IntersectionObserver-based reveal (motion-allowed only)
@@ -33,32 +33,47 @@
     }
 
     // ── Mobile drawer ───────────────────────────────────────────────────
+    // Geschlossen trägt der Drawer `hidden` (nicht per Tab erreichbar); beim Öffnen erhält der erste Link
+    // den Fokus, beim Schließen (Escape, Overlay, Toggle) kehrt er zum Menü-Schalter zurück.
+    const isEnglish = (document.documentElement.getAttribute('lang') || '').toLowerCase().indexOf('en') === 0;
+    const labelOpen  = isEnglish ? 'Open menu' : 'Menü öffnen';
+    const labelClose = isEnglish ? 'Close menu' : 'Menü schließen';
+    let drawerTimer = null;
+
     function openDrawer() {
         if (!drawer || !mToggle) return;
+        if (drawerTimer) { window.clearTimeout(drawerTimer); drawerTimer = null; }
+        drawer.hidden = false;
+        void drawer.offsetWidth; // Reflow, damit die Einblend-Transition greift
         drawer.classList.add('is-open');
-        drawer.setAttribute('aria-hidden', 'false');
         if (overlay) { overlay.classList.add('is-open'); }
         mToggle.classList.add('is-active');
         mToggle.setAttribute('aria-expanded', 'true');
-        mToggle.setAttribute('aria-label', 'Menü schließen');
+        mToggle.setAttribute('aria-label', labelClose);
         document.body.style.overflow = 'hidden';
+        const firstLink = drawer.querySelector('a[href]');
+        if (firstLink) { firstLink.focus(); }
     }
 
-    function closeDrawer() {
-        if (!drawer || !mToggle) return;
+    function closeDrawer(restoreFocus) {
+        if (!drawer || !mToggle || !drawer.classList.contains('is-open')) return;
         drawer.classList.remove('is-open');
-        drawer.setAttribute('aria-hidden', 'true');
         if (overlay) { overlay.classList.remove('is-open'); }
         mToggle.classList.remove('is-active');
         mToggle.setAttribute('aria-expanded', 'false');
-        mToggle.setAttribute('aria-label', 'Menü öffnen');
+        mToggle.setAttribute('aria-label', labelOpen);
         document.body.style.overflow = '';
+        drawerTimer = window.setTimeout(function () {
+            drawer.hidden = true;
+            drawerTimer = null;
+        }, prefersReducedMotion ? 0 : 320);
+        if (restoreFocus) { mToggle.focus(); }
     }
 
     if (mToggle && drawer) {
         mToggle.addEventListener('click', function () {
             if (drawer.classList.contains('is-open')) {
-                closeDrawer();
+                closeDrawer(true);
             } else {
                 openDrawer();
             }
@@ -66,14 +81,14 @@
     }
 
     if (overlay) {
-        overlay.addEventListener('click', closeDrawer);
+        overlay.addEventListener('click', function () { closeDrawer(true); });
     }
 
     // Outside-click safety (in case overlay isn't rendered)
     document.addEventListener('click', function (e) {
         if (!drawer || !drawer.classList.contains('is-open')) return;
         if (drawer.contains(e.target) || (mToggle && mToggle.contains(e.target))) return;
-        closeDrawer();
+        closeDrawer(false);
     });
 
     // ── Search panel toggle ─────────────────────────────────────────────
@@ -83,7 +98,6 @@
         if (!searchPanel || !searchBtn) return;
         searchOpenerEl = document.activeElement;
         searchPanel.removeAttribute('hidden');
-        searchPanel.setAttribute('aria-hidden', 'false');
         searchBtn.setAttribute('aria-expanded', 'true');
         const input = searchPanel.querySelector('input[type="search"]');
         if (input) { input.focus(); }
@@ -92,7 +106,6 @@
     function closeSearch() {
         if (!searchPanel || !searchBtn) return;
         searchPanel.setAttribute('hidden', '');
-        searchPanel.setAttribute('aria-hidden', 'true');
         searchBtn.setAttribute('aria-expanded', 'false');
         if (searchOpenerEl && typeof searchOpenerEl.focus === 'function') {
             searchOpenerEl.focus();
@@ -117,7 +130,7 @@
     // ── Global Escape ───────────────────────────────────────────────────
     document.addEventListener('keydown', function (e) {
         if (e.key !== 'Escape') return;
-        if (drawer && drawer.classList.contains('is-open')) { closeDrawer(); }
+        if (drawer && drawer.classList.contains('is-open')) { closeDrawer(true); }
         if (searchPanel && !searchPanel.hasAttribute('hidden')) { closeSearch(); }
     });
 

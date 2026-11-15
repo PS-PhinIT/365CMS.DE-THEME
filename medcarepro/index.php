@@ -22,6 +22,7 @@ $posts = isset($posts) && is_array($posts) ? $posts : [];
         <?php if (!empty($posts)) : ?>
         <div class="mc-grid mc-grid--blog">
             <?php foreach ($posts as $p) :
+                $p       = is_array($p) ? (object) $p : $p;
                 $url     = $safe(theme_post_url($p));
                 $title   = $safe((string) ($p->title ?? ''));
                 $excerpt = $safe((string) ($p->excerpt ?? ''));

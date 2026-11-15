@@ -28,11 +28,17 @@ if (isset($post) && (is_object($post) || is_array($post))) {
 }
 
 $context = get_defined_vars();
+// Vorschau-Links ($isPreview) und nicht veröffentlichte Inhalte: noindex, keine strukturierten Daten, Hinweisleiste.
+$isPreview = theme_v4_is_preview($context);
 $siteTitle = rundschau_site_title();
 $documentTitle = rundschau_page_title($context);
+// Inhaltssprache: $contentLocale des Routers, sonst Locale-Kontext des Cores (/en/…).
 $locale = isset($contentLocale) && is_string($contentLocale) && preg_match('/^[a-z]{2}$/', $contentLocale) === 1 ? $contentLocale : rundschau_request_locale();
 
+// Logo: Theme-Einstellung, sonst Core-Option site_logo.
 $logoUrl = rundschau_media_url(rundschau_text('header', 'logo_url'));
+$logoUrl = $logoUrl !== '' ? $logoUrl : theme_v4_site_logo();
+$logoSize = $logoUrl !== '' ? theme_v4_image_dimensions($logoUrl) : null;
 $claim = rundschau_text('header', 'brand_claim', (string) Rundschau_Theme::instance()->getConfig('brand_claim', ''));
 $showTopbar = rundschau_flag('header', 'show_topbar', true);
 $showDate = rundschau_flag('header', 'show_date', true);
@@ -55,21 +61,26 @@ $tickerSpeed = in_array($tickerSpeed, ['slow', 'normal', 'fast'], true) ? $ticke
 
 $appendRessorts = rundschau_flag('header', 'nav_append_ressorts', true);
 $isArticle = isset($post) && is_object($post);
-$bodyClasses = 'rundschau' . ($isArticle ? ' is-article' : '') . (isset($page) && is_array($page) ? ' is-page' : '');
+$bodyClasses = 'rundschau' . ($isArticle ? ' is-article' : '') . (isset($page) && is_array($page) ? ' is-page' : '') . ($isPreview ? ' is-preview' : '');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo rundschau_e($locale); ?>">
 <head>
     <meta charset="UTF-8">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo rundschau_e($documentTitle); ?></title>
+    <?php echo rundschau_head_tags($isPreview); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <link rel="alternate" type="application/rss+xml" title="<?php echo rundschau_e($siteTitle); ?> – RSS" href="<?php echo rundschau_e(rundschau_url('/feed')); ?>">
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
 <body class="<?php echo rundschau_e($bodyClasses); ?>">
 <?php \CMS\Hooks::doAction('body_start'); ?>
-<a class="rs-skip-link" href="#main-content">Zum Inhalt springen</a>
+<a class="rs-skip-link" href="#main-content"><?php echo rundschau_e(theme_v4_t('Zum Inhalt springen', 'Skip to content', $locale)); ?></a>
+<?php if ($isPreview) : ?>
+<p class="theme-v4-preview-banner" role="status"><?php echo rundschau_e(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $locale)); ?></p>
+<?php endif; ?>
 
 <header class="rs-header">
     <?php if ($showTopbar) : ?>
@@ -83,9 +94,16 @@ $bodyClasses = 'rundschau' . ($isArticle ? ' is-article' : '') . (isset($page) &
                         <span class="rs-topbar__label"><?php echo rundschau_e($topbarLabel); ?></span>
                     <?php endif; ?>
                 </p>
-                <nav class="rs-topbar__nav" aria-label="Service">
-                    <?php rundschau_nav_menu('service-nav', 'rs-topbar__list', rundschau_default_menu('service-nav')); ?>
-                </nav>
+                <?php
+                ob_start();
+                $rsHasService = rundschau_nav_menu('service-nav', 'rs-topbar__list', rundschau_default_menu('service-nav'));
+                $rsServiceNav = (string) ob_get_clean();
+                ?>
+                <?php if ($rsHasService) : ?>
+                    <nav class="rs-topbar__nav" aria-label="Service">
+                        <?php echo $rsServiceNav; // rundschau_nav_menu(): escapte Menüliste ?>
+                    </nav>
+                <?php endif; ?>
             </div>
         </div>
     <?php endif; ?>
@@ -100,7 +118,7 @@ $bodyClasses = 'rundschau' . ($isArticle ? ' is-article' : '') . (isset($page) &
 
             <a class="rs-brand" href="<?php echo rundschau_e(rundschau_url('/')); ?>" rel="home">
                 <?php if ($logoUrl !== '') : ?>
-                    <img class="rs-brand__logo" src="<?php echo rundschau_e($logoUrl); ?>" alt="<?php echo rundschau_e($siteTitle); ?>" height="56">
+                    <img class="rs-brand__logo" src="<?php echo rundschau_e($logoUrl); ?>" alt="<?php echo rundschau_e($siteTitle); ?>"<?php echo $logoSize !== null ? ' width="' . (int) $logoSize[0] . '" height="' . (int) $logoSize[1] . '"' : ' height="56"'; ?>>
                 <?php else : ?>
                     <span class="rs-brand__name"><?php echo rundschau_e($siteTitle); ?></span>
                 <?php endif; ?>
@@ -130,7 +148,8 @@ $bodyClasses = 'rundschau' . ($isArticle ? ' is-article' : '') . (isset($page) &
 
     <div class="rs-panel rs-panel--menu" id="rs-menu-panel" hidden>
         <nav class="rs-container" aria-label="Ressorts (mobil)">
-            <?php rundschau_nav_menu('primary', 'rs-mobile-nav', rundschau_default_menu('primary'), $appendRessorts); ?>
+            <?php // Mobile Navigation: Core-Hook main_nav im Kontext `mobile` direkt nach den Ressorts. ?>
+            <?php rundschau_nav_menu('primary', 'rs-mobile-nav', rundschau_default_menu('primary'), $appendRessorts, 'mobile'); ?>
             <?php rundschau_nav_menu('service-nav', 'rs-mobile-nav rs-mobile-nav--service', rundschau_default_menu('service-nav')); ?>
         </nav>
     </div>
@@ -138,7 +157,8 @@ $bodyClasses = 'rundschau' . ($isArticle ? ' is-article' : '') . (isset($page) &
 
 <nav class="rs-navbar" aria-label="Ressorts">
     <div class="rs-container rs-navbar__inner" data-rs-scroll-shadow>
-        <?php rundschau_nav_menu('primary', 'rs-navbar__list', rundschau_default_menu('primary'), $appendRessorts); ?>
+        <?php // Desktop-Ressortleiste: Core-Hook main_nav im Kontext `desktop` (Downloads, Knowledgebase, Newsletter). ?>
+        <?php rundschau_nav_menu('primary', 'rs-navbar__list', rundschau_default_menu('primary'), $appendRessorts, 'desktop'); ?>
     </div>
 </nav>
 

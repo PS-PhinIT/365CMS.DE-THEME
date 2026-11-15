@@ -51,10 +51,35 @@ $partners = [
     ['label' => 'servertrend.com',  'url' => 'https://servertrend.com'],
     ['label' => 'phun.network',     'url' => 'https://phun.network'],
 ];
+
+// Standardspalten: nur Ziele, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0); leere Spalten entfallen.
+$newsFooterColumns = [
+    'Ressourcen' => [
+        ['label' => 'M365 Script Hub',   'url' => news_href('/script-hub')],
+        ['label' => 'Admin Checklisten', 'url' => news_href('/checklisten')],
+        ['label' => 'Knowledge Base',    'url' => news_href('/kb')],
+        ['label' => 'Downloads',         'url' => news_href('/downloads')],
+        ['label' => 'Event Kalender',    'url' => news_href('/events')],
+    ],
+    'Portal' => [
+        ['label' => 'Über uns (Autoren)', 'url' => news_href('/autoren')],
+        ['label' => 'Newsletter',         'url' => news_href('/newsletter')],
+        ['label' => 'Kontakt',            'url' => news_href('/kontakt')],
+        ['label' => 'Impressum',          'url' => news_href('/impressum')],
+        ['label' => 'Datenschutz',        'url' => news_href('/datenschutz')],
+    ],
+];
+
+ob_start();
+$newsHasTopics = theme_nav_menu('footer-nav');
+$newsTopicsMenu = (string) ob_get_clean();
+ob_start();
+$newsHasLegal = theme_nav_menu('footer-legal');
+$newsLegalMenu = (string) ob_get_clean();
 ?>
     </main><!-- /#main-content -->
 
-    <footer class="news-footer" id="news-footer" role="contentinfo">
+    <footer class="news-footer" id="news-footer">
 
         <div class="news-footer-grid">
 
@@ -67,50 +92,54 @@ $partners = [
                 <?php endif; ?>
             </div>
 
-            <div class="news-footer-col">
-                <h4>Themen</h4>
-                <?php theme_nav_menu('footer-nav'); ?>
-            </div>
+            <?php if ($newsHasTopics) : ?>
+                <nav class="news-footer-col" aria-labelledby="news-footer-topics">
+                    <h2 class="news-footer-heading" id="news-footer-topics">Themen</h2>
+                    <?php echo $newsTopicsMenu; // theme_nav_menu(): escapte Menüliste ?>
+                </nav>
+            <?php endif; ?>
 
-            <div class="news-footer-col">
-                <h4>Ressourcen</h4>
-                <ul>
-                    <li><a href="<?php echo $safe(news_href('/script-hub')); ?>">M365 Script Hub</a></li>
-                    <li><a href="<?php echo $safe(news_href('/checklisten')); ?>">Admin Checklisten</a></li>
-                    <li><a href="<?php echo $safe(news_href('/wissen')); ?>">Knowledge Base</a></li>
-                    <li><a href="<?php echo $safe(news_href('/events')); ?>">Event Kalender</a></li>
-                </ul>
-            </div>
-
-            <div class="news-footer-col">
-                <h4>Portal</h4>
-                <ul>
-                    <li><a href="<?php echo $safe(news_href('/autoren')); ?>">Über uns (Autoren)</a></li>
-                    <li><a href="<?php echo $safe(news_href('/impressum')); ?>">Impressum</a></li>
-                    <li><a href="<?php echo $safe(news_href('/datenschutz')); ?>">Datenschutz</a></li>
-                    <li><a href="<?php echo $safe(news_href('/kontakt')); ?>">Kontakt</a></li>
-                </ul>
-            </div>
+            <?php foreach ($newsFooterColumns as $newsColumnTitle => $newsColumnLinks) :
+                $newsColumnLinks = theme_v4_filter_links($newsColumnLinks);
+                if ($newsColumnLinks === []) {
+                    continue;
+                }
+                $newsColumnId = 'news-footer-' . strtolower((string) preg_replace('/[^a-z0-9]+/i', '-', $newsColumnTitle));
+                ?>
+                <nav class="news-footer-col" aria-labelledby="<?php echo $safe($newsColumnId); ?>">
+                    <h2 class="news-footer-heading" id="<?php echo $safe($newsColumnId); ?>"><?php echo $safe($newsColumnTitle); ?></h2>
+                    <ul>
+                        <?php foreach ($newsColumnLinks as $newsLink) :
+                            $newsLinkUrl = news_safe_url($newsLink['url']);
+                            $newsLinkActive = theme_v4_is_current_path($newsLinkUrl);
+                            ?>
+                            <li<?php echo $newsLinkActive ? ' class="current-menu-item"' : ''; ?>><a href="<?php echo $safe($newsLinkUrl); ?>"<?php echo $newsLinkActive ? ' aria-current="page"' : ''; ?>><?php echo $safe($newsLink['label']); ?></a></li>
+                        <?php endforeach; ?>
+                    </ul>
+                </nav>
+            <?php endforeach; ?>
 
         </div>
 
         <?php if ($showPartner) : ?>
-            <div class="news-partner-strip" aria-label="Partnerseiten">
+            <nav class="news-partner-strip" aria-label="Partnerseiten">
                 <?php foreach ($partners as $p) :
-                    $pUrl   = (string) ($p['url']   ?? '#');
+                    $pUrl   = news_safe_url((string) ($p['url'] ?? ''), '');
                     $pLabel = (string) ($p['label'] ?? '');
-                    if ($pLabel === '') { continue; }
+                    if ($pLabel === '' || $pUrl === '') { continue; }
                     ?>
                     <a href="<?php echo $safe($pUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo $safe($pLabel); ?></a>
                 <?php endforeach; ?>
-            </div>
+            </nav>
         <?php endif; ?>
 
         <div class="news-footer-copy">
             <span><?php echo $safe($copyText); ?></span>
-            <nav class="news-footer-legal" aria-label="Rechtliche Links">
-                <?php theme_nav_menu('footer-legal'); ?>
-            </nav>
+            <?php if ($newsHasLegal) : ?>
+                <nav class="news-footer-legal" aria-label="Rechtliche Links">
+                    <?php echo $newsLegalMenu; // theme_nav_menu(): escapte Menüliste ?>
+                </nav>
+            <?php endif; ?>
         </div>
 
     </footer>

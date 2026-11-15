@@ -1,7 +1,7 @@
 # Kontor – Business-Theme für 365CMS
 
-**Version:** 1.0.0
-**Ziel:** 365CMS 3.4.00+ · PHP 8.4
+**Version:** 2.0.0
+**Ziel:** 365CMS 4.0.0 – 4.1.0 · PHP 8.4.1+
 **Slug:** `kontor`
 **Kategorie:** Business / Unternehmenswebsite
 
@@ -28,7 +28,9 @@ Jede Sektion lässt sich einzeln ein- oder ausblenden. Wörter in `*Sternchen*` 
 | `blog-single.php` | Beitrag mit Seitenleiste, Teilen-Links und verwandten Beiträgen |
 | `search.php` | Suche mit Leistungs-Vorschlägen |
 | `404.php` | Nicht gefunden im Hero-Stil |
-| `error.php` | Eigenständige Fehlerseite (Fatal-Handler) |
+| `error.php` | Fehlerseite aller Status außer 404 (Router-Vertrag 4.0.0, eigenständig für Wartung/Fatal-Handler) |
+| `contact.php` | Kontaktseite mit Core-Formular und den Kontaktdaten aus `kt_contact` |
+| `knowledgebase/*.php`, `newsletter/*.php` | Core-Views der Module im Kontor-Rahmen (gemeinsame Overrides) |
 | `index.php` | Fallback (z. B. `/autoren`, `/sitemap`) |
 
 ## Menüpositionen
@@ -62,16 +64,20 @@ Jede Sektion lässt sich einzeln ein- oder ausblenden. Wörter in `*Sternchen*` 
 | `footer` | Kurzbeschreibung, Copyright |
 | `advanced` | Eigenes CSS (wird gefiltert) |
 
-## 365CMS-3.4-Vertrag
+## 365CMS-4.x-Vertrag
 
-- Header/Footer über `ThemeManager::render()`, gegen Doppel-Einbindung geschützt.
-- `cms_csp_runtime_tags()` als erstes Script, CSP-Nonce für Inline-Styles, keine Inline-Handler, keine HTML-Sinks.
-- SEO-Metadaten über `SEOService::renderCurrentHeadTags()`; der Titel läuft über `page_title`.
+- Header/Footer über `ThemeManager::render()`, gegen Doppel-Einbindung geschützt; `header.php` öffnet `<main id="main-content">` (`THEME_V4_HEADER_HAS_MAIN`, `THEME_V4_MAIN_ID`).
+- `includes/cms-v4-compat.php` und `css/cms-v4.css` – gemeinsame 4.x-Schicht aller Public Themes (Fehlerseiten-Vertrag, `main_nav`, Standardlinks, OptionStore, SEO/Vorschau, Fokus-Punkt, Memberbereich, Token-Brücke `--tv4-*` zu den Core-Modulen). Die Token-Brücke steht am Ende von `style.css`.
+- `contact.php`, `knowledgebase/*.php`, `newsletter/*.php` – Core-Formular bzw. Core-Views im Kontor-Rahmen; Kontaktdaten aus `kt_contact`.
+- `cms_csp_runtime_tags(true)` als erstes Script (Theme-Script mit `defer`), CSP-Nonce für Inline-Styles, keine Inline-Handler, keine HTML-Sinks.
+- Kopfbereich über `theme_v4_head_tags()` (Core-SEO); Vorschau-Links und Entwürfe mit `noindex, nofollow`, ohne JSON-LD und mit Hinweisleiste. Der Titel berücksichtigt `$title` der Core-Module und läuft über `page_title`.
+- Desktop- und Mobilnavigation mit Core-Hook `main_nav`; Fallback-Menüs und Buttons verlinken nur vorhandene Ziele, leere Footer-Spalten entfallen.
+- Memberbereich: keine Frontend-Assets, nur die Kontor-Palette über `member_head`.
 - `before_footer`/`body_end` im Footer, `body_start` nach `<body>`.
 - Beitragslinks über `PermalinkService`, Archivlinks über `cms_get_archive_url()`.
-- Google Fonts entfallen bei `privacy_use_local_fonts = 1`; die Schriften werden dann über `local_font_slugs` aus dem Font-Manager geladen (`manrope` …).
+- Keine Google Fonts: Die Schriften kommen über `local_font_slugs` aus der Core-Schriftverwaltung (`manrope` …), sonst greift der System-Fallback.
 
 ## Barrierearmut
 
-Skip-Link, sichtbarer Fokus, `aria-current`, beschriftete Icon-Buttons, FAQ mit nativen
+Skip-Link, sichtbarer Fokus (hell: Tannengrün-Tinte, dunkel: Weiß), `aria-current`, beschriftete Icon-Buttons, FAQ mit nativen
 `details`/`summary`, reduzierte Bewegung, `forced-colors` und Druckansicht.

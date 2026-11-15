@@ -1,9 +1,10 @@
 {
     "name": "Kontor",
     "slug": "kontor",
-    "version": "1.0.0",
-    "requires_cms": "3.4.00",
-    "requires_php": "8.4",
+    "version": "2.0.0",
+    "requires_cms": "4.0.0",
+    "requires_php": "8.4.1",
+    "tested_up_to": "4.1.0",
     "author": "PHINIT.DE / Andreas Hepp",
     "description": "Business-Theme für Mittelstand, Kanzleien, Beratungen und Dienstleister – Tannengrün mit Mint-Akzent, Manrope-Typografie, vollständig pflegbare Startseite (Hero, Leistungen, Über uns, Kennzahlen, Ablauf, Referenz, FAQ, Aktuelles, Kontakt-CTA) und seriöse Unterseiten mit Kontaktkarte.",
     "textdomain": "kontor",
@@ -19,9 +20,24 @@
         "blog-single": "blog-single.php",
         "page": "page.php",
         "search": "search.php",
+        "contact": "contact.php",
         "404": "404.php",
         "error": "error.php",
         "index": "index.php"
+    },
+    "login_page": {
+        "colors": {
+            "background_start": "#f5f2eb",
+            "background_end": "#e4efe9",
+            "card_background": "#ffffff",
+            "text_color": "#1c2b27",
+            "muted_color": "#5a6b65",
+            "primary_color": "#156b52",
+            "primary_text_color": "#ffffff",
+            "link_color": "#156b52",
+            "input_background": "#ffffff",
+            "input_border": "#5a6b65"
+        }
     },
     "menus": {
         "primary": "Hauptnavigation (Header)",
@@ -241,7 +257,7 @@
         },
         "kt_contact": {
             "label": "Kontaktdaten",
-            "description": "Erscheinen in Kontaktleiste, Kontaktkarte, Kontakt-Band und Footer.",
+            "description": "Erscheinen in Kontaktleiste, Kontaktkarte, Kontakt-Band, Footer und auf der Kontaktseite (/kontakt). Das Kontaktformular selbst wird unter Inhalte → Formulare gepflegt.",
             "settings": {
                 "company_name": { "label": "Firmenname", "type": "text", "default": "" , "description": "Leer = Seitentitel."},
                 "address": { "label": "Anschrift", "type": "textarea", "default": "Speicherstraße 12\n20457 Hamburg" },
@@ -263,7 +279,7 @@
         "advanced": {
             "label": "Erweitert",
             "settings": {
-                "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und javascript:-URLs werden entfernt." }
+                "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und Script-URLs werden entfernt." }
             }
         }
     }

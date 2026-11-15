@@ -1,21 +1,42 @@
 {
   "name": "CMS Newspaper",
   "slug": "cms-newspaper",
-  "version": "1.1.0",
-  "requires_cms": "3.4.00",
+  "version": "2.0.0",
+  "requires_cms": "4.0.0",
+  "requires_php": "8.4.1",
+  "tested_up_to": "4.1.0",
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "Editoriales News-Portal-Theme – Broadsheet-Typografie (Playfair Display + Source Sans 3 + IBM Plex Mono), Ink-Schwarz mit Signal-Rot, Rule-Lines statt Card-Shadows. Für Tech-/IT-News, Magazine und redaktionelle Portale.",
   "textdomain": "cms-newspaper",
   "template": "cms-newspaper",
   "tags": ["news", "newspaper", "magazine", "editorial", "broadsheet", "portal", "blog"],
-  "supports": ["custom-logo", "sticky-header", "custom-css", "dark-mode"],
+  "supports": ["custom-logo", "sticky-header", "custom-css"],
 
   "templates": {
     "home": "home.php",
     "index": "index.php",
     "page": "page.php",
+    "blog": "blog.php",
+    "blog-single": "blog-single.php",
+    "search": "search.php",
+    "contact": "contact.php",
     "404": "404.php",
     "error": "error.php"
+  },
+
+  "login_page": {
+    "colors": {
+      "background_start": "#f8f9fa",
+      "background_end": "#f1f0ec",
+      "card_background": "#ffffff",
+      "text_color": "#0a0b0c",
+      "muted_color": "#6b6c6d",
+      "primary_color": "#0a0b0c",
+      "primary_text_color": "#ffffff",
+      "link_color": "#c22510",
+      "input_background": "#ffffff",
+      "input_border": "#8d8e8f"
+    }
   },
 
   "menus": {
@@ -65,7 +86,8 @@
         "ink_ghost": {
           "label": "Ink (Geistergrau)",
           "type": "color",
-          "default": "#9a9b9c"
+          "default": "#6f7071",
+          "description": "Meta-Zeilen (Datum, Art). Für WCAG AA mindestens 4,5:1 auf dem Papierton."
         },
         "paper_color": {
           "label": "Papier (Hintergrund)",
@@ -81,13 +103,13 @@
         "accent_color": {
           "label": "Signal-Rot (Kategorien / Breaking)",
           "type": "color",
-          "default": "#e32d12",
-          "description": "Sparsam einsetzbarer Editorial-Akzent – Breaking, Badges, Top-Rule der Repo-Karte."
+          "default": "#c22510",
+          "description": "Sparsam einsetzbarer Editorial-Akzent – Breaking, Badges, Top-Rule der Repo-Karte. Auch Text- und Fokusfarbe: mindestens 4,5:1 auf dem Papierton wählen."
         },
         "accent_hover": {
           "label": "Signal-Rot Hover",
           "type": "color",
-          "default": "#c22510"
+          "default": "#9f1e0d"
         },
         "border_color": {
           "label": "Rahmenfarbe (Hairlines)",
@@ -106,7 +128,7 @@
 
     "typography": {
       "label": "Typografie",
-      "description": "Editoriale Trinity – Playfair (Display), Source Sans 3 (Body), IBM Plex Mono (Kicker/Meta).",
+      "description": "Editoriale Trinity – Playfair (Display), Source Sans 3 (Body), IBM Plex Mono (Kicker/Meta). Die Schriftdateien kommen aus der Core-Schriftverwaltung (lokal gespeicherte Schriften); ohne lokale Datei greift die System-Schrift.",
       "settings": {
         "font_family_display": {
           "label": "Display-Schrift (Headlines & Masthead)",
@@ -230,6 +252,22 @@
           "label": "Utility-Bar Status-Zustand",
           "type": "text",
           "default": "OPTIMAL"
+        },
+        "social_linkedin_url": {
+          "label": "LinkedIn-Profil (URL)",
+          "type": "text",
+          "default": "",
+          "description": "Leer = kein Symbol in der Utility-Bar."
+        },
+        "social_github_url": {
+          "label": "GitHub-Profil (URL)",
+          "type": "text",
+          "default": ""
+        },
+        "social_x_url": {
+          "label": "X-Profil (URL)",
+          "type": "text",
+          "default": ""
         }
       }
     },
@@ -409,6 +447,34 @@
           "type": "textarea",
           "default": "",
           "description": "Zusätzliches CSS wird im <head> nach den Theme-Variablen ausgegeben."
+        }
+      }
+    },
+
+    "contact": {
+      "label": "Kontakt",
+      "description": "Redaktionskontakt neben dem Core-Kontaktformular (/kontakt, /contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse"
+        },
+        "contact_phone": {
+          "label": "Telefon",
+          "type": "text",
+          "default": ""
+        },
+        "contact_address": {
+          "label": "Adresse",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Erreichbarkeit",
+          "type": "textarea",
+          "default": ""
         }
       }
     }

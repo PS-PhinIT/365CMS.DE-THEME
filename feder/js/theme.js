@@ -13,10 +13,10 @@
     'use strict';
 
     var root = document.documentElement;
-    var header = document.getElementById('fd-header');
+    var header = document.getElementById('fdr-header');
 
     // ── Panels (Suche / Menü) ────────────────────────────────────────────────
-    var toggles = Array.prototype.slice.call(document.querySelectorAll('[data-fd-toggle]'));
+    var toggles = Array.prototype.slice.call(document.querySelectorAll('[data-fdr-toggle]'));
     var openToggle = null;
 
     function panelFor(toggle) {
@@ -86,13 +86,13 @@
     });
 
     window.addEventListener('resize', function () {
-        if (openToggle && openToggle.getAttribute('data-fd-toggle') === 'menu' && window.innerWidth > 900) {
+        if (openToggle && openToggle.getAttribute('data-fdr-toggle') === 'menu' && window.innerWidth > 900) {
             closePanel(false);
         }
     });
 
     // ── Farbschema ──────────────────────────────────────────────────────────
-    var schemeToggle = document.querySelector('[data-fd-scheme-toggle]');
+    var schemeToggle = document.querySelector('[data-fdr-scheme-toggle]');
     var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
     function effectiveScheme() {
@@ -128,8 +128,8 @@
 
     // ── Header-Schatten beim Scrollen ────────────────────────────────────────
     var ticking = false;
-    var progressBar = document.querySelector('[data-fd-progress]');
-    var articleBody = document.querySelector('[data-fd-article-body]');
+    var progressBar = document.querySelector('[data-fdr-progress]');
+    var articleBody = document.querySelector('[data-fdr-article-body]');
 
     function update() {
         ticking = false;
@@ -156,12 +156,12 @@
     update();
 
     // ── Link kopieren ───────────────────────────────────────────────────────
-    Array.prototype.slice.call(document.querySelectorAll('[data-fd-copy]')).forEach(function (button) {
-        var label = button.querySelector('[data-fd-copy-label]');
+    Array.prototype.slice.call(document.querySelectorAll('[data-fdr-copy]')).forEach(function (button) {
+        var label = button.querySelector('[data-fdr-copy-label]');
         var original = label ? label.textContent : '';
 
         button.addEventListener('click', function () {
-            var url = button.getAttribute('data-fd-copy') || window.location.href;
+            var url = button.getAttribute('data-fdr-copy') || window.location.href;
             var done = function (text) {
                 if (label) {
                     label.textContent = text;

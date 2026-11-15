@@ -71,7 +71,7 @@ $recent = $showSidebar ? kontor_get_posts(['limit' => 4, 'exclude' => [$postId]]
     <article class="kt-content__main" aria-label="<?php echo kontor_e($title); ?>">
         <?php if ($image !== '') : ?>
             <figure class="kt-content__media">
-                <img src="<?php echo kontor_e($image); ?>" alt="<?php echo kontor_e($title); ?>" width="1200" height="675" loading="eager" decoding="async" fetchpriority="high">
+                <?php echo kontor_img($image, $title, ['lcp' => true, 'item' => $post], 1200, 675); ?>
             </figure>
         <?php endif; ?>
 

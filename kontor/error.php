@@ -2,10 +2,15 @@
 declare(strict_types=1);
 
 /**
- * Kontor – Fehlerseite
+ * Kontor – Fehlerseite für alle Status außer 404 (Router::renderError(), 365CMS 4.0.0)
  *
- * Wird vom Fatal-Handler in index.php direkt eingebunden (ohne header/footer) und
- * rendert deshalb ein eigenständiges Dokument – bewusst ohne functions.php.
+ * Router-Vertrag: `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`;
+ * eigenständig (Wartungsmodus, Fatal-Handler) zusätzlich `$error_standalone` und bei 503 `$error_retry_after`.
+ *
+ * - Eigenständig: vollständiges Dokument mit Theme-Stylesheet, ohne Header/Footer, Hooks, Customizer
+ *   und Datenbank; eigenes <main>.
+ * - Sonst rendert der Core header.php/footer.php; header.php öffnet <main id="main-content"> bereits,
+ *   deshalb hier nur der Inhalt.
  *
  * @package Kontor_Theme
  */
@@ -14,42 +19,57 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$errorCode = (int) ($GLOBALS['error_code'] ?? $errorCode ?? 500);
-$errorCode = $errorCode >= 400 && $errorCode < 600 ? $errorCode : 500;
-$errorMessage = (string) ($GLOBALS['error_message'] ?? $errorMessage ?? 'Beim Laden der Seite ist ein unerwarteter Fehler aufgetreten.');
-$siteUrl = rtrim(defined('SITE_URL') ? (string) SITE_URL : '', '/');
-$siteName = defined('SITE_NAME') ? (string) SITE_NAME : '365CMS';
-$esc = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-
-if (!headers_sent()) {
-    http_response_code($errorCode);
+// Auch vom Fatal-Handler (index.php) direkt eingebunden – dann ohne functions.php.
+if (!function_exists('theme_v4_error_context')) {
+    require_once __DIR__ . '/includes/cms-v4-compat.php';
 }
 
-$inner = '<section class="kt-notfound"><div class="kt-container kt-notfound__inner">'
-    . '<p class="kt-notfound__code" aria-hidden="true">' . $errorCode . '</p>'
-    . '<p class="kt-eyebrow kt-eyebrow--light">Fehler ' . $errorCode . '</p>'
-    . '<h1 class="kt-hero__title">Hier ist etwas schiefgelaufen.</h1>'
-    . '<p class="kt-hero__text">' . $esc($errorMessage) . '</p>'
-    . '<div class="kt-hero__actions"><a class="kt-button kt-button--accent" href="' . $esc($siteUrl . '/') . '"><span>Zur Startseite</span></a></div>'
-    . '</div></section>';
+$ktError    = theme_v4_error_context(get_defined_vars());
+$ktLocale   = theme_v4_locale($contentLocale ?? null);
+$ktDefaults = theme_v4_error_texts($ktError['code'], $ktLocale);
+$ktTitle    = $ktError['title'] !== '' ? $ktError['title'] : $ktDefaults['title'];
+$ktMessage  = $ktError['message'] !== '' ? $ktError['message'] : $ktDefaults['message'];
+$ktHome     = theme_v4_site_url() . '/';
+$ktBack     = $ktError['standalone'] ? '' : theme_v4_safe_back_url();
+$ktVersion  = defined('KONTOR_THEME_VERSION') ? (string) KONTOR_THEME_VERSION : '2.0.0';
 
-if (defined('CMS_THEME_HEADER_RENDERED')) {
-    echo $inner;
-    return;
+if ($ktError['standalone']) {
+    $ktThemeUrl = theme_v4_theme_url(__DIR__);
+    theme_v4_standalone_open(
+        $ktError['code'] . ' – ' . $ktTitle,
+        [
+            $ktThemeUrl . '/style.css?v=' . rawurlencode($ktVersion),
+            $ktThemeUrl . '/css/cms-v4.css?v=' . rawurlencode($ktVersion),
+        ],
+        $ktLocale,
+        'kontor is-error'
+    );
+    echo '<main id="main-content" class="kt-main">' . "\n";
 }
 ?>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex">
-    <title><?php echo $esc('Fehler ' . $errorCode . ' – ' . $siteName); ?></title>
-    <link rel="stylesheet" href="<?php echo $esc($siteUrl . '/themes/kontor/style.css'); ?>">
-</head>
-<body class="kontor is-error">
-<main id="main-content" class="kt-main">
-    <?php echo $inner; ?>
-</main>
-</body>
-</html>
+<section class="kt-notfound" aria-labelledby="kt-error-title">
+    <div class="kt-container kt-notfound__inner">
+        <p class="kt-notfound__code" aria-hidden="true"><?php echo (int) $ktError['code']; ?></p>
+        <p class="kt-eyebrow kt-eyebrow--light"><?php echo theme_v4_e(theme_v4_t('Fehler', 'Error', $ktLocale) . ' ' . $ktError['code']); ?></p>
+        <h1 class="kt-hero__title" id="kt-error-title"><?php echo theme_v4_e($ktTitle); ?></h1>
+        <p class="kt-hero__text"><?php echo theme_v4_e($ktMessage); ?></p>
+        <?php if ($ktError['retry_after'] > 0) : ?>
+            <p class="kt-hero__text"><?php echo theme_v4_e(theme_v4_t(
+                'Bitte versuchen Sie es in etwa ' . max(1, (int) ceil($ktError['retry_after'] / 60)) . ' Minute(n) erneut.',
+                'Please try again in about ' . max(1, (int) ceil($ktError['retry_after'] / 60)) . ' minute(s).',
+                $ktLocale
+            )); ?></p>
+        <?php endif; ?>
+        <div class="kt-hero__actions">
+            <a class="kt-button kt-button--accent" href="<?php echo theme_v4_e($ktHome); ?>"><span><?php echo theme_v4_e(theme_v4_t('Zur Startseite', 'Back to home', $ktLocale)); ?></span></a>
+            <?php if ($ktBack !== '') : ?>
+                <a class="kt-button kt-button--outline-light" href="<?php echo theme_v4_e($ktBack); ?>"><span><?php echo theme_v4_e(theme_v4_t('Zurück', 'Back', $ktLocale)); ?></span></a>
+            <?php endif; ?>
+        </div>
+    </div>
+</section>
+<?php
+if ($ktError['standalone']) {
+    echo "</main>\n";
+    theme_v4_standalone_close();
+}

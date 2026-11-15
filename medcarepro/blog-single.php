@@ -17,7 +17,7 @@ if (!defined('ABSPATH')) {
 $safe    = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 $blogUrl    = $safe(theme_route_url('blog'));
 $homeUrl    = $safe(theme_route_url('home'));
-$doctorsUrl = $safe(theme_route_url('doctors'));
+$doctorsUrl = theme_v4_link_available(theme_route_url('doctors')) ? $safe(theme_route_url('doctors')) : ''; // nur, wenn /aerzte existiert
 
 // Der Core übergibt den Beitrag als Objekt ($post); 'content' ist bereits gerendertes, sanitiertes HTML.
 $post = isset($post) && is_array($post) ? (object) $post : ($post ?? null);
@@ -28,10 +28,12 @@ $post = isset($post) && is_array($post) ? (object) $post : ($post ?? null);
         <?php if (!empty($post)) :
             $title    = $safe((string) ($post->title ?? ''));
             $content  = (string) ($post->content ?? '');
-            $date     = isset($post->created_at) ? date('d. F Y', strtotime((string) $post->created_at)) : '';
+            $rawDate  = (string) ($post->published_at ?? $post->created_at ?? '');
+            $date     = mc_format_date($rawDate);
+            $dateIso  = mc_format_date($rawDate, 'Y-m-d');
             $author   = $safe((string) ($post->author_name ?? ''));
             $category = $safe((string) ($post->category_name ?? ''));
-            $imgUrl   = $safe((string) ($post->thumbnail_url ?? $post->featured_image ?? ''));
+            $imgUrl   = mc_media_url($post->thumbnail_url ?? $post->featured_image ?? '');
             $showPriv = filter_var(mc_get_setting('dsgvo_medical', 'show_privacy_on_forms', true), FILTER_VALIDATE_BOOLEAN);
             $privacyNote = $showPriv
                 ? (string) mc_get_setting('dsgvo_medical', 'privacy_form_text', '')
@@ -59,7 +61,7 @@ $post = isset($post) && is_array($post) ? (object) $post : ($post ?? null);
                     <span class="mc-blog-single__author"><?php echo $author; ?></span>
                     <?php endif; ?>
                     <?php if ($date !== '') : ?>
-                    <time class="mc-blog-single__date"><?php echo $date; ?></time>
+                    <time class="mc-blog-single__date" datetime="<?php echo $safe($dateIso); ?>"><?php echo $safe($date); ?></time>
                     <?php endif; ?>
                     <span class="mc-blog-single__back">
                         <a href="<?php echo $blogUrl; ?>">← Zurück zum Ratgeber</a>
@@ -68,12 +70,12 @@ $post = isset($post) && is_array($post) ? (object) $post : ($post ?? null);
             </header>
 
             <?php if ($imgUrl !== '') : ?>
-            <img src="<?php echo $imgUrl; ?>" alt="" class="mc-blog-single__hero-img">
+            <?php echo theme_v4_img($imgUrl, '', ['class' => 'mc-blog-single__hero-img', 'lcp' => true, 'item' => $post]); // LCP-Bild: fetchpriority, width/height, Fokus-Punkt ?>
             <?php endif; ?>
 
             <?php if ($content !== '') : ?>
             <div class="mc-card mc-blog-single__content prose">
-                <?php echo $content; ?>
+                <?php echo $content; // vom Core gerendertes, sanitiertes HTML – unverändert ?>
             </div>
             <?php endif; ?>
 
@@ -94,7 +96,7 @@ $post = isset($post) && is_array($post) ? (object) $post : ($post ?? null);
 
         <nav class="mc-blog-single__nav" aria-label="Beitragsnavigation">
             <a href="<?php echo $blogUrl; ?>" class="mc-btn mc-btn-outline">← Alle Beiträge</a>
-            <a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-primary">Passenden Arzt finden</a>
+            <?php if ($doctorsUrl !== '') : ?><a href="<?php echo $doctorsUrl; ?>" class="mc-btn mc-btn-primary">Passenden Arzt finden</a><?php endif; ?>
         </nav>
 
         <?php else : ?>

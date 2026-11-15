@@ -27,21 +27,21 @@ $socialLinks = feder_social_links();
 ?>
 </main>
 
-<footer class="fd-footer">
-    <div class="fd-footer__inner">
-        <div class="fd-footer__brand">
-            <a class="fd-footer__name" href="<?php echo feder_e(feder_url('/')); ?>" rel="home"><?php echo feder_e($siteTitle); ?></a>
+<footer class="fdr-footer">
+    <div class="fdr-footer__inner">
+        <div class="fdr-footer__brand">
+            <a class="fdr-footer__name" href="<?php echo feder_e(feder_url('/')); ?>" rel="home"><?php echo feder_e($siteTitle); ?></a>
             <?php if ($tagline !== '') : ?>
-                <p class="fd-footer__tagline"><?php echo feder_e($tagline); ?></p>
+                <p class="fdr-footer__tagline"><?php echo feder_e($tagline); ?></p>
             <?php endif; ?>
             <?php if ($socialLinks !== []) : ?>
-                <ul class="fd-social" aria-label="Profile und Feed">
+                <ul class="fdr-social" aria-label="Profile und Feed">
                     <?php foreach ($socialLinks as $link) :
                         $external = preg_match('#^https?://#i', $link['url']) === 1 && parse_url($link['url'], PHP_URL_HOST) !== parse_url((string) SITE_URL, PHP_URL_HOST);
                         ?>
                         <li>
                             <a href="<?php echo feder_e($link['url']); ?>"<?php echo $external ? ' target="_blank" rel="me noopener noreferrer"' : ''; ?>>
-                                <?php echo feder_icon($link['icon']); ?><span class="fd-visually-hidden"><?php echo feder_e($link['label']); ?></span>
+                                <?php echo feder_icon($link['icon']); ?><span class="fdr-visually-hidden"><?php echo feder_e($link['label']); ?></span>
                             </a>
                         </li>
                     <?php endforeach; ?>
@@ -49,18 +49,18 @@ $socialLinks = feder_social_links();
             <?php endif; ?>
         </div>
 
-        <nav class="fd-footer__nav" aria-label="Footer-Navigation">
-            <?php feder_nav_menu('footer-nav', 'fd-footer__list', feder_default_menu('footer-nav')); ?>
+        <nav class="fdr-footer__nav" aria-label="Footer-Navigation">
+            <?php feder_nav_menu('footer-nav', 'fdr-footer__list', feder_default_menu('footer-nav')); ?>
         </nav>
     </div>
 
-    <div class="fd-footer__bottom">
-        <p class="fd-footer__copy"><?php echo feder_e($copyright); ?></p>
-        <nav class="fd-footer__legal" aria-label="Rechtliche Links">
-            <?php feder_nav_menu('footer-legal', 'fd-footer__legal-list', feder_default_menu('footer-legal')); ?>
+    <div class="fdr-footer__bottom">
+        <p class="fdr-footer__copy"><?php echo feder_e($copyright); ?></p>
+        <nav class="fdr-footer__legal" aria-label="Rechtliche Links">
+            <?php feder_nav_menu('footer-legal', 'fdr-footer__legal-list', feder_default_menu('footer-legal')); ?>
         </nav>
         <?php if (feder_flag('footer', 'show_back_to_top', true)) : ?>
-            <a class="fd-to-top" href="#main-content"><?php echo feder_icon('up'); ?><span>Nach oben</span></a>
+            <a class="fdr-to-top" href="#main-content"><?php echo feder_icon('up'); ?><span>Nach oben</span></a>
         <?php endif; ?>
     </div>
 </footer>

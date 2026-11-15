@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Suche
  *
- * Datenvertrag (365CMS 3.4, ThemeRouter): $results (Arrays: _type, _type_label, slug, title, meta_description), $query (string).
+ * Datenvertrag (365CMS 4.x, ThemeRouter): $results (Arrays: _type, _type_label, slug, title, meta_description), $query (string).
  */
 
 if (!defined('ABSPATH')) {
@@ -36,7 +36,7 @@ $query     = trim(strip_tags((string) ($query ?? '')));
 $query     = function_exists('mb_substr') ? mb_substr($query, 0, 120) : substr($query, 0, 120);
 $searchUrl = $siteUrl . '/search';
 ?>
-<main id="main" class="site-main tn-section" role="main">
+<main id="main" class="site-main tn-section">
     <div class="container">
         <?php if ($query !== '') : ?>
             <h1>Suchergebnisse für „<?php echo $safe($query); ?>“<?php if ($results !== []) : ?> (<?php echo count($results); ?>)<?php endif; ?></h1>

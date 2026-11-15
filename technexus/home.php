@@ -14,8 +14,12 @@ $heroHeadline  = (string) tn_get_setting('tech_hero', 'hero_headline', 'Vernetze
 $heroSubline   = (string) tn_get_setting('tech_hero', 'hero_subline', '');
 $heroCta       = (string) tn_get_setting('tech_hero', 'hero_cta_label', 'Experten entdecken');
 $heroCtaUrl    = tn_href((string) tn_get_setting('tech_hero', 'hero_cta_url', '/it-experts'));
+// /it-experts kommt aus einem Plugin: Ziele ohne Route/Seite nicht verlinken (365CMS 4.0.0).
+$heroCtaUrl    = theme_v4_link_available($heroCtaUrl) ? $heroCtaUrl : '';
 $heroSecCta    = (string) tn_get_setting('tech_hero', 'hero_secondary_cta_label', 'Profil anlegen');
 $heroSecCtaUrl = tn_href((string) tn_get_setting('tech_hero', 'hero_secondary_cta_url', '/register'));
+$heroSecCtaUrl = theme_v4_link_available($heroSecCtaUrl) ? $heroSecCtaUrl : '';
+$expertsUrl    = theme_v4_link_available(theme_route_url('experts')) ? theme_route_url('experts') : '';
 $showStats     = filter_var(tn_get_setting('tech_hero', 'show_stats_bar', true), FILTER_VALIDATE_BOOLEAN);
 
 $expertTitle = (string) tn_get_setting('tech_content', 'experts_section_title', 'Top IT-Experten');
@@ -26,6 +30,7 @@ $ctaRegLabel = (string) tn_get_setting('tech_content', 'register_cta_label', 'Je
 
 $isLoggedIn = theme_is_logged_in();
 
+// Feature-Raster der Core-Landing-Page (LandingPageService, 365CMS 4.0.0: Felder icon/title/description).
 try {
     $landingSvc = \CMS\Services\LandingPageService::getInstance();
     $lpHeader   = $landingSvc->getHeader();
@@ -36,7 +41,7 @@ try {
 }
 ?>
 
-<main id="main" class="site-main" role="main">
+<main id="main" class="site-main">
 
     <section class="home-hero" aria-label="Hero">
         <div class="home-hero__mesh" aria-hidden="true"></div>
@@ -52,10 +57,12 @@ try {
             <?php endif; ?>
 
             <div class="hero-cta-group">
+                <?php if ($heroCtaUrl !== '' && $heroCta !== '') : ?>
                 <a href="<?php echo tn_html_attr($heroCtaUrl); ?>" class="btn btn-primary">
                     <?php echo tn_html_attr($heroCta); ?>
                 </a>
-                <?php if (!$isLoggedIn) : ?>
+                <?php endif; ?>
+                <?php if (!$isLoggedIn && $heroSecCtaUrl !== '' && $heroSecCta !== '') : ?>
                     <a href="<?php echo tn_html_attr($heroSecCtaUrl); ?>" class="btn btn-outline">
                         <?php echo tn_html_attr($heroSecCta); ?>
                     </a>
@@ -63,7 +70,7 @@ try {
             </div>
 
             <?php if ($showStats) : ?>
-                <div class="hero-stats" aria-label="Plattform-Statistiken">
+                <div class="hero-stats" role="group" aria-label="Plattform-Statistiken">
                     <div class="hero-stat">
                         <span class="hero-stat-number">500+</span>
                         <span class="hero-stat-label">IT-Experten</span>
@@ -86,11 +93,12 @@ try {
             <div class="container">
                 <div class="section-header">
                     <?php
-                    $featTitle = (string) ($lpHeader['features_title'] ?? '');
+                    // Der LandingPageService liefert keinen Abschnittstitel – ohne h2 folgten die h3 der Karten direkt auf h1.
+                    $featTitle = trim((string) ($lpHeader['features_title'] ?? ''));
+                    $featTitle = $featTitle !== '' ? $featTitle : 'Funktionen der Plattform';
                     $featSub   = (string) ($lpHeader['features_subtitle'] ?? '');
-                    if ($featTitle !== '') : ?>
+                    ?>
                         <h2><?php echo tn_html_attr($featTitle); ?></h2>
-                    <?php endif; ?>
                     <?php if ($featSub !== '') : ?>
                         <p><?php echo tn_html_attr($featSub); ?></p>
                     <?php endif; ?>
@@ -98,7 +106,7 @@ try {
                 <div class="tech-grid">
                     <?php foreach ($lpFeatures as $feat) :
                         $fTitle = (string) ($feat['title'] ?? '');
-                        $fText  = (string) ($feat['text']  ?? '');
+                        $fText  = (string) ($feat['description'] ?? $feat['text'] ?? '');
                         $fIcon  = (string) ($feat['icon']  ?? '');
                         if ($fTitle === '' && $fText === '') {
                             continue;
@@ -121,6 +129,8 @@ try {
         </section>
     <?php endif; ?>
 
+    <?php // Ohne Experten-Verzeichnis (Plugin-Route /it-experts) bliebe der Abschnitt leer. ?>
+    <?php if ($expertsUrl !== '') : ?>
     <section class="home-experts tn-section" aria-label="Experten">
         <div class="container">
             <div class="section-header">
@@ -132,7 +142,7 @@ try {
             <div class="tech-grid">
                 <div class="tech-card tech-card--placeholder">
                     <p class="tech-card__meta">
-                        <a href="<?php echo tn_html_attr(theme_route_url('experts')); ?>" class="btn btn-primary">
+                        <a href="<?php echo tn_html_attr($expertsUrl); ?>" class="btn btn-primary">
                             Alle IT-Experten anzeigen
                         </a>
                     </p>
@@ -140,6 +150,7 @@ try {
             </div>
         </div>
     </section>
+    <?php endif; ?>
 
     <?php if (!$isLoggedIn) : ?>
         <section class="cta-section tn-section" aria-label="Registrierung">

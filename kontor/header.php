@@ -28,29 +28,38 @@ if (isset($post) && (is_object($post) || is_array($post))) {
 
 $context = get_defined_vars();
 $documentTitle = kontor_page_title($context);
-$locale = isset($contentLocale) && is_string($contentLocale) && preg_match('/^[a-z]{2}$/', $contentLocale) === 1 ? $contentLocale : kontor_request_locale();
+$locale = theme_v4_locale($contentLocale ?? null);
+// Vorschau-Link oder nicht veröffentlichter Inhalt: noindex, keine strukturierten Daten, Hinweisleiste.
+$isPreview = theme_v4_is_preview($context);
 $company = kontor_company_name();
-$logoUrl = kontor_media_url(kontor_text('header', 'logo_url'));
+// Theme-Logo, sonst Core-Option site_logo (nur lokale URLs).
+$logoUrl = theme_v4_site_logo(kontor_media_url(kontor_text('header', 'logo_url')));
 $contact = kontor_contact();
 $socials = kontor_social_links();
 $showContactBar = kontor_flag('header', 'show_contact_bar', true);
 $ctaLabel = kontor_text('header', 'header_cta_label', 'Beratung anfragen');
 $ctaUrl = kontor_text('header', 'header_cta_url', '/kontakt');
 $isHome = kontor_is_home_request();
-$bodyClasses = 'kontor' . ($isHome ? ' is-home' : '') . (isset($post) && is_object($post) ? ' is-article' : '');
+$bodyClasses = 'kontor' . ($isHome ? ' is-home' : '') . (isset($post) && is_object($post) ? ' is-article' : '') . ($isPreview ? ' is-preview' : '');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo kontor_e($locale); ?>">
 <head>
     <meta charset="UTF-8">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo kontor_e($documentTitle); ?></title>
+    <?php // Core-SEO (Beschreibung, Robots, Canonical, hreflang, Open Graph, JSON-LD); Vorschau: noindex, ohne JSON-LD. ?>
+    <?php echo theme_v4_head_tags($isPreview, kontor_site_description()); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
 <body class="<?php echo kontor_e($bodyClasses); ?>">
 <?php \CMS\Hooks::doAction('body_start'); ?>
-<a class="kt-skip-link" href="#main-content">Zum Inhalt springen</a>
+<a class="kt-skip-link" href="#main-content"><?php echo kontor_e(theme_v4_t('Zum Inhalt springen', 'Skip to content', $locale)); ?></a>
+<?php if ($isPreview) : ?>
+<p class="theme-v4-preview-banner" role="status"><?php echo kontor_e(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $locale)); ?></p>
+<?php endif; ?>
 
 <?php if ($showContactBar) : ?>
     <div class="kt-contactbar">
@@ -83,7 +92,7 @@ $bodyClasses = 'kontor' . ($isHome ? ' is-home' : '') . (isset($post) && is_obje
         </a>
 
         <nav class="kt-nav" aria-label="Hauptnavigation">
-            <?php kontor_nav_menu('primary', 'kt-nav__list', kontor_default_menu('primary')); ?>
+            <?php kontor_nav_menu('primary', 'kt-nav__list', kontor_default_menu('primary'), 'desktop'); ?>
         </nav>
 
         <div class="kt-header__actions">
@@ -99,7 +108,7 @@ $bodyClasses = 'kontor' . ($isHome ? ' is-home' : '') . (isset($post) && is_obje
 
     <div class="kt-mobile" id="kt-mobile-menu" hidden>
         <nav class="kt-container" aria-label="Mobile Navigation">
-            <?php kontor_nav_menu('primary', 'kt-mobile__list', kontor_default_menu('primary')); ?>
+            <?php kontor_nav_menu('primary', 'kt-mobile__list', kontor_default_menu('primary'), 'mobile'); ?>
             <div class="kt-mobile__cta"><?php echo kontor_button($ctaLabel, $ctaUrl, 'primary', true); ?></div>
             <?php if ($contact['phone_href'] !== '' || $contact['email_href'] !== '') : ?>
                 <ul class="kt-contactlist kt-contactlist--mobile">

@@ -12,57 +12,56 @@ if (!defined('ABSPATH')) {
 }
 
 if (empty($page) || !is_array($page)) {
-    http_response_code(404);
-    \CMS\ThemeManager::instance()->render('404');
+    if (!headers_sent()) {
+        http_response_code(404); // der Core setzt den Status meist schon vor header.php
+    }
+    require __DIR__ . '/404.php'; // Header/Footer rendert der Core bereits
     return;
 }
 
 /* ─── Customizer-Einstellungen ─── */
-$showTitle      = ptc_customizer_get('blog', 'page_show_title',          '1');
-$showUpdated    = ptc_customizer_get('blog', 'page_show_updated',        '1');
-$showFeatured   = ptc_customizer_get('blog', 'page_show_featured_image', '1');
-$pageMaxWidth   = (int) ptc_customizer_get('blog', 'page_max_width',    '960');
+$showTitle      = filter_var(ptc_customizer_get('blog', 'page_show_title',          '1'), FILTER_VALIDATE_BOOLEAN);
+$showUpdated    = filter_var(ptc_customizer_get('blog', 'page_show_updated',        '1'), FILTER_VALIDATE_BOOLEAN);
+$showFeatured   = filter_var(ptc_customizer_get('blog', 'page_show_featured_image', '1'), FILTER_VALIDATE_BOOLEAN);
 
-$pageTitle      = $page['title']          ?? '';
-$pageContent    = $page['content']        ?? '';
-$updatedAt      = $page['updated_at']     ?? '';
-$featuredImage  = $page['featured_image'] ?? '';
-
-$allowedTags = '<p><br><strong><b><em><i><u><s>'
-    . '<h1><h2><h3><h4><h5><h6>'
-    . '<ul><ol><li><dl><dt><dd>'
-    . '<a><img>'
-    . '<blockquote><pre><code>'
-    . '<table><thead><tbody><tr><th><td>'
-    . '<div><span><section><article><aside>'
-    . '<hr><figure><figcaption><iframe><video><audio><source>';
+// Auch Core-Module rendern über page.php (Downloads, Feeds: `id` 0, ohne `updated_at`/`featured_image`).
+$pageTitle      = trim((string) ($page['title'] ?? ''));
+$pageContent    = (string) ($page['content'] ?? '');
+$updatedAt      = ptc_format_date($page['updated_at'] ?? ($page['content_updated_at'] ?? ''));
+$featuredImage  = ptc_safe_url((string) ($page['featured_image'] ?? ''));
+$isModulePage   = (int) ($page['id'] ?? 0) === 0; // Core-Modul: volle Inhaltsbreite statt Lesespalte
 ?>
 
-<?php if ($showTitle && $pageTitle && trim($pageTitle) !== '') : ?>
+<?php if ($showTitle && $pageTitle !== '') : ?>
 <section class="ptc-page-hero">
     <div class="ptc-container">
         <h1><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
-        <?php if ($showUpdated && $updatedAt && trim($updatedAt) !== '') : ?>
-            <p>Zuletzt aktualisiert: <?php echo htmlspecialchars(date('d.m.Y', strtotime($updatedAt)), ENT_QUOTES, 'UTF-8'); ?></p>
+        <?php if ($showUpdated && $updatedAt !== '') : ?>
+            <p>Zuletzt aktualisiert: <?php echo htmlspecialchars($updatedAt, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
     </div>
 </section>
+<?php elseif ($pageTitle !== '') : ?>
+<h1 class="theme-v4-sr-only"><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
 <?php endif; ?>
 
-<?php if ($showFeatured && $featuredImage) : ?>
+<?php if ($showFeatured && $featuredImage !== '' && !str_starts_with($featuredImage, '#')) : ?>
 <div class="ptc-page-featured">
     <div class="ptc-container">
-        <img src="<?php echo htmlspecialchars($featuredImage, ENT_QUOTES, 'UTF-8'); ?>"
-             alt="<?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?>" loading="lazy">
+        <?php echo theme_v4_img($featuredImage, $pageTitle, ['lcp' => true, 'item' => $page, 'sizes' => '(max-width: 1240px) 100vw, 1240px']); ?>
     </div>
 </div>
 <?php endif; ?>
 
 <div class="ptc-page-content">
     <div class="ptc-container">
-        <?php if ($pageContent && trim($pageContent) !== '') : ?>
-            <div class="ptc-prose ptc-prose--constrained sun-editor-editable">
-                <?php echo strip_tags($pageContent, $allowedTags); ?>
+        <?php if (trim($pageContent) !== '') : ?>
+            <div class="ptc-prose<?php echo $isModulePage ? ' ptc-prose--module' : ' ptc-prose--constrained'; ?> sun-editor-editable">
+                <?php
+                // Vom Core gerendertes und bereinigtes HTML (Editor.js, Downloads, Feeds, Formulare) – unverändert
+                // ausgeben. Das frühere strip_tags() entfernte u. a. <picture>, <form>, <button> und <svg>.
+                echo $pageContent;
+                ?>
             </div>
         <?php else : ?>
             <p class="ptc-text-muted">Diese Seite hat noch keinen Inhalt.</p>

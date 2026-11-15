@@ -18,17 +18,23 @@
 
     let searchTrigger = null;
 
+    // Umschalter mit fester Beschriftung („Dunkelmodus“) und aria-pressed statt wechselndem Label.
     const applyTheme = (mode) => {
         html.setAttribute('data-theme', mode);
         if (themeBtn) {
-            themeBtn.setAttribute(
-                'aria-label',
-                mode === 'dark' ? 'Hellmodus aktivieren' : 'Dunkelmodus aktivieren'
-            );
+            themeBtn.setAttribute('aria-pressed', mode === 'dark' ? 'true' : 'false');
         }
     };
 
-    const savedTheme = localStorage.getItem('tn-color-scheme');
+    // localStorage kann (privater Modus, blockierte Website-Daten) Ausnahmen werfen.
+    const readScheme = () => {
+        try { return window.localStorage.getItem('tn-color-scheme'); } catch (e) { return null; }
+    };
+    const storeScheme = (mode) => {
+        try { window.localStorage.setItem('tn-color-scheme', mode); } catch (e) { /* nur für diese Sitzung */ }
+    };
+
+    const savedTheme = readScheme();
     if (savedTheme === 'dark' || savedTheme === 'light') {
         applyTheme(savedTheme);
     } else if (html.getAttribute('data-theme') !== 'dark' && html.getAttribute('data-theme') !== 'light') {
@@ -40,7 +46,7 @@
     themeBtn?.addEventListener('click', () => {
         const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         applyTheme(next);
-        localStorage.setItem('tn-color-scheme', next);
+        storeScheme(next);
     });
 
     if (header && !prefersReducedMotion) {
@@ -65,6 +71,8 @@
         nav.classList.add('open');
         mToggle.setAttribute('aria-expanded', 'true');
         mToggle.classList.add('active');
+        const firstLink = nav.querySelector('a');
+        if (firstLink) firstLink.focus();
     };
 
     if (mToggle && nav) {
@@ -84,8 +92,9 @@
         });
 
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
+            if (e.key === 'Escape' && nav.classList.contains('open')) {
                 closeMobileMenu();
+                mToggle.focus(); // Fokus zurück an den Schalter
             }
         });
     }

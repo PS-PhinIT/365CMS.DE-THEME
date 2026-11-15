@@ -45,7 +45,8 @@ $ctaTitle         = (string) ll_get_setting('logistics_content', 'cta_section_ti
 $ctaText          = (string) ll_get_setting('logistics_content', 'cta_section_text',       'Registriere dein Logistik-Unternehmen und erhalte Zugang zu tausenden Buchungsanfragen täglich.');
 
 $heroCtaUrl = $safe(theme_route_url('register'));
-$heroSecUrl = $safe(theme_route_url('tracking'));
+// /tracking ist keine Core-Route: Zweit-CTA nur, wenn es die Seite gibt.
+$heroSecUrl = theme_v4_link_available(theme_route_url('tracking')) ? $safe(theme_route_url('tracking')) : '';
 $regUrl     = $safe(theme_route_url('register'));
 $isLoggedIn = theme_is_logged_in();
 
@@ -118,7 +119,7 @@ $serviceIcon = static function (string $key): string {
     };
 };
 ?>
-<main id="main" class="ll-main" role="main">
+<main id="main" class="ll-main">
 
     <!-- ════════════════════════════════════════════════════
          Hero — operativ, route-line statt SaaS-Gradient
@@ -139,11 +140,13 @@ $serviceIcon = static function (string $key): string {
                         <a href="<?php echo $heroCtaUrl; ?>" class="ll-btn ll-btn-accent ll-btn-lg">
                             <?php echo $safe($heroCtaLabel); ?>
                         </a>
+                        <?php if ($heroSecUrl !== '' && $heroSecLabel !== '') : ?>
                         <a href="<?php echo $heroSecUrl; ?>" class="ll-btn ll-btn-outline ll-btn-lg">
                             <?php echo $safe($heroSecLabel); ?>
                         </a>
+                        <?php endif; ?>
                     </div>
-                    <div class="ll-stats-row" aria-label="Plattform-Eckdaten">
+                    <div class="ll-stats-row" role="group" aria-label="Plattform-Eckdaten">
                         <div class="ll-stat">
                             <span class="ll-stat-number">4.800+</span>
                             <span class="ll-stat-label">Sendungen / Tag</span>
@@ -223,7 +226,7 @@ $serviceIcon = static function (string $key): string {
                 </li>
             </ol>
 
-            <div class="ll-status-legend-row" aria-label="Status-Badge-Übersicht">
+            <div class="ll-status-legend-row" role="group" aria-label="Status-Badge-Übersicht">
                 <?php foreach ($statusLabels as $key => $label) : ?>
                     <span class="ll-status-badge ll-status--<?php echo $safe($key); ?>"><?php echo $safe($label); ?></span>
                 <?php endforeach; ?>

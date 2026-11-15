@@ -1,7 +1,7 @@
 # Kompass – Informations-Theme für 365CMS
 
-**Version:** 1.0.0
-**Ziel:** 365CMS 3.4.00+ · PHP 8.4
+**Version:** 2.0.0
+**Ziel:** 365CMS 4.0.0 – 4.1.0 · PHP 8.4.1+
 **Slug:** `kompass`
 **Kategorie:** Information / Service-Portal / Wissensdatenbank
 
@@ -25,7 +25,7 @@ Customizer pflegbar.
   Menüposition `service-nav`.
 - Fokus nach GOV.UK-Muster, Skip-Link, `aria-current`, `aria-pressed`, FAQ mit nativen
   `details`/`summary`, Unterstützung für `prefers-reduced-motion`, `forced-colors` und Druck.
-- Footer-Link zur **Erklärung zur Barrierefreiheit** (Standard `/barrierefreiheit` – bitte die
+- Footer-Link zur **Erklärung zur Barrierefreiheit** (Standard `/barrierefreiheit`, erscheint nur, wenn die Seite veröffentlicht ist – bitte die
   Seite anlegen oder den Link im Customizer anpassen/leeren).
 
 ## Templates
@@ -39,7 +39,9 @@ Customizer pflegbar.
 | `blog-single.php` | Beitrag mit Inhaltsverzeichnis, Stichwörtern und weiteren Informationen |
 | `search.php` | Suche mit Suchtipps und Einstiegen bei leeren Ergebnissen |
 | `404.php` | Nicht gefunden mit Suche, Schnellzugriffen und Kontakt |
-| `error.php` | Eigenständige Fehlerseite (Fatal-Handler) |
+| `error.php` | Fehlerseite aller Status außer 404 (Router-Vertrag 4.0.0, eigenständig für Wartung/Fatal-Handler) |
+| `contact.php` | Kontaktseite mit Core-Formular und den Angaben aus „Service & Kontakt“ |
+| `knowledgebase/*.php`, `newsletter/*.php` | Core-Views der Module im Kompass-Rahmen (gemeinsame Overrides) |
 | `index.php` | Fallback (z. B. `/sitemap` als Seitenübersicht, `/autoren`) |
 
 ## Menüpositionen
@@ -68,12 +70,16 @@ Customizer pflegbar.
 | `footer` | Kurzbeschreibung, Link zur Erklärung zur Barrierefreiheit, Copyright |
 | `advanced` | Eigenes CSS (wird gefiltert) |
 
-## 365CMS-3.4-Vertrag
+## 365CMS-4.x-Vertrag
 
-- Header/Footer über `ThemeManager::render()`, gegen Doppel-Einbindung geschützt.
-- `cms_csp_runtime_tags()` als erstes Script, CSP-Nonce für Inline-Styles/-Scripts, keine Inline-Handler, keine HTML-Sinks.
-- SEO-Metadaten über `SEOService::renderCurrentHeadTags()`; der Titel läuft über `page_title`.
+- Header/Footer über `ThemeManager::render()`, gegen Doppel-Einbindung geschützt; `header.php` öffnet `<main id="main-content">` (`THEME_V4_HEADER_HAS_MAIN`, `THEME_V4_MAIN_ID`).
+- `includes/cms-v4-compat.php` und `css/cms-v4.css` – gemeinsame 4.x-Schicht aller Public Themes (Fehlerseiten-Vertrag, `main_nav`, Standardlinks, OptionStore, SEO/Vorschau, Fokus-Punkt, Memberbereich, Token-Brücke `--tv4-*` zu den Core-Modulen). Die Token-Brücke steht am Ende von `style.css` (inkl. hohem Kontrast).
+- `contact.php`, `knowledgebase/*.php`, `newsletter/*.php` – Core-Formular bzw. Core-Views im Kompass-Rahmen; Kontaktdaten aus `kp_service`.
+- `cms_csp_runtime_tags(true)` als erstes Script (Theme-Script mit `defer`), CSP-Nonce für Inline-Styles/-Scripts, keine Inline-Handler, keine HTML-Sinks.
+- Kopfbereich über `theme_v4_head_tags()` (Core-SEO); Vorschau-Links und Entwürfe mit `noindex, nofollow`, ohne JSON-LD und mit Hinweisleiste. Der Titel berücksichtigt `$title` der Core-Module und läuft über `page_title`.
+- Hauptnavigation mit Core-Hook `main_nav`; Standardlinks (Fallback-Menüs, Schnellzugriffe, FAQ-, Service- und Barrierefreiheits-Link) nur zu vorhandenen Zielen.
+- Memberbereich: keine Frontend-Assets, nur die Kompass-Palette über `member_head`.
 - `before_footer`/`body_end` im Footer, `body_start` nach `<body>`.
 - Beitragslinks über `PermalinkService`, Archivlinks über `cms_get_archive_url()`.
 - Das Core-Inhaltsverzeichnis wird ausgeblendet, sobald Kompass sein eigenes Verzeichnis in der Seitenleiste zeigt.
-- Google Fonts entfallen bei `privacy_use_local_fonts = 1`; die Schriften werden dann über `local_font_slugs` aus dem Font-Manager geladen (`public-sans`, `atkinson-hyperlegible` …).
+- Keine Google Fonts: Die Schriften kommen über `local_font_slugs` aus der Core-Schriftverwaltung (`public-sans`, `atkinson-hyperlegible` …), sonst greift der System-Fallback.

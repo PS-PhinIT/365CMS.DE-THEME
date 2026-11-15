@@ -51,16 +51,16 @@ $authorAvatar = isset($author) && is_array($author) ? feder_media_url($author['a
 $formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
 ?>
 
-<header class="fd-archive-head fd-measure">
+<header class="fdr-archive-head fdr-measure">
     <?php if ($authorAvatar !== '') : ?>
-        <img class="fd-archive-head__avatar" src="<?php echo feder_e($authorAvatar); ?>" alt="" width="80" height="80">
+        <img class="fdr-archive-head__avatar" src="<?php echo feder_e($authorAvatar); ?>" alt="" width="80" height="80">
     <?php endif; ?>
-    <p class="fd-kicker"><?php echo feder_e($kicker); ?></p>
-    <h1 class="fd-archive-head__title"><?php echo feder_e($title); ?></h1>
+    <p class="fdr-kicker"><?php echo feder_e($kicker); ?></p>
+    <h1 class="fdr-archive-head__title"><?php echo feder_e($title); ?></h1>
     <?php if ($description !== '') : ?>
-        <p class="fd-archive-head__text"><?php echo feder_e($description); ?></p>
+        <p class="fdr-archive-head__text"><?php echo feder_e($description); ?></p>
     <?php endif; ?>
-    <p class="fd-meta">
+    <p class="fdr-meta">
         <?php if ($isOverview) : ?>
             <?php echo (int) $total; ?> <?php echo $total === 1 ? 'Eintrag' : 'Einträge'; ?>
         <?php else : ?>
@@ -68,20 +68,20 @@ $formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP
         <?php endif; ?>
     </p>
     <?php if ($searchable) : ?>
-        <form class="fd-searchform fd-searchform--inline" method="get" action="<?php echo feder_e($formAction); ?>" role="search">
-            <label for="fd-archive-q" class="fd-visually-hidden">In diesem Archiv suchen</label>
-            <input id="fd-archive-q" type="search" name="q" value="<?php echo feder_e($archiveQuery); ?>" placeholder="In „<?php echo feder_e($title); ?>“ suchen …" maxlength="120">
-            <button type="submit" class="fd-button fd-button--ghost"><?php echo feder_icon('search'); ?><span>Filtern</span></button>
+        <form class="fdr-searchform fdr-searchform--inline" method="get" action="<?php echo feder_e($formAction); ?>" role="search">
+            <label for="fdr-archive-q" class="fdr-visually-hidden">In diesem Archiv suchen</label>
+            <input id="fdr-archive-q" type="search" name="q" value="<?php echo feder_e($archiveQuery); ?>" placeholder="In „<?php echo feder_e($title); ?>“ suchen …" maxlength="120">
+            <button type="submit" class="fdr-button fdr-button--ghost"><?php echo feder_icon('search'); ?><span>Filtern</span></button>
         </form>
     <?php endif; ?>
 </header>
 
 <?php if ($isOverview) : ?>
-    <section class="fd-overview fd-wide" aria-label="<?php echo feder_e($title); ?>">
+    <section class="fdr-overview fdr-wide" aria-label="<?php echo feder_e($title); ?>">
         <?php if ($overviewItems === []) : ?>
-            <p class="fd-empty fd-measure">Keine Einträge gefunden.</p>
+            <p class="fdr-empty fdr-measure">Keine Einträge gefunden.</p>
         <?php else : ?>
-            <ul class="fd-overview__grid">
+            <ul class="fdr-overview__grid">
                 <?php foreach ($overviewItems as $item) :
                     $itemUrl = feder_safe_url((string) ($item['url'] ?? ''), '');
                     if ($itemUrl === '') {
@@ -90,12 +90,12 @@ $formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP
                     $count = (int) ($item['count'] ?? 0);
                     ?>
                     <li>
-                        <a class="fd-overview__card" href="<?php echo feder_e(feder_url($itemUrl)); ?>">
-                            <span class="fd-overview__title"><?php echo feder_e((string) ($item['title'] ?? '')); ?></span>
+                        <a class="fdr-overview__card" href="<?php echo feder_e(feder_url($itemUrl)); ?>">
+                            <span class="fdr-overview__title"><?php echo feder_e((string) ($item['title'] ?? '')); ?></span>
                             <?php if (trim((string) ($item['description'] ?? '')) !== '') : ?>
-                                <span class="fd-overview__text"><?php echo feder_e((string) $item['description']); ?></span>
+                                <span class="fdr-overview__text"><?php echo feder_e((string) $item['description']); ?></span>
                             <?php endif; ?>
-                            <span class="fd-overview__count"><?php echo $count; ?> <?php echo $count === 1 ? 'Beitrag' : 'Beiträge'; ?></span>
+                            <span class="fdr-overview__count"><?php echo $count; ?> <?php echo $count === 1 ? 'Beitrag' : 'Beiträge'; ?></span>
                         </a>
                     </li>
                 <?php endforeach; ?>
@@ -103,14 +103,14 @@ $formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP
         <?php endif; ?>
     </section>
 <?php else : ?>
-    <section class="fd-archive fd-measure" aria-label="Beiträge">
+    <section class="fdr-archive fdr-measure" aria-label="Beiträge">
         <?php if ($posts === []) : ?>
-            <div class="fd-empty">
+            <div class="fdr-empty">
                 <p><?php echo $archiveQuery !== '' ? 'Keine Beiträge passen zu „' . feder_e($archiveQuery) . '“.' : 'Hier ist noch nichts erschienen.'; ?></p>
-                <p><a class="fd-link-arrow" href="<?php echo feder_e(feder_url('/blog')); ?>">Zu allen Texten<?php echo feder_icon('arrow'); ?></a></p>
+                <p><a class="fdr-link-arrow" href="<?php echo feder_e(feder_url('/blog')); ?>">Zu allen Texten<?php echo feder_icon('arrow'); ?></a></p>
             </div>
         <?php else : ?>
-            <ol class="fd-cards">
+            <ol class="fdr-cards">
                 <?php foreach ($posts as $item) :
                     $item = is_array($item) ? (object) $item : $item;
                     if (!is_object($item)) {
@@ -122,27 +122,27 @@ $formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP
                     $itemExcerpt = feder_excerpt($item, 200);
                     $itemDate = $item->published_at ?? $item->created_at ?? '';
                     ?>
-                    <li class="fd-card<?php echo $itemImage !== '' ? ' fd-card--media' : ''; ?>">
+                    <li class="fdr-card<?php echo $itemImage !== '' ? ' fdr-card--media' : ''; ?>">
                         <article>
-                            <div class="fd-card__body">
-                                <p class="fd-meta">
+                            <div class="fdr-card__body">
+                                <p class="fdr-meta">
                                     <time datetime="<?php echo feder_e(feder_format_date($itemDate, 'iso')); ?>"><?php echo feder_e(feder_format_date($itemDate)); ?></time>
                                     <?php if ($itemCategory !== '') : ?>
-                                        <span class="fd-dot" aria-hidden="true">·</span>
+                                        <span class="fdr-dot" aria-hidden="true">·</span>
                                         <a href="<?php echo feder_e(feder_archive_url('category', (string) ($item->category_slug ?? ''))); ?>"><?php echo feder_e($itemCategory); ?></a>
                                     <?php endif; ?>
                                 </p>
-                                <h2 class="fd-card__title"><a href="<?php echo feder_e($itemUrl); ?>"><?php echo feder_e((string) ($item->title ?? '')); ?></a></h2>
+                                <h2 class="fdr-card__title"><a href="<?php echo feder_e($itemUrl); ?>"><?php echo feder_e((string) ($item->title ?? '')); ?></a></h2>
                                 <?php if ($itemExcerpt !== '') : ?>
-                                    <p class="fd-card__excerpt"><?php echo feder_e($itemExcerpt); ?></p>
+                                    <p class="fdr-card__excerpt"><?php echo feder_e($itemExcerpt); ?></p>
                                 <?php endif; ?>
                                 <?php if ($showReadingTime && isset($item->content)) : ?>
-                                    <p class="fd-meta"><?php echo feder_icon('clock'); ?><span><?php echo feder_reading_time((string) $item->content); ?> Min. Lesezeit</span></p>
+                                    <p class="fdr-meta"><?php echo feder_icon('clock'); ?><span><?php echo feder_reading_time((string) $item->content); ?> Min. Lesezeit</span></p>
                                 <?php endif; ?>
                             </div>
                             <?php if ($itemImage !== '') : ?>
-                                <a class="fd-card__media" href="<?php echo feder_e($itemUrl); ?>" tabindex="-1" aria-hidden="true">
-                                    <img src="<?php echo feder_e($itemImage); ?>" alt="" width="320" height="200" loading="lazy" decoding="async">
+                                <a class="fdr-card__media" href="<?php echo feder_e($itemUrl); ?>" tabindex="-1" aria-hidden="true">
+                                    <?php echo feder_img($itemImage, '', ['item' => $item], 320, 200); ?>
                                 </a>
                             <?php endif; ?>
                         </article>

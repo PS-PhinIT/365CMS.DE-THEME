@@ -29,10 +29,13 @@ if (isset($post) && (is_object($post) || is_array($post))) {
 
 $context = get_defined_vars();
 $documentTitle = kompass_page_title($context);
-$locale = isset($contentLocale) && is_string($contentLocale) && preg_match('/^[a-z]{2}$/', $contentLocale) === 1 ? $contentLocale : kompass_request_locale();
+$locale = theme_v4_locale($contentLocale ?? null);
+// Vorschau-Link oder nicht veröffentlichter Inhalt: noindex, keine strukturierten Daten, Hinweisleiste.
+$isPreview = theme_v4_is_preview($context);
 $siteTitle = kompass_site_title();
 $siteDescription = kompass_site_description();
-$logoUrl = kompass_media_url(kompass_text('header', 'logo_url'));
+// Theme-Logo, sonst Core-Option site_logo (nur lokale URLs).
+$logoUrl = theme_v4_site_logo(kompass_media_url(kompass_text('header', 'logo_url')));
 $isHome = kompass_is_home_request();
 
 $showBar = kompass_flag('header', 'show_a11y_bar', true);
@@ -50,20 +53,27 @@ $hasServiceLinks = $easyUrl !== '' || $signUrl !== '' || $serviceNav !== '';
 $bodyClasses = 'kompass'
     . ($isHome ? ' is-home' : '')
     . (isset($post) && is_object($post) ? ' is-article' : '')
-    . (isset($page) && is_array($page) ? ' is-page' : '');
+    . (isset($page) && is_array($page) ? ' is-page' : '')
+    . ($isPreview ? ' is-preview' : '');
 ?>
 <!DOCTYPE html>
 <html lang="<?php echo kompass_e($locale); ?>">
 <head>
     <meta charset="UTF-8">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo kompass_e($documentTitle); ?></title>
+    <?php // Core-SEO (Beschreibung, Robots, Canonical, hreflang, Open Graph, JSON-LD); Vorschau: noindex, ohne JSON-LD. ?>
+    <?php echo theme_v4_head_tags($isPreview, $siteDescription); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
 <body class="<?php echo kompass_e($bodyClasses); ?>" id="top">
 <?php \CMS\Hooks::doAction('body_start'); ?>
-<a class="kp-skip-link" href="#main-content">Zum Inhalt springen</a>
+<a class="kp-skip-link" href="#main-content"><?php echo kompass_e(theme_v4_t('Zum Inhalt springen', 'Skip to content', $locale)); ?></a>
+<?php if ($isPreview) : ?>
+<p class="theme-v4-preview-banner" role="status"><?php echo kompass_e(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $locale)); ?></p>
+<?php endif; ?>
 
 <?php if ($showBar && ($hasServiceLinks || $showTextsize || $showContrast)) : ?>
     <div class="kp-a11ybar">
@@ -135,7 +145,11 @@ $bodyClasses = 'kompass'
 
 <nav class="kp-nav" id="kp-nav" aria-label="Hauptnavigation">
     <div class="kp-container">
-        <?php kompass_nav_menu('primary', 'kp-nav__list', kompass_default_menu('primary')); ?>
+        <?php
+        // Eine responsive Navigation für Desktop und Mobil (der Menü-Schalter blendet dieselbe Liste ein):
+        // main_nav deshalb einmal mit dem Kontext `desktop`, sonst erschienen die Core-Einträge doppelt.
+        kompass_nav_menu('primary', 'kp-nav__list', kompass_default_menu('primary'), 'desktop');
+        ?>
     </div>
 </nav>
 

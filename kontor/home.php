@@ -77,7 +77,7 @@ $aboutPoints = kontor_lines(kontor_text('kt_about', 'about_points'));
 
         <div class="kt-hero__visual<?php echo $heroImage === '' ? ' kt-hero__visual--pattern' : ''; ?>">
             <?php if ($heroImage !== '') : ?>
-                <img src="<?php echo kontor_e($heroImage); ?>" alt="" width="720" height="560" loading="eager" decoding="async" fetchpriority="high">
+                <?php echo kontor_img($heroImage, '', ['lcp' => true], 720, 560); ?>
             <?php else : ?>
                 <div class="kt-hero__pattern" aria-hidden="true">
                     <?php foreach (array_slice($services, 0, 4) as $service) : ?>
@@ -148,7 +148,7 @@ $aboutPoints = kontor_lines(kontor_text('kt_about', 'about_points'));
         <div class="kt-container kt-about">
             <div class="kt-about__media<?php echo $aboutImage === '' ? ' kt-about__media--empty' : ''; ?>">
                 <?php if ($aboutImage !== '') : ?>
-                    <img src="<?php echo kontor_e($aboutImage); ?>" alt="" width="640" height="520" loading="lazy" decoding="async">
+                    <?php echo kontor_img($aboutImage, '', [], 640, 520); ?>
                 <?php else : ?>
                     <span class="kt-about__monogram" aria-hidden="true"><?php echo kontor_e(kontor_initials(kontor_company_name())); ?></span>
                 <?php endif; ?>

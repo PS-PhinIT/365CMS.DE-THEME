@@ -65,6 +65,11 @@ $ctaRegLabel   = (string) pf_get_setting('hr_content', 'cta_register_label', 'Ko
 $isLoggedIn  = theme_is_logged_in();
 $registerUrl = pf_href('/register');
 
+// Theme-Ziele ohne Core-Route (/arbeitgeber, /kandidaten, /jobs/…) nur verlinken, wenn Seite/Route existiert.
+$ctaSeekerHref  = theme_v4_link_available(pf_href($ctaSeekerUrl)) ? pf_href($ctaSeekerUrl) : '';
+$ctaEmpHref     = theme_v4_link_available(pf_href($ctaEmpUrl)) ? pf_href($ctaEmpUrl) : '';
+$candidatesHref = theme_v4_link_available(theme_route_url('candidates')) ? theme_route_url('candidates') : '';
+
 // ── Demo-Daten (Static editorial placeholders) ──────────────────────────────
 // Mirrored from the HR-pipeline prototype intent. Production sites swap to a
 // CMS-driven data source via CandidateService / JobService once available.
@@ -129,7 +134,7 @@ $jobs = [
 ];
 ?>
 
-<main id="main" class="pf-main" role="main">
+<main id="main" class="pf-main">
 
     <!-- ── HERO ─────────────────────────────────────────────────────────── -->
     <section class="pf-hero" aria-label="Einleitung">
@@ -147,17 +152,21 @@ $jobs = [
                         <p class="pf-hero-sub"><?php echo $safe($heroSubline); ?></p>
                     <?php endif; ?>
                     <div class="pf-cta-group">
-                        <a href="<?php echo $safe(pf_href($ctaSeekerUrl)); ?>" class="pf-btn pf-btn-primary pf-focus-shadow">
+                        <?php if ($ctaSeekerHref !== '' && $ctaSeekerLabel !== '') : ?>
+                        <a href="<?php echo $safe($ctaSeekerHref); ?>" class="pf-btn pf-btn-primary pf-focus-shadow">
                             <?php echo $safe($ctaSeekerLabel); ?>
                         </a>
-                        <a href="<?php echo $safe(pf_href($ctaEmpUrl)); ?>" class="pf-btn pf-btn-secondary pf-focus-shadow">
+                        <?php endif; ?>
+                        <?php if ($ctaEmpHref !== '' && $ctaEmpLabel !== '') : ?>
+                        <a href="<?php echo $safe($ctaEmpHref); ?>" class="pf-btn pf-btn-secondary pf-focus-shadow">
                             <?php echo $safe($ctaEmpLabel); ?>
                         </a>
+                        <?php endif; ?>
                     </div>
                 </div>
 
                 <aside class="pf-hero-aside" aria-label="<?php echo $safe($heroAsideTitle); ?>">
-                    <div class="pf-hero-aside-title"><?php echo $safe($heroAsideTitle); ?></div>
+                    <p class="pf-hero-aside-title"><?php echo $safe($heroAsideTitle); ?></p>
                     <?php foreach (array_slice($talents, 0, 2) as $candidate) : ?>
                         <?php include __DIR__ . '/partials/candidate-card.php'; ?>
                     <?php endforeach; ?>
@@ -211,11 +220,13 @@ $jobs = [
                     <?php include __DIR__ . '/partials/candidate-card.php'; ?>
                 <?php endforeach; ?>
             </div>
+            <?php if ($candidatesHref !== '') : ?>
             <div class="pf-section-cta">
-                <a href="<?php echo $safe(theme_route_url('candidates')); ?>" class="pf-btn pf-btn-ghost pf-focus-shadow">
-                    Alle Kandidaten anzeigen →
+                <a href="<?php echo $safe($candidatesHref); ?>" class="pf-btn pf-btn-ghost pf-focus-shadow">
+                    Alle Kandidaten anzeigen <span aria-hidden="true">→</span>
                 </a>
             </div>
+            <?php endif; ?>
         </div>
     </section>
 
@@ -231,14 +242,20 @@ $jobs = [
             </div>
             <div class="pf-grid-3">
                 <?php foreach ($jobs as $job) :
-                    $jHref = $safe(pf_href((string) ($job['href'] ?? '#')));
+                    // Demo-Stellen: Links nur, wenn die Zielseite existiert.
+                    $jRaw  = pf_href((string) ($job['href'] ?? ''));
+                    $jHref = theme_v4_link_available($jRaw) ? $safe($jRaw) : '';
                     ?>
                     <article class="pf-card pf-job-card pf-reveal">
                         <div class="pf-job-header">
                             <div>
-                                <div class="pf-job-title">
+                                <h3 class="pf-job-title">
+                                    <?php if ($jHref !== '') : ?>
                                     <a href="<?php echo $jHref; ?>" class="pf-focus-shadow"><?php echo $safe((string) $job['title']); ?></a>
-                                </div>
+                                    <?php else : ?>
+                                    <?php echo $safe((string) $job['title']); ?>
+                                    <?php endif; ?>
+                                </h3>
                                 <div class="pf-job-company"><?php echo $safe((string) $job['company']); ?></div>
                             </div>
                             <?php if (!empty($job['remote'])) : ?>
@@ -257,10 +274,12 @@ $jobs = [
                                 <span class="pf-skill-chip"><?php echo $safe((string) $tag); ?></span>
                             <?php endforeach; ?>
                         </div>
+                        <?php if ($jHref !== '') : ?>
                         <div class="pf-job-cta-row">
                             <a href="<?php echo $jHref; ?>" class="pf-btn pf-btn-primary pf-btn-sm pf-focus-shadow">Details &amp; Bewerben</a>
                             <a href="<?php echo $jHref; ?>?action=save" class="pf-btn pf-btn-ghost pf-btn-sm pf-focus-shadow">Merken</a>
                         </div>
+                        <?php endif; ?>
                     </article>
                 <?php endforeach; ?>
             </div>

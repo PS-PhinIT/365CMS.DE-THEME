@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * CMS Newspaper Theme – Bootstrap & Customizer Integration
  *
- * Editorial news / magazine theme for 365CMS v3.x.x on PHP 8.4.
+ * Editorial news / magazine theme for 365CMS 4.0.0 – 4.1.0 on PHP 8.4.1.
  *
  * @package CmsNewspaper_Theme
  */
@@ -14,12 +14,22 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('CMSNEWSPAPER_THEME_VERSION')) {
-    define('CMSNEWSPAPER_THEME_VERSION', '1.1.0');
+    define('CMSNEWSPAPER_THEME_VERSION', '2.0.0');
 }
 
+// Marketplace-Slug (index.json); der Theme-Ordner heißt `newspaper`. URLs/Pfade daher immer über das aktive Theme.
 if (!defined('CMSNEWSPAPER_THEME_SLUG')) {
     define('CMSNEWSPAPER_THEME_SLUG', 'cms-newspaper');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">; Module und Fehlerseiten setzen kein zweites <main>.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 /**
  * Newspaper Theme Singleton
@@ -43,21 +53,23 @@ final class CmsNewspaper_Theme
 
     private function registerHooks(): void
     {
+        // Menü-Positionen ausschließlich über den Filter (ThemeManager::registerMenuLocation() gibt es in 4.0 nicht mehr).
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Shell und löst ebenfalls `head` aus:
+        // dort weder Frontend-Stylesheet noch Customizer-Variablen oder Theme-Script, nur die Palette als --member-*.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         // Assets in <head>
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'],      1);
-        \CMS\Hooks::addAction('head', [$this, 'outputGoogleFonts'],  5);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'],     10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 15);
 
         // Deferred navigation script
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
-
-        // Menü-Locations via Filter
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
-
-        // Menüs registrieren – auf BEIDEN Hooks für v3-Bootstrap-Kompatibilität
-        \CMS\Hooks::addAction('init',     [$this, 'registerNavMenus'], 10);
-        \CMS\Hooks::addAction('cms_init', [$this, 'registerNavMenus'], 10);
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
@@ -65,13 +77,31 @@ final class CmsNewspaper_Theme
     public function enqueueStyles(): void
     {
         $themeUrl = $this->themeBaseUrl();
-        $href     = htmlspecialchars(
-            $themeUrl . '/style.css?v=' . rawurlencode(CMSNEWSPAPER_THEME_VERSION),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-        echo '<link rel="preload" href="' . $href . '" as="style">' . "\n";
+        $version  = rawurlencode(CMSNEWSPAPER_THEME_VERSION);
+        $href     = htmlspecialchars($themeUrl . '/style.css?v=' . $version, ENT_QUOTES, 'UTF-8');
+        $v4Href   = htmlspecialchars($themeUrl . '/css/cms-v4.css?v=' . $version, ENT_QUOTES, 'UTF-8');
         echo '<link rel="stylesheet" href="' . $href . '">' . "\n";
+        echo '<link rel="stylesheet" href="' . $v4Href . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greifen die System-Fallbacks der Font-Stacks.
+    }
+
+    /** Memberbereich (inkl. Newsletter-Widget) in der Newspaper-Palette – Customizer-Werte, sanitisiert. */
+    public function outputMemberTokens(): void
+    {
+        $c = fn(string $key, string $default): string => news_css_color($this->customizerGet('colors', $key, $default), $default);
+        echo theme_v4_member_tokens_style([
+            'primary'    => $c('ink_color', '#0a0b0c'),
+            'accent'     => $c('accent_color', '#c22510'),
+            'bg'         => $c('paper_color', '#f8f9fa'),
+            'card_bg'    => $c('surface_color', '#ffffff'),
+            'text'       => $c('ink_color', '#0a0b0c'),
+            'text_muted' => $c('ink_dim', '#6b6c6d'),
+            'border'     => $c('border_color', '#e4e5e7'),
+            'focus'      => $c('accent_color', '#c22510'),
+            'radius'     => news_css_number($this->customizerGet('layout', 'border_radius', 6), 6, 0, 12) . 'px',
+            'font'       => $this->mapFontChoice((string) $this->customizerGet('typography', 'font_family_base', 'source-sans'), 'body'),
+        ]);
     }
 
     public function enqueueScripts(): void
@@ -85,58 +115,60 @@ final class CmsNewspaper_Theme
         echo '<script src="' . $src . '" defer></script>' . "\n";
     }
 
-    /**
-     * Google Fonts – preconnect + nur benötigte Familien.
-     */
-    public function outputGoogleFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $families = $this->googleFontFamilies();
-        if ($families === '') {
-            return;
-        }
-        $url = 'https://fonts.googleapis.com/css2?family=' . $families . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    }
-
     // ── Meta ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Nur noch theme-color. Beschreibung, Robots, Canonical und Open Graph liefert das Core-SEO in header.php
+     * (theme_v4_head_tags()) – bisher gab das Theme zusätzlich eine site-weite Beschreibung, `og:url` = Startseite
+     * und `robots: index,follow` aus, auch auf Vorschau- und Fehlerseiten.
+     */
     public function outputMetaTags(): void
     {
-        $tm       = \CMS\ThemeManager::instance();
-        $siteDesc = htmlspecialchars((string) $tm->getSiteDescription(), ENT_QUOTES, 'UTF-8');
-        $siteUrl  = htmlspecialchars((string) (defined('SITE_URL') ? SITE_URL : ''), ENT_QUOTES, 'UTF-8');
-
-        $themeColor = htmlspecialchars(
-            (string) $this->customizerGet('colors', 'ink_color', '#0a0b0c'),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-
-        echo '<meta name="description" content="' . $siteDesc . '">' . "\n";
-        echo '<meta property="og:url" content="' . $siteUrl . '">' . "\n";
-        echo '<meta name="theme-color" content="' . $themeColor . '">' . "\n";
-        echo '<meta name="robots" content="index,follow">' . "\n";
+        $themeColor = news_css_color($this->customizerGet('colors', 'ink_color', '#0a0b0c'), '#0a0b0c');
+        echo '<meta name="theme-color" content="' . htmlspecialchars($themeColor, ENT_QUOTES, 'UTF-8') . '">' . "\n";
     }
 
     // ── Customizer-getriebene CSS-Variablen + custom_css ─────────────────────
 
     public function outputCustomStyles(): void
     {
-        $p = fn(string $g, string $k, string $d): string =>
-            htmlspecialchars((string) $this->customizerGet($g, $k, $d), ENT_QUOTES, 'UTF-8');
+        // Werte validiert statt nur escaped: Farben als Hex/RGB/HSL, Zahlen geklemmt, Auswahl gegen Liste.
+        $colorKeys = [
+            'ink_color' => '#0a0b0c', 'ink_mid' => '#3a3b3c', 'ink_dim' => '#6b6c6d', 'ink_ghost' => '#6f7071',
+            'paper_color' => '#f8f9fa', 'surface_color' => '#ffffff', 'accent_color' => '#c22510',
+            'accent_hover' => '#9f1e0d', 'border_color' => '#e4e5e7', 'live_color' => '#22c55e',
+        ];
+        $numberLimits = [
+            'typography' => ['font_size_base' => [16, 14, 20], 'line_height_base' => [1.6, 1.3, 2]],
+            'layout'     => ['container_width' => [1040, 960, 1440], 'section_spacing' => [4, 2, 8], 'border_radius' => [6, 0, 12]],
+            'buttons'    => ['button_border_radius' => [4, 0, 12], 'button_padding_x' => [1.5, 0.5, 3], 'button_padding_y' => [0.75, 0.25, 1.5]],
+        ];
+        $p = function (string $g, string $k, string $d) use ($colorKeys, $numberLimits): string {
+            $raw = $this->customizerGet($g, $k, $d);
+            if ($g === 'colors' && isset($colorKeys[$k])) {
+                return news_css_color($raw, $colorKeys[$k]);
+            }
+            if (isset($numberLimits[$g][$k])) {
+                [$default, $min, $max] = $numberLimits[$g][$k];
+                return news_css_number($raw, (float) $default, (float) $min, (float) $max);
+            }
+            if ($g === 'buttons' && $k === 'button_transform') {
+                $value = (string) $raw;
+                return in_array($value, ['uppercase', 'none', 'capitalize', 'lowercase'], true) ? $value : $d;
+            }
+
+            return htmlspecialchars((string) $raw, ENT_QUOTES, 'UTF-8');
+        };
 
         $displayChoice = (string) $this->customizerGet('typography', 'font_family_display', 'playfair');
         $baseChoice    = (string) $this->customizerGet('typography', 'font_family_base',    'source-sans');
         $monoChoice    = (string) $this->customizerGet('typography', 'font_family_mono',    'plex-mono');
 
-        $displayFont = htmlspecialchars($this->mapFontChoice($displayChoice, 'display'), ENT_QUOTES, 'UTF-8');
-        $baseFont    = htmlspecialchars($this->mapFontChoice($baseChoice,    'body'),    ENT_QUOTES, 'UTF-8');
-        $monoFont    = htmlspecialchars($this->mapFontChoice($monoChoice,    'mono'),    ENT_QUOTES, 'UTF-8');
+        // Feste Font-Stacks aus mapFontChoice() (keine Nutzereingabe). Nicht HTML-escapen: Entities wie &quot; werden
+        // in <style> nicht dekodiert – bisher war --news-font-* dadurch ungültig und die Display-Schrift griff nie.
+        $displayFont = $this->mapFontChoice($displayChoice, 'display');
+        $baseFont    = $this->mapFontChoice($baseChoice,    'body');
+        $monoFont    = $this->mapFontChoice($monoChoice,    'mono');
 
         echo '<style id="news-custom-vars"' . theme_csp_nonce_attr() . '>:root{';
 
@@ -144,14 +176,14 @@ final class CmsNewspaper_Theme
         echo '--news-ink:'         . $p('colors', 'ink_color',     '#0a0b0c') . ';';
         echo '--news-ink-mid:'     . $p('colors', 'ink_mid',       '#3a3b3c') . ';';
         echo '--news-ink-dim:'     . $p('colors', 'ink_dim',       '#6b6c6d') . ';';
-        echo '--news-ink-ghost:'   . $p('colors', 'ink_ghost',     '#9a9b9c') . ';';
+        echo '--news-ink-ghost:'   . $p('colors', 'ink_ghost',     '#6f7071') . ';';
         echo '--news-paper:'       . $p('colors', 'paper_color',   '#f8f9fa') . ';';
         echo '--news-surface:'     . $p('colors', 'surface_color', '#ffffff') . ';';
-        echo '--news-accent:'      . $p('colors', 'accent_color',  '#e32d12') . ';';
-        echo '--news-accent-hover:'. $p('colors', 'accent_hover',  '#c22510') . ';';
+        echo '--news-accent:'      . $p('colors', 'accent_color',  '#c22510') . ';';
+        echo '--news-accent-hover:'. $p('colors', 'accent_hover',  '#9f1e0d') . ';';
         echo '--news-rule:'        . $p('colors', 'border_color',  '#e4e5e7') . ';';
         echo '--news-live:'        . $p('colors', 'live_color',    '#22c55e') . ';';
-        echo '--focus-ring:'       . $p('colors', 'accent_color',  '#e32d12') . ';';
+        echo '--focus-ring:'       . $p('colors', 'accent_color',  '#c22510') . ';';
 
         // Typography
         echo '--news-font-display:'. $displayFont . ';';
@@ -193,24 +225,25 @@ final class CmsNewspaper_Theme
 
     // ── Menü-Positionen ───────────────────────────────────────────────────────
 
-    public function registerMenuLocations(array $locations): array
+    /**
+     * @param mixed $locations
+     * @return array<int, mixed>
+     */
+    public function registerMenuLocations(mixed $locations): array
     {
-        $locations[] = ['slug' => 'primary-nav',  'label' => 'Hauptnavigation (Ressorts)'];
-        $locations[] = ['slug' => 'footer-nav',   'label' => 'Footer-Navigation'];
-        $locations[] = ['slug' => 'footer-legal', 'label' => 'Footer Rechtliche Links'];
-        $locations[] = ['slug' => 'topics-nav',   'label' => 'Themen-Schnellnavigation (Sub-Bar)'];
-        return $locations;
-    }
-
-    public function registerNavMenus(): void
-    {
-        $tm = \CMS\ThemeManager::instance();
-        if (method_exists($tm, 'registerMenuLocation')) {
-            $tm->registerMenuLocation('primary-nav',  'Hauptnavigation (Ressorts)');
-            $tm->registerMenuLocation('footer-nav',   'Footer-Navigation');
-            $tm->registerMenuLocation('footer-legal', 'Footer Rechtliche Links');
-            $tm->registerMenuLocation('topics-nav',   'Themen-Schnellnavigation (Sub-Bar)');
+        $locations = is_array($locations) ? $locations : [];
+        $existing  = array_column(array_filter($locations, 'is_array'), 'slug');
+        foreach ([
+            'primary-nav'  => 'Hauptnavigation (Ressorts)',
+            'footer-nav'   => 'Footer-Navigation',
+            'footer-legal' => 'Footer Rechtliche Links',
+            'topics-nav'   => 'Themen-Schnellnavigation (Sub-Bar)',
+        ] as $slug => $label) {
+            if (!in_array($slug, $existing, true)) {
+                $locations[] = ['slug' => $slug, 'label' => $label];
+            }
         }
+        return $locations;
     }
 
     /**
@@ -235,15 +268,10 @@ final class CmsNewspaper_Theme
 
     // ── Internal helpers ─────────────────────────────────────────────────────
 
+    /** URL des aktiven Theme-Ordners (`newspaper`); der Marketplace-Slug `cms-newspaper` ist kein Ordnername. */
     private function themeBaseUrl(): string
     {
-        $tm = \CMS\ThemeManager::instance();
-        try {
-            $url = (string) $tm->getThemeUrl(CMSNEWSPAPER_THEME_SLUG);
-        } catch (\Throwable) {
-            $url = (string) $tm->getThemeUrl();
-        }
-        return rtrim($url, '/');
+        return theme_v4_theme_url(__DIR__);
     }
 
     private function customizerGet(string $group, string $key, mixed $default = null): mixed
@@ -263,8 +291,9 @@ final class CmsNewspaper_Theme
      */
     private function mapFontChoice(string $choice, string $slot): string
     {
-        $sansStack  = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-        $serifStack = 'Georgia, "Times New Roman", "Source Serif 4", serif';
+        // System-Fallbacks: Webfonts kommen nur aus der Core-Schriftverwaltung (keine Google Fonts).
+        $sansStack  = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        $serifStack = 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif';
         $monoStack  = 'ui-monospace, SFMono-Regular, "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace';
 
         return match ($choice) {
@@ -292,54 +321,6 @@ final class CmsNewspaper_Theme
                 default   => '"Source Sans 3", ' . $sansStack,
             },
         };
-    }
-
-    private function googleFontFamilies(): string
-    {
-        $display = (string) $this->customizerGet('typography', 'font_family_display', 'playfair');
-        $base    = (string) $this->customizerGet('typography', 'font_family_base',    'source-sans');
-        $mono    = (string) $this->customizerGet('typography', 'font_family_mono',    'plex-mono');
-
-        $needed = [];
-        foreach ([$display, $base, $mono] as $choice) {
-            switch ($choice) {
-                case 'playfair':
-                    $needed['Playfair Display'] = 'Playfair+Display:wght@600;700;800';
-                    break;
-                case 'source-serif':
-                    $needed['Source Serif 4']   = 'Source+Serif+4:wght@500;700';
-                    break;
-                case 'eb-garamond':
-                    $needed['EB Garamond']      = 'EB+Garamond:wght@500;700';
-                    break;
-                case 'lora':
-                    $needed['Lora']             = 'Lora:wght@500;700';
-                    break;
-                case 'syne':
-                    $needed['Syne']             = 'Syne:wght@700;800';
-                    break;
-                case 'source-sans':
-                    $needed['Source Sans 3']    = 'Source+Sans+3:wght@400;600;700';
-                    break;
-                case 'inter':
-                    $needed['Inter']            = 'Inter:wght@400;500;700';
-                    break;
-                case 'barlow':
-                    $needed['Barlow']           = 'Barlow:wght@400;500;700';
-                    break;
-                case 'plex-mono':
-                    $needed['IBM Plex Mono']    = 'IBM+Plex+Mono:wght@400;600';
-                    break;
-                case 'jetbrains':
-                    $needed['JetBrains Mono']   = 'JetBrains+Mono:wght@400;600';
-                    break;
-            }
-        }
-
-        if ($needed === []) {
-            return '';
-        }
-        return implode('&family=', $needed);
     }
 
     private function sanitizeCustomCss(string $raw): string
@@ -384,42 +365,78 @@ if (!function_exists('theme_route_url')) {
             'search'   => $base . '/search',
             'login'    => $base . '/login',
             'register' => $base . '/register',
-            'archive'  => $base . '/archiv',
+            'archive'  => $base . '/blog', // Beitragsarchiv des Cores (bisher /archiv, eine Route, die es nicht gibt)
             default    => $base . '/' . ltrim($name, '/'),
         };
+    }
+}
+
+if (!function_exists('news_safe_url')) {
+    /**
+     * Nur sichere Linkziele: Pfad, Anker, http(s), mailto:, tel: – sonst `$fallback`
+     * (FILTER_VALIDATE_URL allein ließ z. B. `javascript://…` durch).
+     */
+    function news_safe_url(string $url, string $fallback = '#'): string
+    {
+        $url = trim($url);
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_starts_with($url, '//')) {
+            return $fallback;
+        }
+        if (str_starts_with($url, '/') || str_starts_with($url, '#') || str_starts_with($url, '?')) {
+            return $url;
+        }
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+        if (in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false) {
+            return $url;
+        }
+        if (in_array($scheme, ['mailto', 'tel'], true)) {
+            return $url;
+        }
+
+        return $fallback;
     }
 }
 
 if (!function_exists('theme_nav_menu')) {
     /**
      * Render a registered navigation menu as a <ul> list.
+     *
+     * Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den Menüeinträgen die Einträge der Core-Module
+     * (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) – auch wenn das Menü leer ist.
+     *
+     * @return bool true, wenn eine Liste ausgegeben wurde
      */
-    function theme_nav_menu(string $location): void
+    function theme_nav_menu(string $location, string $mainNavContext = ''): bool
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
             $items = [];
         }
-        if (empty($items)) {
-            return;
+        $items = is_array($items) ? $items : [];
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'current-menu-item']);
+            $coreItems = (string) ob_get_clean();
         }
-        $cur = rtrim(parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/', '/');
+        if ($items === [] && $coreItems === '') {
+            return false;
+        }
+
         echo '<ul>';
         foreach ($items as $item) {
-            $rawUrl = (string) ($item['url']   ?? '#');
-            $label  = (string) ($item['label'] ?? '');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
-
-            $isActive = ($path === '' || $path === '/')
-                ? ($cur === '' || $cur === '/')
-                : str_starts_with($cur, $path);
-
-            $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
-                ? $rawUrl
-                : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
-                    ? $rawUrl
-                    : '#');
+            if (!is_array($item)) {
+                continue;
+            }
+            // Der Core liefert die Beschriftung in `title`; `label` bleibt für ältere Menüdaten.
+            $label = trim((string) ($item['label'] ?? $item['title'] ?? ''));
+            if ($label === '') {
+                continue;
+            }
+            $sanitizedUrl = news_safe_url((string) ($item['url'] ?? '#'));
+            $isActive = $sanitizedUrl !== '#' && !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'
@@ -428,28 +445,22 @@ if (!function_exists('theme_nav_menu')) {
             $cls = $isActive ? ' class="current-menu-item"' : '';
             echo '<li' . $cls . '><a href="'
                 . htmlspecialchars($sanitizedUrl, ENT_QUOTES, 'UTF-8')
-                . '"' . $target . '>'
+                . '"' . $target . ($isActive ? ' aria-current="page"' : '') . '>'
                 . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
                 . '</a></li>';
         }
+        echo $coreItems; // Core-Hook main_nav: fertige, escapte Links in <li>
         echo '</ul>';
+
+        return true;
     }
 }
 
 if (!function_exists('get_header')) {
     function get_header(): void
     {
-        $path = __DIR__ . '/header.php';
-        try {
-            $tp = \CMS\ThemeManager::instance()->getThemePath(CMSNEWSPAPER_THEME_SLUG) . '/header.php';
-            if (file_exists($tp)) {
-                $path = $tp;
-            }
-        } catch (\Throwable) {
-            // bleibt bei __DIR__
-        }
-        if (file_exists($path)) {
-            require $path;
+        if (is_file(__DIR__ . '/header.php')) {
+            require __DIR__ . '/header.php';
         }
     }
 }
@@ -457,17 +468,8 @@ if (!function_exists('get_header')) {
 if (!function_exists('get_footer')) {
     function get_footer(): void
     {
-        $path = __DIR__ . '/footer.php';
-        try {
-            $tp = \CMS\ThemeManager::instance()->getThemePath(CMSNEWSPAPER_THEME_SLUG) . '/footer.php';
-            if (file_exists($tp)) {
-                $path = $tp;
-            }
-        } catch (\Throwable) {
-            // bleibt bei __DIR__
-        }
-        if (file_exists($path)) {
-            require $path;
+        if (is_file(__DIR__ . '/footer.php')) {
+            require __DIR__ . '/footer.php';
         }
     }
 }
@@ -629,7 +631,53 @@ if (!function_exists('news_brand_html')) {
     }
 }
 
-// ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
+if (!function_exists('news_css_color')) {
+    /** Farbwert für CSS: nur Hex/RGB(A)/HSL(A), sonst `$fallback`. */
+    function news_css_color(mixed $value, string $fallback): string
+    {
+        $candidate = trim(is_scalar($value) ? (string) $value : '');
+        if (preg_match('/^#(?:[0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i', $candidate) === 1
+            || preg_match('/^(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s\/]+\)$/i', $candidate) === 1) {
+            return $candidate;
+        }
+
+        return $fallback;
+    }
+}
+
+if (!function_exists('news_css_number')) {
+    /** Zahl für CSS, auf [min, max] geklemmt. */
+    function news_css_number(mixed $value, float $default, float $min, float $max): string
+    {
+        $number = is_numeric($value) ? (float) $value : $default;
+        $number = max($min, min($max, $number));
+
+        return rtrim(rtrim(number_format($number, 3, '.', ''), '0'), '.');
+    }
+}
+
+if (!function_exists('news_social_links')) {
+    /**
+     * Profil-Links der Utility-Bar aus dem Customizer (Header → Social-Profile). Leere Felder entfallen –
+     * bisher zeigte die Leiste drei Platzhalter-Links auf `#`.
+     *
+     * @return list<array{label:string,url:string,icon:string}>
+     */
+    function news_social_links(): array
+    {
+        $links = [];
+        foreach (['linkedin' => 'LinkedIn', 'github' => 'GitHub', 'x' => 'X (Twitter)'] as $key => $label) {
+            $url = news_safe_url((string) news_get_setting('header', 'social_' . $key . '_url', ''), '');
+            if ($url !== '' && preg_match('#^https?://#i', $url) === 1) {
+                $links[] = ['label' => $label, 'url' => $url, 'icon' => $key];
+            }
+        }
+
+        return $links;
+    }
+}
+
+// ── 365CMS-Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────────
 
 if (!function_exists('theme_csp_nonce_attr')) {
     /** Liefert ` nonce="…"` für Inline-<style>/<script> unter der 365CMS-CSP. */
@@ -646,25 +694,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 
@@ -695,5 +728,16 @@ if (!function_exists('theme_search_result_url')) {
         $slug = ltrim((string) ($data['slug'] ?? ''), '/');
 
         return rtrim((string) SITE_URL, '/') . '/' . implode('/', array_map('rawurlencode', explode('/', $slug)));
+    }
+}
+
+if (!function_exists('news_document_title')) {
+    /**
+     * Dokumenttitel: `$title` der Core-Module/Fehlerseiten, sonst Beitrag/Seite über das Core-SEO, sonst Site-Titel
+     * (bisher stand auf jeder Seite nur der Site-Titel im <title>).
+     */
+    function news_document_title(mixed $title = null): string
+    {
+        return theme_v4_document_title(is_string($title) ? $title : null);
     }
 }

@@ -4,10 +4,10 @@ Theme URI: https://phin.network
 Author: PHIN IT Solutions
 Author URI: https://phin.network
 Description: Editorial B2B / Corporate Landing Theme – Deep-Slate-Anker, deliberater Kupfer-Gold-Akzent, redaktionelle Whitespace-Disziplin und Rule-Line-Typografie. Für IT-Beratung, Consultancies und seriöse Dienstleister.
-Version: 3.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 4.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: biz-theme
 Tags: business, corporate, consulting, b2b, landing, editorial
@@ -22,7 +22,7 @@ Tags: business, corporate, consulting, b2b, landing, editorial
    ================================================================ */
 :root {
     --biz-accent:        #c08a2e;
-    --biz-accent-hover:  #a16f1e;
+    --biz-accent-hover:  #8a5f17;   /* Text/Links auf hellen Flächen: 5,6:1 auf Weiß (bisher #a16f1e: 4,4:1) */
     --biz-accent-soft:   #f0e3c6;
     --biz-ink:           #0c1320;
     --biz-ink-soft:      #18243a;
@@ -45,12 +45,15 @@ Tags: business, corporate, consulting, b2b, landing, editorial
     --biz-shadow-sm:     0 1px 2px rgba(12, 19, 32, 0.06);
     --biz-shadow-md:     0 8px 28px rgba(12, 19, 32, 0.10);
 
-    --biz-font-body:     -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --biz-font-heading:  -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --biz-font-body:     system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --biz-font-heading:  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --biz-font-size-base:16px;
     --biz-line-height:   1.65;
 
-    --focus-ring:        var(--biz-accent);
+    /* Fokus: dunkles Kupfer auf hellen Flächen (5,2:1 auf Papier; helles Kupfer nur 2,8:1),
+       helles Kupfer auf Ink/Ink-Soft (6,1:1 / 5,1:1) */
+    --focus-ring:        var(--biz-accent-hover);
+    --focus-ring-on-dark: var(--biz-accent);
 }
 
 /* ================================================================
@@ -85,8 +88,10 @@ body.biz-body {
 body.mobile-menu-open { overflow: hidden; }
 
 img { max-width: 100%; height: auto; display: block; }
-a { color: var(--biz-accent); text-decoration: none; transition: color 0.2s ease; }
-a:hover { color: var(--biz-accent-hover); }
+/* Links auf hellen Flächen im dunklen Kupfer (helles Kupfer #c08a2e: 3,0:1 auf Weiß, 2,8:1 auf Papier) */
+a { color: var(--biz-accent-hover); text-decoration: none; transition: color 0.2s ease; }
+a:hover { color: var(--biz-ink); }
+.biz-prose a { text-decoration: underline; text-underline-offset: 2px; }
 
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--biz-font-heading);
@@ -108,6 +113,17 @@ h1, h2, h3, h4, h5, h6 {
 }
 .biz-focus-shadow:focus-visible {
     box-shadow: 0 0 0 3px var(--focus-ring), 0 0 0 5px rgba(192, 138, 46, 0.25);
+}
+
+/* Dunkle Flächen: Header, Mobil-Drawer, Hero, dunkle Sektionen, CTA, Seiten-Hero, Footer */
+.biz-header,
+.biz-mobile-drawer,
+.biz-hero,
+.biz-section-dark,
+.biz-cta-section,
+.biz-page-hero,
+.biz-footer {
+    --focus-ring: var(--focus-ring-on-dark);
 }
 
 .skip-link {
@@ -147,9 +163,11 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.18em;
-    color: var(--biz-accent);
+    color: var(--biz-accent-hover); /* 5,2:1 auf Papier (bisher helles Kupfer: 2,8:1) */
     margin-bottom: 1.25rem;
 }
+.biz-cta-section .biz-eyebrow { color: var(--biz-accent-soft); }
+.biz-cta-section .biz-eyebrow::before { background: var(--biz-accent-soft); }
 .biz-eyebrow::before {
     content: '';
     display: inline-block;
@@ -273,7 +291,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-biz-outline {
     background: transparent;
     color: var(--biz-white);
-    border-color: rgba(255, 255, 255, 0.32);
+    border-color: rgba(255, 255, 255, 0.5); /* Rahmen 5,3:1 auf Ink (bisher 0.32: 2,9:1) */
 }
 .btn-biz-outline:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -617,8 +635,8 @@ h1, h2, h3, h4, h5, h6 {
     width: 22px;
     height: 22px;
     background: transparent;
-    color: var(--biz-accent);
-    border: 1px solid var(--biz-accent);
+    color: var(--biz-accent-hover);
+    border: 1px solid var(--biz-accent-hover);
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
@@ -788,7 +806,8 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--biz-text-on-dark-mute);
     max-width: 360px;
 }
-.biz-footer-col h4 {
+.biz-footer-col h4,
+.biz-footer-col .biz-footer-heading {
     color: var(--biz-white);
     font-size: 0.75rem;
     font-weight: 700;
@@ -1047,3 +1066,58 @@ h1, h2, h3, h4, h5, h6 {
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
 form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
 form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+
+/* ================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die Business-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis). Primär ist das dunkle Kupfer (weiße Schrift 5,6:1).
+   Das Theme hat keinen Dark Mode.
+   ================================================================ */
+:root {
+    --tv4-primary:        var(--biz-accent-hover);
+    --tv4-primary-hover:  var(--biz-ink-soft);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--biz-accent-hover);
+    --tv4-text:           var(--biz-text);
+    --tv4-muted:          var(--biz-text-mute);
+    --tv4-bg:             var(--biz-white);
+    --tv4-surface:        var(--biz-white);
+    --tv4-surface-alt:    var(--biz-paper);
+    --tv4-border:         var(--biz-rule);
+    --tv4-border-strong:  #8b8f99;
+    --tv4-radius:         var(--biz-radius, 6px);
+    --tv4-btn-radius:     var(--biz-radius, 6px);
+    --tv4-focus:          var(--biz-accent-hover);
+    --tv4-font-body:      var(--biz-font-body);
+    --tv4-font-heading:   var(--biz-font-heading);
+    --tv4-hero-start:     var(--biz-ink);
+    --tv4-hero-end:       var(--biz-ink-soft);
+    --tv4-max:            var(--biz-max-width, 1200px);
+}
+
+/* Core-Module (Knowledgebase, Newsletter) im Theme-Rahmen; header.php öffnet <main>, der Header ist sticky. */
+.theme-v4-module {
+    max-width: var(--biz-max-width, 1200px);
+    margin-inline: auto;
+    padding: 3rem 2rem 4rem;
+}
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content {
+    padding-top: 0;
+}
+@media (max-width: 768px) {
+    .theme-v4-module { padding: 2rem 1.25rem 3rem; }
+}
+
+/* Core-Module über page.php (Downloads, Feeds): volle Containerbreite statt Lesespalte */
+.biz-prose.biz-prose--module { max-width: none; }
+
+/* Fußzeilen-Überschriften (h2 statt h4, ohne Ebenensprung) */
+.biz-footer-col .biz-footer-heading { font-family: var(--biz-font-body); line-height: 1.4; }
+
+/* Eigenständige Fehler-/Wartungsseite (error.php ohne Header/Footer) */
+.biz-error-standalone { width: 100%; align-self: stretch; }
+
+/* Sprungziel des Skip-Links ohne sichtbaren Rahmen um den ganzen Inhalt */
+#main-content:focus { outline: none; }

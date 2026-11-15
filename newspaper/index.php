@@ -36,7 +36,7 @@ $safe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8'
 
         <div class="news-actions-row">
             <a href="<?php echo $safe(news_href('/')); ?>" class="news-btn news-btn-primary">Zur Startseite</a>
-            <a href="<?php echo $safe(theme_route_url('archive')); ?>" class="news-btn news-btn-ghost">Archiv durchsuchen</a>
+            <a href="<?php echo $safe(theme_route_url('archive')); ?>" class="news-btn news-btn-ghost">Alle Beiträge</a>
         </div>
     </div>
 </div>

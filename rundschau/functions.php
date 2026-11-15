@@ -15,29 +15,40 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('RUNDSCHAU_THEME_VERSION')) {
-    define('RUNDSCHAU_THEME_VERSION', '1.0.0');
+    define('RUNDSCHAU_THEME_VERSION', '2.0.0');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">; Module und Fehlerseiten setzen kein zweites <main>.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 final class Rundschau_Theme
 {
     public const SLUG = 'rundschau';
 
     /**
-     * Schriftwahl → [CSS-Stack, Google-Fonts-Familie (leer = keine Webfont), Font-Manager-Slug].
+     * Schriftwahl → [CSS-Stack mit System-Fallback, Font-Manager-Slug (leer = keine Webfont)].
      *
-     * @var array<string, array{0:string,1:string,2:string}>
+     * Webfonts kommen ausschließlich aus der Core-Schriftverwaltung (local_font_slugs), nie von Google Fonts.
+     *
+     * @var array<string, array{0:string,1:string}>
      */
     private const FONTS = [
-        'archivo'          => ['"Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif', 'Archivo:wdth,wght@75..100,400..800', 'archivo'],
-        'roboto-condensed' => ['"Roboto Condensed", "Arial Narrow", Arial, sans-serif', 'Roboto+Condensed:wght@400..800', 'roboto-condensed'],
-        'oswald'           => ['"Oswald", "Arial Narrow", Arial, sans-serif', 'Oswald:wght@400..700', 'oswald'],
-        'source-serif'     => ['"Source Serif 4", Georgia, "Times New Roman", serif', 'Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700', 'source-serif-4'],
-        'merriweather'     => ['"Merriweather", Georgia, serif', 'Merriweather:ital,wght@0,400;0,700;0,900;1,400', 'merriweather'],
-        'lora'             => ['"Lora", Georgia, serif', 'Lora:ital,wght@0,400..700;1,400..700', 'lora'],
-        'source-sans'      => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif', 'Source+Sans+3:ital,wght@0,400..700;1,400..700', 'source-sans'],
-        'inter'            => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'Inter:wght@400;500;600;700', 'inter'],
-        'system-serif'     => ['ui-serif, Charter, "Bitstream Charter", Cambria, Georgia, serif', '', ''],
-        'system'           => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', '', ''],
+        'archivo'          => ['"Archivo", "Arial Narrow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif', 'archivo'],
+        'roboto-condensed' => ['"Roboto Condensed", "Arial Narrow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif', 'roboto-condensed'],
+        'oswald'           => ['"Oswald", "Arial Narrow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif', 'oswald'],
+        'source-serif'     => ['"Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'source-serif-4'],
+        'merriweather'     => ['"Merriweather", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'merriweather'],
+        'lora'             => ['"Lora", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'lora'],
+        'source-sans'      => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'source-sans'],
+        'inter'            => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'inter'],
+        'system-serif'     => ['ui-serif, Charter, "Bitstream Charter", Cambria, Georgia, serif', ''],
+        'system'           => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', ''],
     ];
 
     private static ?self $instance = null;
@@ -53,23 +64,49 @@ final class Rundschau_Theme
 
     private function __construct()
     {
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Shell und löst ebenfalls `head` aus:
+        // dort weder Frontend-Stylesheet noch Theme-Script, nur die Rundschau-Palette als --member-*-Variablen.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'], 1);
-        \CMS\Hooks::addAction('head', [$this, 'outputFonts'], 5);
-        \CMS\Hooks::addAction('head', [$this, 'outputSeoTags'], 8);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'], 10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 16);
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
-
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
-        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
 
     public function enqueueStyles(): void
     {
-        $href = $this->themeUrl() . '/style.css?v=' . rawurlencode(RUNDSCHAU_THEME_VERSION);
-        echo '<link rel="stylesheet" href="' . rundschau_e($href) . '">' . "\n";
+        $version = rawurlencode(RUNDSCHAU_THEME_VERSION);
+        echo '<link rel="stylesheet" href="' . rundschau_e($this->themeUrl() . '/style.css?v=' . $version) . '">' . "\n";
+        echo '<link rel="stylesheet" href="' . rundschau_e($this->themeUrl() . '/css/cms-v4.css?v=' . $version) . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung
+        // über local_font_slugs, sonst greifen die System-Fallbacks der Font-Stacks.
+    }
+
+    /** Memberbereich (inkl. Newsletter-Widget) in der Rundschau-Palette – Customizer-Werte, sanitisiert. */
+    public function outputMemberTokens(): void
+    {
+        $c = static fn(string $key, string $default): string => rundschau_css_color((string) rundschau_setting('colors', $key, $default), $default);
+        echo theme_v4_member_tokens_style([
+            'primary'    => $c('brand_color', '#0b3c49'),
+            'accent'     => $c('accent_color', '#c2410c'),
+            'bg'         => $c('surface_color', '#f2f4f5'),
+            'card_bg'    => $c('paper_color', '#ffffff'),
+            'text'       => $c('text_color', '#14181c'),
+            'text_muted' => $c('muted_color', '#5b6670'),
+            'border'     => $c('border_color', '#dde2e5'),
+            'focus'      => $c('accent_color', '#c2410c'),
+            'radius'     => rundschau_css_number(rundschau_setting('layout', 'border_radius', 4), 4, 0, 14) . 'px',
+            'font'       => $this->fontStack((string) rundschau_setting('typography', 'font_headline', 'archivo'), 'archivo'),
+        ]);
     }
 
     public function enqueueScripts(): void
@@ -78,30 +115,9 @@ final class Rundschau_Theme
         echo '<script src="' . rundschau_e($src) . '" defer></script>' . "\n";
     }
 
-    public function outputFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet über local_font_slugs lokal gespeicherte Schriften ein (DSGVO).
-        }
-
-        $families = [];
-        foreach ($this->selectedFontKeys() as $key) {
-            $family = self::FONTS[$key][1] ?? '';
-            if ($family !== '') {
-                $families[$family] = true;
-            }
-        }
-        if ($families === []) {
-            return;
-        }
-
-        $url = 'https://fonts.googleapis.com/css2?family=' . implode('&family=', array_keys($families)) . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . rundschau_e($url) . '">' . "\n";
-    }
-
     /**
+     * Schriften der Customizer-Auswahl für die Core-Schriftverwaltung (wirksam bei privacy_use_local_fonts).
+     *
      * @param mixed $slugs
      * @return array<int, string>
      */
@@ -109,40 +125,13 @@ final class Rundschau_Theme
     {
         $slugs = is_array($slugs) ? $slugs : [];
         foreach ($this->selectedFontKeys() as $key) {
-            $slug = self::FONTS[$key][2] ?? '';
+            $slug = self::FONTS[$key][1] ?? '';
             if ($slug !== '') {
                 $slugs[] = $slug;
             }
         }
 
         return array_values(array_unique(array_map('strval', $slugs)));
-    }
-
-    /** SEO-Metadaten (Description, Canonical, Open Graph, Schema) aus dem Core-SEO-Modul. */
-    public function outputSeoTags(): void
-    {
-        $html = '';
-        try {
-            if (class_exists('\\CMS\\Services\\SEOService')) {
-                $seo = \CMS\Services\SEOService::getInstance();
-                $html = (string) $seo->renderCurrentHeadTags();
-                $custom = trim((string) $seo->getCustomHeaderCode());
-                if ($custom !== '') {
-                    $html .= $custom . "\n";
-                }
-            }
-        } catch (\Throwable) {
-            $html = '';
-        }
-
-        if (trim($html) === '') {
-            $description = rundschau_site_description();
-            if ($description !== '') {
-                $html = '<meta name="description" content="' . rundschau_e($description) . '">' . "\n";
-            }
-        }
-
-        echo $html;
     }
 
     public function outputMetaTags(): void
@@ -159,7 +148,7 @@ final class Rundschau_Theme
         $vars = [
             '--rs-brand'        => $c('brand_color', '#0b3c49'),
             '--rs-brand-dark'   => $c('brand_dark', '#072a33'),
-            '--rs-accent'       => $c('accent_color', '#e8590c'),
+            '--rs-accent'       => $c('accent_color', '#c2410c'),
             '--rs-link'         => $c('link_color', '#0b5566'),
             '--rs-text'         => $c('text_color', '#14181c'),
             '--rs-muted'        => $c('muted_color', '#5b6670'),
@@ -694,10 +683,17 @@ if (!function_exists('rundschau_categories')) {
         try {
             $db = \CMS\Database::instance();
             $prefix = $db->getPrefix();
+            // Eine Abfrage: Beitragszahlen je Kategorie als vorab gruppierte Tabelle (nur veröffentlichte Beiträge,
+            // 4.1.0-Status `pending` zählt nicht) statt einer Unterabfrage je Kategorie.
             $rows = $db->get_results(
-                "SELECT c.id, c.name, c.slug, c.description, c.parent_id, c.sort_order,
-                        (SELECT COUNT(*) FROM {$prefix}posts p WHERE p.category_id = c.id AND " . cms_post_publication_where('p') . ") AS post_count
+                "SELECT c.id, c.name, c.slug, c.description, c.parent_id, c.sort_order, COALESCE(pc.post_count, 0) AS post_count
                  FROM {$prefix}post_categories c
+                 LEFT JOIN (
+                     SELECT p.category_id, COUNT(*) AS post_count
+                     FROM {$prefix}posts p
+                     WHERE " . cms_post_publication_where('p') . "
+                     GROUP BY p.category_id
+                 ) pc ON pc.category_id = c.id
                  ORDER BY c.sort_order ASC, c.name ASC"
             ) ?: [];
         } catch (\Throwable) {
@@ -939,9 +935,19 @@ if (!function_exists('rundschau_nav_menu')) {
     /**
      * @param array<int, array{label:string,url:string}> $fallback
      * @param bool $appendRessorts Hauptkategorien anhängen, die im gepflegten Menü noch fehlen
+     * @param string $mainNavContext `desktop`/`mobile`: direkt nach den Menüeinträgen folgen die Einträge der
+     *                               Core-Module (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) – auch beim Fallback-Menü
+     * @return bool true, wenn eine Liste ausgegeben wurde
      */
-    function rundschau_nav_menu(string $location, string $class = '', array $fallback = [], bool $appendRessorts = false): void
+    function rundschau_nav_menu(string $location, string $class = '', array $fallback = [], bool $appendRessorts = false, string $mainNavContext = ''): bool
     {
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'is-active']);
+            $coreItems = (string) ob_get_clean();
+        }
+
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
@@ -967,11 +973,12 @@ if (!function_exists('rundschau_nav_menu')) {
                 }
             }
         }
-        if ($items === []) {
-            return;
+        if ($items === [] && $coreItems === '') {
+            return false;
         }
 
-        $current = rtrim((string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/'), '/');
+        // Aktueller Pfad ohne Unterverzeichnis von SITE_URL (sonst blieb aria-current bei Installationen in /cms/ aus).
+        $current = rtrim(theme_v4_request_path(), '/');
         $sitePath = rtrim((string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?? ''), '/');
         $siteHost = parse_url((string) SITE_URL, PHP_URL_HOST);
 
@@ -1002,7 +1009,10 @@ if (!function_exists('rundschau_nav_menu')) {
 
             echo '<li' . ($cls !== '' ? ' class="' . rundschau_e($cls) . '"' : '') . '><a href="' . rundschau_e($href) . '"' . $attrs . '>' . rundschau_e($label) . '</a></li>';
         }
+        echo $coreItems; // Core-Hook main_nav: fertige, escapte Links in <li>
         echo '</ul>';
+
+        return true;
     }
 }
 
@@ -1020,7 +1030,8 @@ if (!function_exists('rundschau_default_menu')) {
             return $items;
         }
 
-        return match ($location) {
+        // Fallback-Links nur zu vorhandenen Routen bzw. veröffentlichten Seiten (365CMS 4.0.0).
+        return theme_v4_filter_links(match ($location) {
             'service-nav' => [
                 ['label' => 'Alle Meldungen', 'url' => '/blog'],
                 ['label' => 'Themen A–Z', 'url' => rundschau_archive_url('tag')],
@@ -1038,7 +1049,7 @@ if (!function_exists('rundschau_default_menu')) {
                 ['label' => 'Datenschutz', 'url' => '/datenschutz'],
             ],
             default => [],
-        };
+        });
     }
 }
 
@@ -1166,7 +1177,8 @@ if (!function_exists('rundschau_teaser')) {
         <article class="rs-teaser rs-teaser--<?php echo rundschau_e($variant); ?><?php echo $image === '' ? ' rs-teaser--noimg' : ''; ?>">
             <?php if ($image !== '') : ?>
                 <a class="rs-teaser__media" href="<?php echo rundschau_e($url); ?>" tabindex="-1" aria-hidden="true">
-                    <img src="<?php echo rundschau_e($image); ?>" alt="" width="<?php echo $size[0]; ?>" height="<?php echo $size[1]; ?>" loading="<?php echo $variant === 'lead' ? 'eager' : 'lazy'; ?>" decoding="async">
+                    <?php // Aufmacher = LCP-Bild (fetchpriority, nicht lazy); Fokus-Punkt als object-position (4.1.0). ?>
+                    <?php echo theme_v4_img($image, '', ['width' => (int) $size[0], 'height' => (int) $size[1], 'lcp' => $variant === 'lead','item' => $post]); ?>
                 </a>
             <?php endif; ?>
             <div class="rs-teaser__body">
@@ -1192,8 +1204,15 @@ if (!function_exists('rundschau_page_title')) {
     {
         $site = rundschau_site_title();
         $label = '';
+        // Seitentitel, den Core-Module (Kontakt, Knowledgebase, Newsletter, Downloads) und der Router übergeben.
+        $moduleTitle = is_string($context['title'] ?? null) ? trim((string) $context['title']) : '';
 
-        if (isset($context['post']) || isset($context['page'])) {
+        if ($moduleTitle !== '' && !isset($context['post']) && !isset($context['page'])) {
+            $label = str_contains($moduleTitle, $site) ? '' : $moduleTitle;
+            if ($label === '') {
+                return (string) \CMS\Hooks::applyFilters('page_title', $moduleTitle);
+            }
+        } elseif (isset($context['post']) || isset($context['page'])) {
             try {
                 $payload = \CMS\Services\SEOService::getInstance()->getCurrentSeoPayload();
                 $label = trim((string) ($payload['title'] ?? ''));
@@ -1232,6 +1251,29 @@ if (!function_exists('rundschau_page_title')) {
     }
 }
 
+if (!function_exists('rundschau_head_tags')) {
+    /**
+     * SEO-Ausgabe im <head>: Core-SEO (Description, Canonical, Robots, hreflang, Open Graph, JSON-LD) über
+     * theme_v4_head_tags() – im Vorschaukontext mit `noindex, nofollow` und ohne JSON-LD –, danach der im
+     * SEO-Modul gepflegte eigene Header-Code. Das Theme gibt keine eigenen Meta-/OG-/Robots-Tags aus.
+     */
+    function rundschau_head_tags(bool $isPreview): string
+    {
+        $html = theme_v4_head_tags($isPreview, rundschau_site_description());
+        try {
+            if (class_exists('\\CMS\\Services\\SEOService')) {
+                $custom = trim((string) \CMS\Services\SEOService::getInstance()->getCustomHeaderCode());
+                if ($custom !== '') {
+                    $html .= $custom . "\n"; // im Admin gepflegter Code, unverändert
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return $html;
+    }
+}
+
 // ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften, Permalinks) ──────
 
 if (!function_exists('theme_csp_nonce_attr')) {
@@ -1249,25 +1291,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

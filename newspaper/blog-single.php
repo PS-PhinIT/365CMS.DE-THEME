@@ -58,11 +58,11 @@ $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], sta
 <div class="news-page-content">
     <div class="news-container">
         <?php if ($postImage !== '') : ?>
-            <figure class="cms-post-image"><img src="<?php echo $safe($postImage); ?>" alt="<?php echo $safe($postTitle); ?>" loading="lazy" decoding="async"></figure>
+            <figure class="cms-post-image"><?php echo theme_v4_img($postImage, $postTitle, ['lcp' => true, 'item' => $post]); // LCP-Bild (fetchpriority, width/height, Fokus-Punkt) ?></figure>
         <?php endif; ?>
         <?php if (trim($postContent) !== '') : ?>
             <div class="news-prose">
-                <?php echo $postContent; ?>
+                <?php echo $postContent; // vom Core gerendertes, sanitiertes HTML – unverändert ?>
             </div>
         <?php endif; ?>
         <p><a href="<?php echo $safe($blogUrl); ?>" class="news-btn news-btn-ghost">← Alle Beiträge</a></p>

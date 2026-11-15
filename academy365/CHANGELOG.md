@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.0.1 - 2026-11-15
+
+### Gemeinsame 4.x-Schicht 1.0.1
+- `css/cms-v4.css`: Die Variablen des Feed-Aggregators (`--fd-*`) gelten nur noch in `.fd-aggregator`/`.fd-body` statt global auf `body`.
+- `theme_v4_member_tokens_style()`: `focus` erzeugt einen gültigen `box-shadow`-Wert für `--member-focus-ring` (bisher fiel der Fokus-Halo im Memberbereich weg); keine dunkle Member-Palette, weil die Tabler-Shell keinen Dunkelmodus hat.
+
 ## 4.0.0 - 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

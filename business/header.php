@@ -17,29 +17,38 @@ if (defined('CMS_THEME_HEADER_RENDERED')) {
 }
 define('CMS_THEME_HEADER_RENDERED', true);
 
-$title    = biz_site_title();
-$siteUrl  = biz_site_url();
-$bodyCls  = biz_body_class();
+$bizSiteTitle = biz_site_title(); // bereits escaped; $title bleibt der Seitentitel aus Modulen/Router
+$siteUrl      = biz_site_url();
+$bizLocale    = theme_v4_locale($contentLocale ?? null);
+$bizIsPreview = theme_v4_is_preview(get_defined_vars());
+$bodyCls      = biz_body_class($bizIsPreview ? 'is-preview' : '');
+$bizContact   = biz_href('/contact'); // Core-Route (365CMS 4.0.0) mit Kontaktformular
 
 try {
     $_logoUrl = (string) \CMS\Services\ThemeCustomizer::instance()->get('header', 'logo_url', '');
 } catch (\Throwable) {
     $_logoUrl = '';
 }
-$logoUrl = biz_safe_url($_logoUrl);
+$logoUrl  = theme_v4_site_logo(biz_safe_url($_logoUrl));
+$logoDims = $logoUrl !== '' ? theme_v4_image_dimensions($logoUrl) : null;
 ?>
 <!DOCTYPE html>
-<html lang="de">
+<html lang="<?php echo theme_v4_e($bizLocale); ?>">
 <head>
     <meta charset="UTF-8">
+    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags() : '' ?>
-    <title><?php echo $title; ?></title>
+    <title><?php echo theme_v4_e(theme_v4_document_title($title ?? null)); ?></title>
+    <?php echo theme_v4_head_tags($bizIsPreview, \CMS\ThemeManager::instance()->getSiteDescription()); ?>
+    <?php echo theme_v4_favicon_tag(); ?>
     <?php \CMS\Hooks::doAction('head'); ?>
 </head>
 
 <body class="<?php echo $bodyCls; ?>">
-<a class="skip-link" href="#main-content">Zum Inhalt springen</a>
+<a class="skip-link" href="#main-content"><?php echo theme_v4_e(theme_v4_t('Zum Inhalt springen', 'Skip to content', $bizLocale)); ?></a>
+<?php if ($bizIsPreview) : ?>
+<p class="theme-v4-preview-banner" role="status"><?php echo theme_v4_e(theme_v4_t('Vorschau – dieser Inhalt ist nicht veröffentlicht.', 'Preview – this content is not published.', $bizLocale)); ?></p>
+<?php endif; ?>
 
 <div class="biz-site">
 
@@ -48,28 +57,28 @@ $logoUrl = biz_safe_url($_logoUrl);
             <div class="biz-header-inner">
 
                 <!-- Logo -->
-                <a href="<?php echo htmlspecialchars(biz_href('/'), ENT_QUOTES, 'UTF-8'); ?>" class="biz-logo biz-focus-shadow" aria-label="<?php echo $title; ?>">
+                <a href="<?php echo htmlspecialchars(biz_href('/'), ENT_QUOTES, 'UTF-8'); ?>" class="biz-logo biz-focus-shadow" rel="home">
                     <?php if ($logoUrl !== '') : ?>
                         <img src="<?php echo htmlspecialchars($logoUrl, ENT_QUOTES, 'UTF-8'); ?>"
-                             alt="<?php echo $title; ?>" class="biz-logo-img">
+                             alt="<?php echo $bizSiteTitle; ?>" class="biz-logo-img" decoding="async"<?php echo $logoDims !== null ? ' width="' . $logoDims[0] . '" height="' . $logoDims[1] . '"' : ''; ?>>
                     <?php else : ?>
                         <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
                              aria-hidden="true" focusable="false">
                             <rect width="32" height="32" rx="6" fill="#c08a2e"/>
                             <path d="M8 10h4v12H8V10zm6 0h4v12h-4V10zm6 4h4v8h-4v-8z" fill="#0c1320"/>
                         </svg>
-                        <span class="biz-logo-text"><?php echo $title; ?></span>
+                        <span class="biz-logo-text"><?php echo $bizSiteTitle; ?></span>
                     <?php endif; ?>
                 </a>
 
-                <!-- Desktop Navigation -->
-                <nav class="biz-nav" id="biz-main-nav" aria-label="Hauptnavigation">
-                    <?php biz_nav_menu('primary'); ?>
+                <!-- Desktop Navigation (main_nav-Kontext desktop; der Mobil-Drawer unten nutzt mobile) -->
+                <nav class="biz-nav" id="biz-main-nav" aria-label="<?php echo theme_v4_e(theme_v4_t('Hauptnavigation', 'Main navigation', $bizLocale)); ?>">
+                    <?php biz_nav_menu('primary', 'desktop'); ?>
                 </nav>
 
                 <!-- Header CTA -->
                 <div class="biz-header-cta">
-                    <a href="<?php echo htmlspecialchars(biz_href('#kontakt'), ENT_QUOTES, 'UTF-8'); ?>"
+                    <a href="<?php echo htmlspecialchars($bizContact, ENT_QUOTES, 'UTF-8'); ?>"
                        class="btn-biz btn-biz-primary">
                         Kontakt
                     </a>
@@ -88,16 +97,16 @@ $logoUrl = biz_safe_url($_logoUrl);
         </div>
     </header>
 
-    <!-- Mobile Overlay & Drawer -->
-    <div class="biz-mobile-overlay" id="bizMobileOverlay" role="presentation"></div>
-    <nav id="bizMobileDrawer" class="biz-mobile-drawer" aria-label="Mobile Navigation" aria-hidden="true">
-        <?php biz_nav_menu('primary'); ?>
+    <!-- Mobile Overlay & Drawer (geschlossen: inert, damit die Links nicht per Tab erreichbar sind) -->
+    <div class="biz-mobile-overlay" id="bizMobileOverlay" aria-hidden="true"></div>
+    <nav id="bizMobileDrawer" class="biz-mobile-drawer" aria-label="<?php echo theme_v4_e(theme_v4_t('Mobile Navigation', 'Mobile navigation', $bizLocale)); ?>" inert>
+        <?php biz_nav_menu('primary', 'mobile'); ?>
         <div class="biz-drawer-cta">
-            <a href="<?php echo htmlspecialchars(biz_href('#kontakt'), ENT_QUOTES, 'UTF-8'); ?>"
+            <a href="<?php echo htmlspecialchars($bizContact, ENT_QUOTES, 'UTF-8'); ?>"
                class="btn-biz btn-biz-primary biz-drawer-cta-link">
                 Kontakt aufnehmen
             </a>
         </div>
     </nav>
 
-    <main id="main-content" class="biz-content">
+    <main id="main-content" class="biz-content" tabindex="-1">

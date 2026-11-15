@@ -1,9 +1,10 @@
 {
     "name": "Kompass",
     "slug": "kompass",
-    "version": "1.0.0",
-    "requires_cms": "3.4.00",
-    "requires_php": "8.4",
+    "version": "2.0.0",
+    "requires_cms": "4.0.0",
+    "requires_php": "8.4.1",
+    "tested_up_to": "4.1.0",
     "author": "PHINIT.DE / Andreas Hepp",
     "description": "Barrierearmes Informations- und Service-Portal für Kommunen, Vereine, Verbände, Hilfe-Center und Wissensdatenbanken – Suche im Mittelpunkt, Themenkacheln aus Kategorien, Schnellzugriffe, Hinweisbanner, automatisches Inhaltsverzeichnis, Themen A–Z, Schriftgrößen- und Kontrastumschaltung, Atkinson-Hyperlegible-Typografie.",
     "textdomain": "kompass",
@@ -19,9 +20,24 @@
         "blog-single": "blog-single.php",
         "page": "page.php",
         "search": "search.php",
+        "contact": "contact.php",
         "404": "404.php",
         "error": "error.php",
         "index": "index.php"
+    },
+    "login_page": {
+        "colors": {
+            "background_start": "#f2f5f9",
+            "background_end": "#dde6f1",
+            "card_background": "#ffffff",
+            "text_color": "#1b2430",
+            "muted_color": "#4b5868",
+            "primary_color": "#1a4d8f",
+            "primary_text_color": "#ffffff",
+            "link_color": "#1a4d8f",
+            "input_background": "#ffffff",
+            "input_border": "#4b5868"
+        }
     },
     "menus": {
         "primary": "Hauptnavigation",
@@ -180,7 +196,7 @@
         },
         "kp_service": {
             "label": "Service & Kontakt",
-            "description": "Erscheint auf der Startseite, in der 404-Seite und im Footer.",
+            "description": "Erscheint auf der Startseite, der Kontaktseite (/kontakt), in der 404-Seite und im Footer. Das Kontaktformular selbst wird unter Inhalte → Formulare gepflegt.",
             "settings": {
                 "service_heading": { "label": "Überschrift", "type": "text", "default": "Service & Kontakt" },
                 "service_text": { "label": "Text", "type": "textarea", "default": "Sie haben Ihre Antwort nicht gefunden? Wir helfen Ihnen gern persönlich weiter." },
@@ -205,7 +221,7 @@
         "advanced": {
             "label": "Erweitert",
             "settings": {
-                "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und javascript:-URLs werden entfernt." }
+                "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und Script-URLs werden entfernt." }
             }
         }
     }

@@ -14,9 +14,14 @@ if (!defined('ABSPATH')) {
 }
 
 if (empty($post)) {
-    header('Location: ' . SITE_URL . '/blog');
-    exit;
+    // Header ist bereits gesendet (der Core rendert header.php vorher) – kein Location-Header mehr möglich.
+    if (!headers_sent()) {
+        http_response_code(404);
+    }
+    require __DIR__ . '/404.php';
+    return;
 }
+$post = is_array($post) ? (object) $post : $post;
 
 $siteUrl = ptc_site_url();
 
@@ -30,23 +35,25 @@ $showReadingTime = ptc_customizer_get('blog', 'blog_single_show_reading_time', '
 $maxWidth        = (int) ptc_customizer_get('blog', 'blog_single_max_width',   '820');
 
 /* ─── Post-Daten aufbereiten ─── */
-$pTitle    = htmlspecialchars($post->title ?? '', ENT_QUOTES, 'UTF-8');
-$pSlug     = $post->slug ?? '';
-$pContent  = $post->content ?? '';
-$pExcerpt  = htmlspecialchars($post->excerpt ?? '', ENT_QUOTES, 'UTF-8');
-$pDate     = isset($post->published_at) ? date('d.m.Y', strtotime($post->published_at)) : '';
-$pDateLong = isset($post->published_at) ? date('d. F Y', strtotime($post->published_at)) : '';
-$pDateIso  = htmlspecialchars($post->published_at ?? '', ENT_QUOTES, 'UTF-8');
-$pAuthor   = htmlspecialchars($post->author_name ?? 'Redaktion', ENT_QUOTES, 'UTF-8');
-$pAuthIni  = mb_strtoupper(mb_substr($pAuthor, 0, 2));
-$pCat      = htmlspecialchars($post->category_name ?? '', ENT_QUOTES, 'UTF-8');
-$pCatSlug  = $post->category_slug ?? '';
+$pTitleRaw = (string) ($post->title ?? '');
+$pTitle    = htmlspecialchars($pTitleRaw, ENT_QUOTES, 'UTF-8');
+$pContent  = (string) ($post->content ?? '');
+$pExcerpt  = htmlspecialchars(strip_tags((string) ($post->excerpt ?? '')), ENT_QUOTES, 'UTF-8');
+$pDateLong = ptc_format_date($post->published_at ?? '', 'd.m.Y');
+$pDateIso  = htmlspecialchars(ptc_format_date($post->published_at ?? '', 'c'), ENT_QUOTES, 'UTF-8');
+$pAuthorRaw = (string) ($post->author_name ?? 'Redaktion');
+$pAuthor   = htmlspecialchars($pAuthorRaw, ENT_QUOTES, 'UTF-8');
+$pAuthIni  = htmlspecialchars(mb_strtoupper(mb_substr($pAuthorRaw, 0, 2)), ENT_QUOTES, 'UTF-8');
+$pCat      = htmlspecialchars((string) ($post->category_name ?? ''), ENT_QUOTES, 'UTF-8');
+$pCatSlug  = (string) ($post->category_slug ?? '');
 $pViews    = (int) ($post->views ?? 0);
-$pImage    = $post->featured_image ?? '';
+$pImage    = ptc_safe_url((string) ($post->featured_image ?? ''));
+$pImage    = str_starts_with($pImage, '#') ? '' : $pImage;
 $pTags     = $post->tags ?? [];
 if (is_string($pTags)) {
     $pTags = array_filter(array_map('trim', explode(',', $pTags)));
 }
+$pTags     = is_array($pTags) ? array_values(array_filter($pTags, 'is_string')) : [];
 
 /* ─── Lesezeit ─── */
 $wordCount = str_word_count(strip_tags($pContent));
@@ -61,6 +68,7 @@ if ($showRelated) {
         $catId  = (int) ($post->category_id ?? 0);
         $postId = (int) ($post->id ?? 0);
         if ($catId > 0) {
+            // Ein Query mit JOIN (keine N+1-Schleife), nur veröffentlichte Beiträge (4.1.0 kennt `pending`).
             $stmt = $db->execute(
                 "SELECT p.id, p.title, p.slug, p.excerpt, p.published_at, p.featured_image,
                         c.name AS category_name
@@ -77,29 +85,20 @@ if ($showRelated) {
         // Keine verwandten Beiträge bei Fehler
     }
 }
-
-$allowedTags = '<p><br><strong><b><em><i><u><s>'
-    . '<h1><h2><h3><h4><h5><h6>'
-    . '<ul><ol><li><dl><dt><dd>'
-    . '<a><img>'
-    . '<blockquote><pre><code>'
-    . '<table><thead><tbody><tr><th><td>'
-    . '<div><span><section><article><aside>'
-    . '<hr><figure><figcaption><iframe><video><audio><source>';
 ?>
 
 <!-- ── Breadcrumb ── -->
 <nav class="ptc-breadcrumb" aria-label="Breadcrumb">
     <div class="ptc-container">
         <a href="<?php echo htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'); ?>/">Startseite</a>
-        <span class="ptc-breadcrumb__sep">›</span>
+        <span class="ptc-breadcrumb__sep" aria-hidden="true">›</span>
         <a href="<?php echo htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'); ?>/blog">Blog</a>
-        <?php if ($pCat) : ?>
-            <span class="ptc-breadcrumb__sep">›</span>
-            <a href="<?php echo htmlspecialchars($siteUrl . '/blog?category=' . urlencode($pCatSlug), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $pCat; ?></a>
+        <?php if ($pCat && $pCatSlug !== '') : ?>
+            <span class="ptc-breadcrumb__sep" aria-hidden="true">›</span>
+            <a href="<?php echo htmlspecialchars(ptc_archive_url('category', $pCatSlug), ENT_QUOTES, 'UTF-8'); ?>"><?php echo $pCat; ?></a>
         <?php endif; ?>
-        <span class="ptc-breadcrumb__sep">›</span>
-        <span class="ptc-breadcrumb__current"><?php echo $pTitle; ?></span>
+        <span class="ptc-breadcrumb__sep" aria-hidden="true">›</span>
+        <span class="ptc-breadcrumb__current" aria-current="page"><?php echo $pTitle; ?></span>
     </div>
 </nav>
 
@@ -109,8 +108,8 @@ $allowedTags = '<p><br><strong><b><em><i><u><s>'
 
         <!-- Article Header -->
         <header class="ptc-article__header">
-            <?php if ($pCat) : ?>
-                <a href="<?php echo htmlspecialchars($siteUrl . '/blog?category=' . urlencode($pCatSlug), ENT_QUOTES, 'UTF-8'); ?>"
+            <?php if ($pCat && $pCatSlug !== '') : ?>
+                <a href="<?php echo htmlspecialchars(ptc_archive_url('category', $pCatSlug), ENT_QUOTES, 'UTF-8'); ?>"
                    class="ptc-article__category"><?php echo $pCat; ?></a>
             <?php endif; ?>
 
@@ -123,18 +122,18 @@ $allowedTags = '<p><br><strong><b><em><i><u><s>'
             <div class="ptc-article__meta">
                 <?php if ($showAuthor) : ?>
                     <div class="ptc-article__author">
-                        <span class="ptc-article__avatar"><?php echo $pAuthIni; ?></span>
+                        <span class="ptc-article__avatar" aria-hidden="true"><?php echo $pAuthIni; ?></span>
                         <span><?php echo $pAuthor; ?></span>
                     </div>
                 <?php endif; ?>
                 <?php if ($showDate && $pDateLong) : ?>
-                    <time datetime="<?php echo $pDateIso; ?>">📅 <?php echo $pDateLong; ?></time>
+                    <time datetime="<?php echo $pDateIso; ?>"><span aria-hidden="true">📅</span> <?php echo htmlspecialchars($pDateLong, ENT_QUOTES, 'UTF-8'); ?></time>
                 <?php endif; ?>
                 <?php if ($showReadingTime) : ?>
-                    <span>📖 <?php echo $readMins; ?> Min. Lesezeit</span>
+                    <span><span aria-hidden="true">📖</span> <?php echo $readMins; ?> Min. Lesezeit</span>
                 <?php endif; ?>
                 <?php if ($pViews > 0) : ?>
-                    <span>👁️ <?php echo number_format($pViews); ?> Aufrufe</span>
+                    <span><span aria-hidden="true">👁️</span> <?php echo number_format($pViews, 0, ',', '.'); ?> Aufrufe</span>
                 <?php endif; ?>
             </div>
         </header>
@@ -142,24 +141,28 @@ $allowedTags = '<p><br><strong><b><em><i><u><s>'
         <!-- Featured Image -->
         <?php if ($showFeatured && $pImage) : ?>
         <figure class="ptc-article__featured">
-            <img src="<?php echo htmlspecialchars($pImage, ENT_QUOTES, 'UTF-8'); ?>"
-                 alt="<?php echo $pTitle; ?>" loading="lazy">
+            <?php // LCP-Bild: width/height, fetchpriority="high" statt lazy, Fokus-Punkt (4.1.0) ?>
+            <?php echo theme_v4_img($pImage, $pTitleRaw, ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 900px) 100vw, 900px']); ?>
         </figure>
         <?php endif; ?>
 
         <!-- Article Content -->
         <div class="ptc-article__content ptc-prose sun-editor-editable">
-            <?php echo strip_tags($pContent, $allowedTags); ?>
+            <?php
+            // Vom Core gerendertes und bereinigtes HTML (Editor.js inkl. <picture>, Formular- und Download-Blöcke)
+            // unverändert ausgeben; das frühere strip_tags() zerstörte Blöcke mit <picture>, <form>, <button>, <svg>.
+            echo $pContent;
+            ?>
         </div>
 
         <!-- Tags -->
         <?php if ($showTags && !empty($pTags)) : ?>
         <div class="ptc-article__tags">
-            <span>🏷️ Tags:</span>
+            <span><span aria-hidden="true">🏷️</span> Tags:</span>
             <?php foreach ($pTags as $tag) :
                 $tEsc = htmlspecialchars($tag, ENT_QUOTES, 'UTF-8');
             ?>
-            <a href="<?php echo htmlspecialchars($siteUrl . '/blog?tag=' . urlencode($tag), ENT_QUOTES, 'UTF-8'); ?>"
+            <a href="<?php echo htmlspecialchars(ptc_archive_url('tag', $tag), ENT_QUOTES, 'UTF-8'); ?>"
                class="ptc-tag"><?php echo $tEsc; ?></a>
             <?php endforeach; ?>
         </div>
@@ -178,17 +181,17 @@ $allowedTags = '<p><br><strong><b><em><i><u><s>'
 <?php if ($showRelated && !empty($relatedPosts)) : ?>
 <section class="ptc-related">
     <div class="ptc-container">
-        <h2>📌 Ähnliche Beiträge</h2>
+        <h2><span aria-hidden="true">📌</span> Ähnliche Beiträge</h2>
         <div class="ptc-related__grid">
             <?php foreach ($relatedPosts as $rel) :
                 $rArr   = (array) $rel;
-                $rTitle = htmlspecialchars($rArr['title'] ?? '', ENT_QUOTES, 'UTF-8');
-                $rSlug  = $rArr['slug'] ?? '';
-                $rImage = $rArr['featured_image'] ?? '';
-                $rDate  = isset($rArr['published_at']) ? date('d.m.Y', strtotime($rArr['published_at'])) : '';
-                $rCat   = htmlspecialchars($rArr['category_name'] ?? '', ENT_QUOTES, 'UTF-8');
-                $rUrl   = htmlspecialchars($siteUrl . '/blog/' . $rSlug, ENT_QUOTES, 'UTF-8');
-                $rExcerpt = $rArr['excerpt'] ?? '';
+                $rTitle = htmlspecialchars((string) ($rArr['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $rImage = ptc_safe_url((string) ($rArr['featured_image'] ?? ''));
+                $rImage = str_starts_with($rImage, '#') ? '' : $rImage;
+                $rDate  = ptc_format_date($rArr['published_at'] ?? '');
+                $rCat   = htmlspecialchars((string) ($rArr['category_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $rUrl   = htmlspecialchars(theme_post_url($rel), ENT_QUOTES, 'UTF-8');
+                $rExcerpt = (string) ($rArr['excerpt'] ?? '');
                 if (mb_strlen($rExcerpt) > 100) {
                     $rExcerpt = mb_substr($rExcerpt, 0, 97) . '…';
                 }
@@ -196,9 +199,8 @@ $allowedTags = '<p><br><strong><b><em><i><u><s>'
             ?>
             <article class="ptc-related__card">
                 <?php if ($rImage) : ?>
-                <a href="<?php echo $rUrl; ?>" class="ptc-related__image">
-                    <img src="<?php echo htmlspecialchars($rImage, ENT_QUOTES, 'UTF-8'); ?>"
-                         alt="<?php echo $rTitle; ?>" loading="lazy">
+                <a href="<?php echo $rUrl; ?>" class="ptc-related__image" tabindex="-1" aria-hidden="true">
+                    <?php echo theme_v4_img($rImage, '', ['item' => $rel]); ?>
                 </a>
                 <?php endif; ?>
                 <div class="ptc-related__body">
@@ -210,7 +212,7 @@ $allowedTags = '<p><br><strong><b><em><i><u><s>'
                         <p><?php echo $rExcerpt; ?></p>
                     <?php endif; ?>
                     <?php if ($rDate) : ?>
-                        <span class="ptc-related__date">📅 <?php echo $rDate; ?></span>
+                        <span class="ptc-related__date"><span aria-hidden="true">📅</span> <?php echo htmlspecialchars($rDate, ENT_QUOTES, 'UTF-8'); ?></span>
                     <?php endif; ?>
                 </div>
             </article>

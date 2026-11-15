@@ -34,7 +34,8 @@ $get = static function (string $k, mixed $d = null) use ($candidate): mixed {
 $pfCandName       = (string) $get('name', 'Unbenanntes Profil');
 $pfCandRole       = (string) $get('role', '–');
 $pfCandLocation   = (string) $get('location', '');
-$pfCandAvatar     = (string) $get('avatar_url', '');
+// Nur lokale Bilder (keine externen Requests, keine javascript:-URLs).
+$pfCandAvatar     = theme_v4_local_asset_url((string) $get('avatar_url', ''));
 $pfCandStage      = (string) $get('stage', 'applied');
 $pfCandSkills     = (array)  $get('skills', []);
 $pfCandAvailable  = filter_var($get('available', false), FILTER_VALIDATE_BOOLEAN);
@@ -63,12 +64,14 @@ $pfStageLabel = function_exists('pf_stage_label')
     : ucfirst($pfCandStage);
 
 $safe        = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
-$profileHref = $safe(function_exists('pf_href') ? pf_href($pfCandProfileUrl) : $pfCandProfileUrl);
+$profileRaw  = function_exists('pf_href') ? pf_href($pfCandProfileUrl) : $pfCandProfileUrl;
+// Demo-Profile: Aktionen nur, wenn die Profilseite existiert (365CMS 4.0.0: keine Links ins Leere).
+$profileHref = ($pfCandProfileUrl !== '#' && theme_v4_link_available($profileRaw)) ? $safe($profileRaw) : '';
 ?>
 <article class="pf-card pf-talent-card pf-reveal" aria-label="Kandidat: <?php echo $safe($pfCandName); ?>">
     <div class="pf-talent-avatar" aria-hidden="true">
         <?php if ($pfCandAvatar !== '') : ?>
-            <img src="<?php echo $safe($pfCandAvatar); ?>" alt="" loading="lazy" decoding="async">
+            <?php echo theme_v4_img($pfCandAvatar, '', ['width' => 64, 'height' => 64]); ?>
         <?php else : ?>
             <?php echo $safe($pfCandInitials); ?>
         <?php endif; ?>
@@ -105,12 +108,14 @@ $profileHref = $safe(function_exists('pf_href') ? pf_href($pfCandProfileUrl) : $
             <?php endforeach; ?>
         </div>
     </div>
+    <?php if ($profileHref !== '') : ?>
     <div class="pf-talent-actions">
         <a href="<?php echo $profileHref; ?>" class="pf-btn pf-btn-secondary pf-btn-sm pf-focus-shadow">
-            Profil ansehen
+            Profil ansehen<span class="pf-visually-hidden">: <?php echo $safe($pfCandName); ?></span>
         </a>
         <a href="<?php echo $profileHref; ?>?action=contact" class="pf-btn pf-btn-ghost pf-btn-sm pf-focus-shadow">
-            Kontakt aufnehmen
+            Kontakt aufnehmen<span class="pf-visually-hidden">: <?php echo $safe($pfCandName); ?></span>
         </a>
     </div>
+    <?php endif; ?>
 </article>

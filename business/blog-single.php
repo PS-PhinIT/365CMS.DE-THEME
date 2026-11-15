@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Beitrags-Detailseite
  *
- * Datenvertrag (365CMS 3.4, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image).
+ * Datenvertrag (365CMS 4.x, ThemeRouter): $post (Objekt: title, content = bereits gerendertes, sanitiertes HTML, published_at, author_name, category_name, featured_image, optional focal_x/focal_y).
  */
 
 if (!defined('ABSPATH')) {
@@ -57,20 +57,21 @@ $metaParts   = array_values(array_filter([$postDate, $postAuthor, $postCat], sta
 <div class="biz-page-content">
     <div class="biz-container">
         <?php if ($postImage !== '') : ?>
-            <figure class="cms-post-image"><img src="<?php echo $safe($postImage); ?>" alt="<?php echo $safe($postTitle); ?>" loading="lazy" decoding="async"></figure>
+            <?php // LCP-Bild: width/height, fetchpriority="high" statt lazy, Fokus-Punkt (4.1.0) ?>
+            <figure class="cms-post-image"><?php echo theme_v4_img($postImage, $postTitle, ['lcp' => true, 'item' => $post, 'sizes' => '(max-width: 1200px) 100vw, 1200px']); ?></figure>
         <?php endif; ?>
         <?php if (trim($postContent) !== '') : ?>
             <div class="biz-prose">
-                <?php echo $postContent; ?>
+                <?php echo $postContent; // Core-HTML unverändert (bereits bereinigt) ?>
             </div>
         <?php endif; ?>
-        <p><a href="<?php echo $safe($blogUrl); ?>" class="btn-biz btn-biz-outline">← Alle Beiträge</a></p>
+        <p><a href="<?php echo $safe($blogUrl); ?>" class="btn-biz btn-biz-ghost"><span aria-hidden="true">←</span> Alle Beiträge</a></p>
     </div>
 </div>
 <?php else : ?>
 <div class="biz-page-content">
     <div class="biz-container">
-        <p class="biz-prose-empty">Beitrag nicht gefunden.</p>
+        <h1 class="biz-error-title">Beitrag nicht gefunden</h1>
         <a href="<?php echo $safe($siteUrl . '/'); ?>" class="btn-biz btn-biz-primary">Zur Startseite</a>
     </div>
 </div>

@@ -4,10 +4,10 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: Datengetriebenes Nachrichtenportal für Lokal-, Fach- und Vereinsnachrichten – Top-Themen, Nachrichten-Ticker, Meistgelesen, automatische Ressort-Blöcke mit Ressortfarben, Petrol-Palette mit Signal-Orange und kräftiger Archivo-Typografie.
-Version: 1.0.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: rundschau
 Tags: news, nachrichten, magazin, portal, zeitung, ressorts, ticker, responsive
@@ -19,7 +19,7 @@ Tags: news, nachrichten, magazin, portal, zeitung, ressorts, ticker, responsive
 :root {
     --rs-brand: #0b3c49;
     --rs-brand-dark: #072a33;
-    --rs-accent: #e8590c;
+    --rs-accent: #c2410c; /* Signal-Orange: 5,2:1 auf Weiß und mit weißer Schrift (bisher #e8590c: 3,6:1) */
     --rs-link: #0b5566;
     --rs-text: #14181c;
     --rs-muted: #5b6670;
@@ -27,8 +27,8 @@ Tags: news, nachrichten, magazin, portal, zeitung, ressorts, ticker, responsive
     --rs-surface: #f2f4f5;
     --rs-border: #dde2e5;
 
-    --rs-font-head: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
-    --rs-font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+    --rs-font-head: "Archivo", "Arial Narrow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    --rs-font-body: "Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", serif;
     --rs-font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, monospace;
     --rs-size-article: 19px;
     --rs-stretch: 88%;
@@ -174,6 +174,13 @@ textarea {
 .rs-skip-link:focus {
     top: 1rem;
     color: #fff;
+}
+
+/* Doppelter Ring: weiß auf der dunklen Service-Leiste, dunkel auf hellem Grund (je ≥ 3:1) */
+.rs-skip-link:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 0;
+    box-shadow: 0 0 0 6px var(--rs-text);
 }
 
 .rs-icon {
@@ -365,8 +372,8 @@ textarea {
 }
 
 .rs-button--accent:hover {
-    border-color: #c2410c;
-    background: #c2410c;
+    border-color: #9a3412;
+    background: #9a3412;
 }
 
 .rs-button--ghost {
@@ -2304,4 +2311,72 @@ textarea {
     .rs-article__media img {
         max-height: 9cm;
     }
+}
+
+/* ==========================================================================
+   12. 365CMS 4.x Token-Brücke
+   Übergibt die Rundschau-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis, Login-Showcase). Rundschau hat keinen Dark Mode.
+   ========================================================================== */
+:root {
+    --tv4-primary: var(--rs-brand);
+    --tv4-primary-hover: var(--rs-brand-dark);
+    --tv4-on-primary: #ffffff;
+    --tv4-link: var(--rs-link);
+    --tv4-text: var(--rs-text);
+    --tv4-muted: var(--rs-muted);
+    --tv4-bg: var(--rs-paper);
+    --tv4-surface: var(--rs-paper);
+    --tv4-surface-alt: var(--rs-surface);
+    --tv4-border: var(--rs-border);
+    --tv4-border-strong: #8a959e;
+    --tv4-radius: var(--rs-radius);
+    --tv4-btn-radius: var(--rs-radius);
+    --tv4-focus: var(--rs-accent);
+    --tv4-font-body: var(--rs-font-body);
+    --tv4-font-heading: var(--rs-font-head);
+    --tv4-hero-start: var(--rs-brand-dark);
+    --tv4-hero-end: var(--rs-brand);
+    --tv4-max: var(--rs-container);
+}
+
+/* Rahmen der Core-Module: Breite wie .rs-container (die Ressort-Leiste ist sticky, nicht fixed) */
+.theme-v4-module {
+    width: min(100% - 2 * var(--rs-gutter), var(--rs-container));
+    max-width: none;
+    margin-inline: auto;
+    padding: 2rem 0 1rem;
+}
+
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content {
+    padding-top: 0;
+}
+
+/* Fehlerseiten: Aktionen und eigenständiges Dokument (Wartung, Fatal-Handler) */
+.rs-pagehead__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1.25rem 0 0;
+}
+
+body.error-standalone {
+    display: block;
+    background: var(--rs-paper);
+    color: var(--rs-text);
+    font-family: var(--rs-font-head);
+}
+
+body.error-standalone .rs-main {
+    display: flex;
+    min-height: 100vh;
+    padding-bottom: 0;
+}
+
+body.error-standalone .rs-pagehead {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
 }

@@ -14,11 +14,14 @@ if (!defined('ABSPATH')) {
 $page = isset($page) && is_array($page) && $page !== [] ? (object) $page : null;
 ?>
 
-<main id="main" class="site-main tn-section" role="main">
+<main id="main" class="site-main tn-section">
     <div class="container container--narrow">
-        <?php if ($page !== null && !empty($page->title ?? '')) : ?>
+        <?php // Downloads/Feeds rendert der Core über page.php mit $page['id'] = 0 – Inhalt auch ohne Titel ausgeben. ?>
+        <?php if ($page !== null && (trim((string) ($page->title ?? '')) !== '' || trim((string) ($page->content ?? '')) !== '')) : ?>
             <article class="page-content tech-card tn-prose-card">
+                <?php if (trim((string) ($page->title ?? '')) !== '') : ?>
                 <h1 class="page-title"><?php echo tn_html_attr((string) $page->title); ?></h1>
+                <?php endif; ?>
 
                 <?php if (!empty($page->content ?? '')) : ?>
                     <div class="page-body prose">

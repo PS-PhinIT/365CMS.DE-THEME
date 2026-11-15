@@ -7,7 +7,8 @@ declare(strict_types=1);
  * Seitenkopf mit Brotkrumen → Inhaltsverzeichnis „Auf dieser Seite“ (aus H2/H3) →
  * Inhalt → Stand, Drucken, Link kopieren, PDF → „War diese Seite hilfreich?“.
  *
- * Datenvertrag (365CMS 3.4): $page (Array; content = gerendertes, sanitiertes HTML).
+ * Datenvertrag (365CMS 4.0): $page (Array; content = gerendertes, sanitiertes HTML). Der Core rendert auch
+ * Downloads und den Feed-Aggregator über diese Vorlage – dann mit $page['id'] = 0 und ggf. ohne Titel.
  *
  * @package Kompass_Theme
  */
@@ -36,20 +37,22 @@ $hasToc = $toc['items'] !== [];
 $content = $toc['html'];
 ?>
 
-<header class="kp-pagehead<?php echo $hideTitle ? ' kp-pagehead--compact' : ''; ?>">
+<header class="kp-pagehead<?php echo $hideTitle || $title === '' ? ' kp-pagehead--compact' : ''; ?>">
     <div class="kp-container">
         <nav class="kp-breadcrumb" aria-label="Brotkrumen">
             <ol>
                 <li><a href="<?php echo kompass_e(kompass_url('/')); ?>">Start</a></li>
-                <li><span aria-current="page"><?php echo kompass_e($title); ?></span></li>
+                <?php if ($title !== '') : ?>
+                    <li><span aria-current="page"><?php echo kompass_e($title); ?></span></li>
+                <?php endif; ?>
             </ol>
         </nav>
-        <?php if (!$hideTitle) : ?>
+        <?php if ($title !== '' && !$hideTitle) : ?>
             <h1 class="kp-pagehead__title"><?php echo kompass_e($title); ?></h1>
             <?php if ($lead !== '') : ?>
                 <p class="kp-pagehead__lead"><?php echo kompass_e($lead); ?></p>
             <?php endif; ?>
-        <?php else : ?>
+        <?php elseif ($title !== '') : ?>
             <h1 class="kp-visually-hidden"><?php echo kompass_e($title); ?></h1>
         <?php endif; ?>
     </div>
@@ -62,22 +65,23 @@ $content = $toc['html'];
         </div>
     <?php endif; ?>
 
-    <article class="kp-layout__main" aria-label="<?php echo kompass_e($title); ?>">
+    <article class="kp-layout__main"<?php echo $title !== '' ? ' aria-label="' . kompass_e($title) . '"' : ''; ?>>
         <?php if ($image !== '') : ?>
             <figure class="kp-media">
-                <img src="<?php echo kompass_e($image); ?>" alt="" width="1200" height="675" loading="eager" decoding="async">
+                <?php echo kompass_img($image, '', ['lcp' => true, 'item' => $page, 'sizes' => '(max-width: 860px) 100vw, 48rem'], 1200, 675); ?>
             </figure>
         <?php endif; ?>
 
         <div class="kp-prose entry-content<?php echo $hasToc ? ' kp-prose--own-toc' : ''; ?>">
             <?php if (trim($content) !== '') : ?>
-                <?php echo $content; ?>
+                <?php echo $content; // Vom Core gerendertes und sanitiertes HTML (Editor.js, Downloads, Feeds) ?>
             <?php else : ?>
                 <p class="kp-empty">Diese Seite hat noch keinen Inhalt.</p>
             <?php endif; ?>
         </div>
 
-        <?php kompass_page_tools($updated, true); ?>
-        <?php kompass_feedback($title); ?>
+        <?php // PDF-Ausgabe nur für echte Seiten (Downloads/Feeds rendert der Core mit $page['id'] = 0). ?>
+        <?php kompass_page_tools($updated, (int) ($page['id'] ?? 0) > 0); ?>
+        <?php kompass_feedback($title !== '' ? $title : kompass_site_title()); ?>
     </article>
 </div>

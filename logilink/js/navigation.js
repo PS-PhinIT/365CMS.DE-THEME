@@ -2,7 +2,7 @@
  * LogiLink Theme – Navigation & UI
  *
  * - Sticky-Header scroll state class
- * - Mobile drawer toggle (aria-expanded / aria-hidden / aria-controls)
+ * - Mobile drawer toggle (aria-expanded / aria-controls; geschlossen per CSS visibility:hidden)
  * - Outside-click + Escape close + body scroll-lock
  * - Search panel toggle with focus restore
  * - IntersectionObserver-based reveal (motion-allowed only) with
@@ -40,18 +40,19 @@
         if (!drawer || !mToggle) return;
         drawerOpenerEl = document.activeElement;
         drawer.classList.add('is-open');
-        drawer.setAttribute('aria-hidden', 'false');
         if (overlay) overlay.classList.add('is-open');
         mToggle.classList.add('is-active');
         mToggle.setAttribute('aria-expanded', 'true');
-        mToggle.setAttribute('aria-label', 'Menü schliessen');
+        mToggle.setAttribute('aria-label', 'Menü schließen');
         document.body.style.overflow = 'hidden';
+        // Fokus in den Drawer: erster Link (Escape/Overlay schließen und geben den Fokus zurück).
+        const firstLink = drawer.querySelector('a, button');
+        if (firstLink) firstLink.focus();
     }
 
     function closeDrawer() {
         if (!drawer || !mToggle) return;
         drawer.classList.remove('is-open');
-        drawer.setAttribute('aria-hidden', 'true');
         if (overlay) overlay.classList.remove('is-open');
         mToggle.classList.remove('is-active');
         mToggle.setAttribute('aria-expanded', 'false');
@@ -92,7 +93,6 @@
         if (!searchPanel || !searchBtn) return;
         searchOpenerEl = document.activeElement;
         searchPanel.removeAttribute('hidden');
-        searchPanel.setAttribute('aria-hidden', 'false');
         searchBtn.setAttribute('aria-expanded', 'true');
         const input = searchPanel.querySelector('input[type="search"]');
         if (input) input.focus();
@@ -101,7 +101,6 @@
     function closeSearch() {
         if (!searchPanel || !searchBtn) return;
         searchPanel.setAttribute('hidden', '');
-        searchPanel.setAttribute('aria-hidden', 'true');
         searchBtn.setAttribute('aria-expanded', 'false');
         if (searchOpenerEl && typeof searchOpenerEl.focus === 'function') {
             searchOpenerEl.focus();

@@ -1,5 +1,44 @@
 # Changelog
 
+## 2.0.0 – 2026-11-15
+
+### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
+
+Setzt 365CMS 4.0.0 und PHP 8.4.1 voraus (`requires_cms`, `tested_up_to: 4.1.0`, `requires_php`).
+
+#### Breaking Change: CSS-Präfix `fdr-`
+- Klassen, Custom Properties und `data-*`-Attribute heißen jetzt `fdr-…` statt `fd-…`. Der in 4.0.0 in den Core gewanderte Feed-Aggregator (`feeds.css`) und die gemeinsamen 4.x-Stile setzen selbst `--fd-accent`, `--fd-text`, `--fd-border` … sowie `.fd-header`, `.fd-card`, `.fd-main`, `.fd-pagination`; mit dem alten Präfix hätten sie Links, Header und Karten des Themes umgefärbt bzw. umgebaut. Eigenes CSS im Customizer (`advanced → custom_css`) bitte auf `fdr-` umstellen.
+
+#### Core-Verträge 4.0.0
+- `error.php` wertet `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`, `$error_standalone` und `$error_retry_after` aus; 403-, 429- und 503-Seiten behalten ihren Status, bei 429/503 mit `Retry-After`. Eigenständige Fehler- und Wartungsseiten sind vollständige Dokumente mit Theme-Stylesheet und eigenem `<main>` (ohne Header, Hooks, Customizer und Datenbank); im Theme-Rahmen kein zweites `<main>`. Standardtexte je Status in Deutsch und Englisch.
+- Desktop- und Mobilnavigation lösen den Core-Hook `main_nav` direkt nach den Menüeinträgen aus (Downloads, Knowledgebase, Newsletter) – auch wenn das Menü leer ist; aktive Einträge tragen `aria-current="page"`.
+- `theme_use_local_fonts()` liest `privacy_use_local_fonts` über den `OptionStore` statt per SQL.
+- `feder_get_categories()` zählt veröffentlichte Beiträge mit `JOIN` + `GROUP BY` in einer Abfrage je Request statt einer Zählabfrage je Kategorie.
+
+#### Vorlagen und Core-Module
+- Neu: `contact.php` gibt das Core-Formular (`$contactFormHtml`) mit Kontaktdaten aus dem neuen Customizer-Bereich „Kontakt“ aus (E-Mail-Fallback: Autor:innen-E-Mail, dann Administrator-Adresse).
+- Neu: `knowledgebase/archive.php`, `knowledgebase/single.php`, `newsletter/page.php`, `newsletter/action.php`, `newsletter/issue.php` setzen die Core-Views in den Feder-Rahmen (Skip-Link-Ziel `#main-content`, kein doppeltes `<main>`).
+- Neu: `css/cms-v4.css` (gemeinsam mit allen Public Themes) und die Token-Brücke `--tv4-*` in `style.css` für hell und dunkel: Downloads, Feeds, Formulare, Hub-Sites, Medien-Credits, Editor.js-Blöcke, Inhaltsverzeichnis, wiederverwendbare Blöcke.
+- Neu: `includes/cms-v4-compat.php` mit den Helfern `theme_v4_*`.
+- `page.php` läuft auch mit `$page['id'] = 0` und ohne Titel (Downloads, Feed-Aggregator).
+- Fallback-Menüs, „Mehr über mich“ und die Newsletter-Box verlinken nur vorhandene Seiten und Routen (z. B. `/ueber-uns`, `/impressum`, `/datenschutz`). Die Newsletter-Box zeigt standardmäßig auf `/newsletter`; die Footer-Navigation enthält Newsletter und Kontakt, sofern vorhanden. Logo-Fallback `site_logo`, Favicon `site_favicon`.
+
+#### 4.1.0
+- Memberbereich und Newsletter-Widget übernehmen die Feder-Palette über `member_head` (`--member-*`); im Admin geänderte Member-Farben haben Vorrang. In der Member-Shell lädt das Theme keine Stylesheets, Schriften oder Scripts mehr. Nur die helle Palette: Die Tabler-Shell des Cores hat keinen Dunkelmodus.
+- Login: Farbvorschlag `login_page.colors` in `theme.json` für die Core-Loginseite.
+- Beitrags-, Seiten- und Startseitenbilder mit Fokus-Punkt (`object-position`).
+- Vorschau-Links (`$isPreview`) und nicht veröffentlichte Inhalte: `noindex, nofollow`, keine JSON-LD-Ausgabe, Hinweisleiste.
+
+#### Sicherheit, Datenschutz, Performance
+- Keine Google-Fonts-Requests mehr, auch nicht bei ausgeschalteter Option „Schriften lokal einbinden“; Schriften kommen aus der Core-Schriftverwaltung (`local_font_slugs`), sonst greifen die System-Fallbacks der Font-Stacks.
+- SEO-Kopf über `theme_v4_head_tags()` statt eigenem Hook; der Dokumenttitel berücksichtigt `$title` der Core-Module und Fehlerseiten.
+- `cms_csp_runtime_tags(true)` als erstes Script im `<head>`; das Theme-Script lädt weiter mit `defer`.
+- LCP-Bild (Beitrag, Seite, hervorgehobener Beitrag der Startseite) mit `fetchpriority="high"`, übrige Bilder `loading="lazy"`; `width`/`height` aus den echten Bildmaßen lokaler Uploads.
+
+#### Barrierefreiheit
+- Skip-Link und Vorschau-Hinweis in der Inhaltssprache, `html lang` nach Inhaltssprache (`de`/`en`).
+- Kontraste geprüft (hell/dunkel, alle ≥ 4,5:1 für Text, Fokusrahmen ≥ 7:1); neue Formularrahmen der Core-Module ≥ 3:1.
+
 ## 1.0.0 – 2026-09-27
 
 Erstveröffentlichung des Blog-Themes **Feder** für 365CMS 3.4.00.

@@ -1,8 +1,8 @@
 # CMS Newspaper Theme
 
-**Version:** 1.1.0
-**Ziel:** 365CMS 3.4.00+ · PHP 8.4
-**Slug:** `cms-newspaper`
+**Version:** 2.0.0
+**Ziel:** 365CMS 4.0.0 – 4.1.0 · PHP 8.4.1+
+**Slug:** `cms-newspaper` (Marketplace), Theme-Ordner `newspaper`
 **Text-Domain:** `cms-newspaper`
 
 Editoriales News-/Magazin-Theme – Broadsheet-Typografie (Playfair Display
@@ -17,19 +17,28 @@ SaaS-Indigo, _keine_ Glassmorphism-Tendenz.
 
 Sticky 3-Bar-Masthead (Utility-Bar + Wordmark/Navigation + Themen-Schnell­
 navigation), Search-Toggle mit Focus-Restore, Mobile-Drawer mit
-`aria-hidden` und Escape-Close.
+`hidden`, Fokus-Rückgabe und Escape-Close.
 
 ## Bootstrap & Hooks
 
-- `\CMS\Hooks::addAction('head', …)` registriert Stylesheet, Google Fonts,
-  Meta-Tags und Customizer-getriebene CSS-Variablen.
+- `\CMS\Hooks::addAction('head', …)` registriert `style.css`, `css/cms-v4.css`,
+  `theme-color` und die Customizer-getriebenen CSS-Variablen. SEO-Tags
+  (Beschreibung, Robots, Canonical, Open Graph, JSON-LD) kommen aus dem Core
+  über `theme_v4_head_tags()` in `header.php`.
 - `\CMS\Hooks::addAction('before_footer', …)` lädt `js/navigation.js` mit
   `defer`-Attribut und versionierter URL.
-- Menü-Registrierung läuft auf BEIDEN Hooks `init` und `cms_init`
-  (v3-Bootstrap-Kompatibilität) sowie über den Filter
-  `register_menu_locations`.
+- Menü-Positionen nur über den Filter `register_menu_locations`
+  (`ThemeManager::registerMenuLocation()` gibt es seit 365CMS 4.0 nicht mehr).
+- Hauptnavigation und Mobil-Drawer lösen den Core-Hook `main_nav` aus
+  (Kontext `desktop` bzw. `mobile`).
+- Im Mitgliederbereich (`/member`) nur `member_head` mit der Theme-Palette.
 - Konstante `CMSNEWSPAPER_THEME_VERSION` synchron mit `theme.json`,
   `style.css`-Header und `update.json`.
+- `includes/cms-v4-compat.php`, `css/cms-v4.css` – gemeinsame 365CMS-4.x-Schicht
+  aller Public Themes (Fehlerseiten-Vertrag, `main_nav`, Standardlinks,
+  SEO/Vorschau, Memberbereich, Token-Brücke `--tv4-*`).
+- `contact.php`, `knowledgebase/*.php`, `newsletter/*.php` – Core-Formular
+  bzw. Core-Views im Theme-Rahmen (kein doppeltes `<main>`).
 
 ## Customizer-Schema (`theme.json` → `customization`)
 
@@ -44,29 +53,34 @@ navigation), Search-Toggle mit Focus-Restore, Mobile-Drawer mit
 | `news_hero`     | Repo-Card-Kicker, Headline, Lead, CTA-Label/URL           |
 | `news_content`  | Sektionsüberschriften, Info-Boxen, Feed-Headings, Live-Indikator |
 | `advanced`      | `custom_css` (defensiv gefiltert gegen `</style>`-Injection) |
+| `contact`       | Angezeigte E-Mail, Telefon, Adresse, Erreichbarkeit auf der Kontaktseite |
+
+Neu in `header`: `social_linkedin_url`, `social_github_url`, `social_x_url`
+(leer = kein Symbol in der Utility-Bar).
 
 Menü-Positionen: `primary-nav`, `footer-nav`, `footer-legal`,
 `topics-nav` (Themen-Schnellnavigation in der dritten Header-Leiste).
 
 ## Sicherheit & Robustheit
 
-- Alle Asset-URLs (`style.css`, `js/navigation.js`, Google Fonts) werden
+- Alle Asset-URLs (`style.css`, `css/cms-v4.css`, `js/navigation.js`) werden
   HTML-escaped ausgegeben und mit versionierter Cache-Bust-Query versehen.
-- `enqueueStyles()` liefert `<link rel="preload">` + `<link rel="stylesheet">`.
-- `enqueueScripts()` setzt `defer`.
+  Keine externen Requests: keine Google Fonts, keine CDNs.
+- `enqueueScripts()` setzt `defer`; `cms_csp_runtime_tags(true)` ist das erste Script im `<head>`.
+- Customizer-Farben und -Zahlen werden vor der Ausgabe ins CSS validiert bzw. geklemmt.
 - `news_href()` normalisiert relative/absolute/Anchor-/`mailto:`/`tel:`-URLs.
 - `news_brand_html()` erlaubt einzig den inneren `<span>`-Highlight im
   Wordmark (z. B. `PHIN<span>IT</span>.DE`); alle anderen Tags werden
   escaped.
-- `theme_nav_menu()` validiert URLs (`FILTER_VALIDATE_URL`) und akzeptiert
-  ansonsten nur relative Pfade und Anchors.
+- `theme_nav_menu()` lässt über `news_safe_url()` nur relative Pfade, Anker,
+  `http(s)`, `mailto:` und `tel:` zu.
 - `custom_css` wird gegen `</style>`-Injection gefiltert.
 - Alle Boolean-Customizer-Werte (`enable_sticky_header`, `show_utility_bar`,
   `show_topics_bar`, `show_search`, `show_partner_strip`,
   `show_breaking_label`) werden ausnahmslos über
   `filter_var(…, FILTER_VALIDATE_BOOLEAN)` gelesen.
-- Google Fonts laden nur die tatsächlich vom Customizer gewählten Familien
-  und nutzen Preconnect zu `googleapis.com` und `gstatic.com` (crossorigin).
+- Schriften kommen ausschließlich aus der Core-Schriftverwaltung; jeder
+  Font-Stack endet auf System-Schriften.
 
 ## Accessibility
 
@@ -80,14 +94,17 @@ Menü-Positionen: `primary-nav`, `footer-nav`, `footer-legal`,
 - Header-Toggles (Suche, Mobile-Menü) tragen `type="button"`, `aria-label`,
   `aria-expanded` und `aria-controls`.
 - Suche restauriert den ursprünglichen Fokus beim Schließen.
-- Mobile-Drawer toggelt `aria-hidden`.
+- Mobile-Drawer ist geschlossen `hidden` (nicht per Tab erreichbar), fokussiert
+  beim Öffnen den ersten Link und gibt den Fokus beim Schließen zurück.
+- Kontraste nach WCAG 2.1 AA (Signal-Rot `#c22510`, Meta-Grau `#6f7071`,
+  aufgehellter Akzent `--news-accent-on-dark` auf Ink-Flächen).
 - Dekorative SVGs nutzen `aria-hidden="true"` und `focusable="false"`.
 
 ## Design-Identität
 
 - **Anker:** Ink-Schwarz `#0a0b0c` – Druckschwarz für Masthead, Headlines,
   Repo-Card und Footer.
-- **Akzent:** Signal-Rot `#e32d12` – ausschließlich für Kategorie-Badges,
+- **Akzent:** Signal-Rot `#c22510` (bis 1.1.0 `#e32d12`) – ausschließlich für Kategorie-Badges,
   Breaking-Indikator, das Quadrat-Mark in Section-Headers und Card-Top-Rule
   der Hero-Repo-Karte. Keine generische SaaS-Indigo-Palette.
 - **Surface:** Off-White `#f8f9fa` (Seite) + reines Weiß `#ffffff` (Karten).
@@ -116,18 +133,25 @@ Menü-Positionen: `primary-nav`, `footer-nav`, `footer-legal`,
 ## Dateistruktur
 
 ```
-cms-newspaper/
+newspaper/
 ├── 404.php
 ├── CHANGELOG.md
+├── admin/customizer.php
+├── blog.php, blog-single.php, search.php
+├── contact.php
+├── css/cms-v4.css, css/customizer-admin.css
 ├── error.php
 ├── footer.php
 ├── functions.php
 ├── header.php
 ├── home.php
+├── images/placeholder.svg
+├── includes/cms-v4-compat.php
 ├── index.php
 ├── js/
-│   └── navigation.js
-├── newspaper.html           (Original-Prototyp, dient als Designreferenz)
+│   └── navigation.js, customizer-admin.js
+├── knowledgebase/archive.php, single.php
+├── newsletter/page.php, action.php, issue.php
 ├── page.php
 ├── README.md
 ├── style.css
@@ -137,7 +161,8 @@ cms-newspaper/
 
 ## Migrationshinweis
 
-Die Datei `newspaper.html` ist nach diesem Release **kein** aktiver
-Templatekandidat mehr und wird nur noch als Designreferenz beibehalten.
-Die produktiv ausgelieferte Startseite ist `home.php` und liest alle
-relevanten Inhalte aus dem Customizer.
+Der statische Prototyp `newspaper.html` ist seit 2.0.0 entfernt: Er lud
+Google Fonts und Bilder von picsum.photos und war unter
+`/themes/newspaper/newspaper.html` öffentlich abrufbar. Die produktiv
+ausgelieferte Startseite ist `home.php` und liest alle relevanten Inhalte
+aus dem Customizer.

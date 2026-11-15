@@ -36,8 +36,8 @@ $topics = feder_flag('feder_home', 'show_topics', true) ? feder_get_categories(1
 $socialLinks = feder_social_links();
 ?>
 
-<section class="fd-intro fd-measure" aria-labelledby="fd-intro-title">
-    <div class="fd-intro__portrait" aria-hidden="true">
+<section class="fdr-intro fdr-measure" aria-labelledby="fdr-intro-title">
+    <div class="fdr-intro__portrait" aria-hidden="true">
         <?php if ($authorImage !== '') : ?>
             <img src="<?php echo feder_e($authorImage); ?>" alt="" width="96" height="96" loading="eager" decoding="async">
         <?php else : ?>
@@ -45,23 +45,23 @@ $socialLinks = feder_social_links();
         <?php endif; ?>
     </div>
     <?php if ($introKicker !== '') : ?>
-        <p class="fd-kicker"><?php echo feder_e($introKicker); ?></p>
+        <p class="fdr-kicker"><?php echo feder_e($introKicker); ?></p>
     <?php endif; ?>
-    <h1 class="fd-intro__title" id="fd-intro-title"><?php echo feder_e($introHeadline); ?></h1>
+    <h1 class="fdr-intro__title" id="fdr-intro-title"><?php echo feder_e($introHeadline); ?></h1>
     <?php if ($introText !== '') : ?>
-        <p class="fd-intro__text"><?php echo nl2br(feder_e($introText), false); ?></p>
+        <p class="fdr-intro__text"><?php echo nl2br(feder_e($introText), false); ?></p>
     <?php endif; ?>
-    <p class="fd-intro__byline">
-        <span class="fd-intro__author"><?php echo feder_e($authorName); ?></span>
-        <?php if ($authorRole !== '') : ?><span class="fd-dot" aria-hidden="true">·</span><span><?php echo feder_e($authorRole); ?></span><?php endif; ?>
-        <?php if (feder_safe_url($authorUrl) !== '') : ?>
-            <span class="fd-dot" aria-hidden="true">·</span><a href="<?php echo feder_e(feder_url($authorUrl)); ?>">Mehr über mich</a>
+    <p class="fdr-intro__byline">
+        <span class="fdr-intro__author"><?php echo feder_e($authorName); ?></span>
+        <?php if ($authorRole !== '') : ?><span class="fdr-dot" aria-hidden="true">·</span><span><?php echo feder_e($authorRole); ?></span><?php endif; ?>
+        <?php if (feder_safe_url($authorUrl) !== '' && theme_v4_link_available(feder_url($authorUrl))) : ?>
+            <span class="fdr-dot" aria-hidden="true">·</span><a href="<?php echo feder_e(feder_url($authorUrl)); ?>">Mehr über mich</a>
         <?php endif; ?>
     </p>
     <?php if ($socialLinks !== []) : ?>
-        <ul class="fd-social fd-social--center" aria-label="Profile und Feed">
+        <ul class="fdr-social fdr-social--center" aria-label="Profile und Feed">
             <?php foreach ($socialLinks as $link) : ?>
-                <li><a href="<?php echo feder_e($link['url']); ?>"<?php echo preg_match('#^https?://#i', $link['url']) === 1 && $link['icon'] !== 'rss' ? ' target="_blank" rel="me noopener noreferrer"' : ''; ?>><?php echo feder_icon($link['icon']); ?><span class="fd-visually-hidden"><?php echo feder_e($link['label']); ?></span></a></li>
+                <li><a href="<?php echo feder_e($link['url']); ?>"<?php echo preg_match('#^https?://#i', $link['url']) === 1 && $link['icon'] !== 'rss' ? ' target="_blank" rel="me noopener noreferrer"' : ''; ?>><?php echo feder_icon($link['icon']); ?><span class="fdr-visually-hidden"><?php echo feder_e($link['label']); ?></span></a></li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
@@ -73,42 +73,42 @@ $socialLinks = feder_social_links();
     $featuredExcerpt = feder_excerpt($featured, 260);
     $featuredCategory = trim((string) ($featured->category_name ?? ''));
     ?>
-    <section class="fd-featured fd-wide" aria-labelledby="fd-featured-title">
-        <article class="fd-featured__card<?php echo $featuredImage === '' ? ' fd-featured__card--text' : ''; ?>">
+    <section class="fdr-featured fdr-wide" aria-labelledby="fdr-featured-title">
+        <article class="fdr-featured__card<?php echo $featuredImage === '' ? ' fdr-featured__card--text' : ''; ?>">
             <?php if ($featuredImage !== '') : ?>
-                <a class="fd-featured__media" href="<?php echo feder_e($featuredUrl); ?>" tabindex="-1" aria-hidden="true">
-                    <img src="<?php echo feder_e($featuredImage); ?>" alt="" width="960" height="540" loading="eager" decoding="async">
+                <a class="fdr-featured__media" href="<?php echo feder_e($featuredUrl); ?>" tabindex="-1" aria-hidden="true">
+                    <?php echo feder_img($featuredImage, '', ['lcp' => true, 'item' => $featured], 960, 540); ?>
                 </a>
             <?php endif; ?>
-            <div class="fd-featured__body">
-                <p class="fd-kicker">
+            <div class="fdr-featured__body">
+                <p class="fdr-kicker">
                     <span>Neu</span>
                     <?php if ($featuredCategory !== '') : ?>
-                        <span class="fd-dot" aria-hidden="true">·</span>
+                        <span class="fdr-dot" aria-hidden="true">·</span>
                         <a href="<?php echo feder_e(feder_archive_url('category', (string) ($featured->category_slug ?? ''))); ?>"><?php echo feder_e($featuredCategory); ?></a>
                     <?php endif; ?>
                 </p>
-                <h2 class="fd-featured__title" id="fd-featured-title"><a href="<?php echo feder_e($featuredUrl); ?>"><?php echo feder_e((string) ($featured->title ?? '')); ?></a></h2>
+                <h2 class="fdr-featured__title" id="fdr-featured-title"><a href="<?php echo feder_e($featuredUrl); ?>"><?php echo feder_e((string) ($featured->title ?? '')); ?></a></h2>
                 <?php if ($featuredExcerpt !== '') : ?>
-                    <p class="fd-featured__excerpt"><?php echo feder_e($featuredExcerpt); ?></p>
+                    <p class="fdr-featured__excerpt"><?php echo feder_e($featuredExcerpt); ?></p>
                 <?php endif; ?>
-                <p class="fd-meta">
+                <p class="fdr-meta">
                     <time datetime="<?php echo feder_e(feder_format_date($featured->published_at ?? $featured->created_at ?? '', 'iso')); ?>"><?php echo feder_e(feder_format_date($featured->published_at ?? $featured->created_at ?? '')); ?></time>
                     <?php if ($showReadingTime) : ?>
-                        <span class="fd-dot" aria-hidden="true">·</span><span><?php echo feder_reading_time((string) ($featured->content ?? '')); ?> Min. Lesezeit</span>
+                        <span class="fdr-dot" aria-hidden="true">·</span><span><?php echo feder_reading_time((string) ($featured->content ?? '')); ?> Min. Lesezeit</span>
                     <?php endif; ?>
                 </p>
-                <a class="fd-link-arrow" href="<?php echo feder_e($featuredUrl); ?>">Weiterlesen<?php echo feder_icon('arrow'); ?></a>
+                <a class="fdr-link-arrow" href="<?php echo feder_e($featuredUrl); ?>">Weiterlesen<?php echo feder_icon('arrow'); ?></a>
             </div>
         </article>
     </section>
 <?php endif; ?>
 
-<section class="fd-stream fd-measure" aria-labelledby="fd-stream-title">
-    <h2 class="fd-section-title" id="fd-stream-title"><?php echo feder_e(feder_text('feder_home', 'stream_heading', 'Neueste Texte')); ?></h2>
+<section class="fdr-stream fdr-measure" aria-labelledby="fdr-stream-title">
+    <h2 class="fdr-section-title" id="fdr-stream-title"><?php echo feder_e(feder_text('feder_home', 'stream_heading', 'Neueste Texte')); ?></h2>
 
     <?php if ($stream === [] && $featured === null) : ?>
-        <p class="fd-empty">Noch keine Beiträge veröffentlicht. Der erste Text erscheint bald.</p>
+        <p class="fdr-empty">Noch keine Beiträge veröffentlicht. Der erste Text erscheint bald.</p>
     <?php else : ?>
         <?php
         $currentYear = '';
@@ -122,27 +122,27 @@ $socialLinks = feder_social_links();
                 $currentYear = $year;
                 $listOpen = true;
                 ?>
-                <h3 class="fd-year"><?php echo feder_e($year); ?></h3>
-                <ol class="fd-postlist">
+                <h3 class="fdr-year"><?php echo feder_e($year); ?></h3>
+                <ol class="fdr-postlist">
             <?php endif;
             $itemUrl = feder_post_link($item);
             $itemCategory = trim((string) ($item->category_name ?? ''));
             ?>
-            <li class="fd-postlist__item">
+            <li class="fdr-postlist__item">
                 <article>
-                    <time class="fd-postlist__date" datetime="<?php echo feder_e(feder_format_date($item->published_at ?? $item->created_at ?? '', 'iso')); ?>"><?php echo feder_e(feder_format_date($item->published_at ?? $item->created_at ?? '', 'day')); ?></time>
-                    <div class="fd-postlist__body">
-                        <h4 class="fd-postlist__title"><a href="<?php echo feder_e($itemUrl); ?>"><?php echo feder_e((string) ($item->title ?? '')); ?></a></h4>
+                    <time class="fdr-postlist__date" datetime="<?php echo feder_e(feder_format_date($item->published_at ?? $item->created_at ?? '', 'iso')); ?>"><?php echo feder_e(feder_format_date($item->published_at ?? $item->created_at ?? '', 'day')); ?></time>
+                    <div class="fdr-postlist__body">
+                        <h4 class="fdr-postlist__title"><a href="<?php echo feder_e($itemUrl); ?>"><?php echo feder_e((string) ($item->title ?? '')); ?></a></h4>
                         <?php $itemExcerpt = feder_excerpt($item, 150); ?>
                         <?php if ($itemExcerpt !== '') : ?>
-                            <p class="fd-postlist__excerpt"><?php echo feder_e($itemExcerpt); ?></p>
+                            <p class="fdr-postlist__excerpt"><?php echo feder_e($itemExcerpt); ?></p>
                         <?php endif; ?>
-                        <p class="fd-meta">
+                        <p class="fdr-meta">
                             <?php if ($itemCategory !== '') : ?>
                                 <a href="<?php echo feder_e(feder_archive_url('category', (string) ($item->category_slug ?? ''))); ?>"><?php echo feder_e($itemCategory); ?></a>
                             <?php endif; ?>
                             <?php if ($showReadingTime) : ?>
-                                <?php if ($itemCategory !== '') : ?><span class="fd-dot" aria-hidden="true">·</span><?php endif; ?>
+                                <?php if ($itemCategory !== '') : ?><span class="fdr-dot" aria-hidden="true">·</span><?php endif; ?>
                                 <span><?php echo feder_reading_time((string) ($item->content ?? '')); ?> Min.</span>
                             <?php endif; ?>
                         </p>
@@ -155,17 +155,17 @@ $socialLinks = feder_social_links();
         <?php endif; ?>
 
         <?php if ($totalPosts > count($stream) + ($featured !== null ? 1 : 0)) : ?>
-            <p class="fd-stream__more"><a class="fd-button fd-button--ghost" href="<?php echo feder_e(feder_url('/blog')); ?>">Alle <?php echo (int) $totalPosts; ?> Texte ansehen<?php echo feder_icon('arrow'); ?></a></p>
+            <p class="fdr-stream__more"><a class="fdr-button fdr-button--ghost" href="<?php echo feder_e(feder_url('/blog')); ?>">Alle <?php echo (int) $totalPosts; ?> Texte ansehen<?php echo feder_icon('arrow'); ?></a></p>
         <?php endif; ?>
     <?php endif; ?>
 </section>
 
 <?php if ($topics !== []) : ?>
-    <section class="fd-topics fd-measure" aria-labelledby="fd-topics-title">
-        <h2 class="fd-section-title" id="fd-topics-title"><?php echo feder_e(feder_text('feder_home', 'topics_heading', 'Themen')); ?></h2>
-        <ul class="fd-chips">
+    <section class="fdr-topics fdr-measure" aria-labelledby="fdr-topics-title">
+        <h2 class="fdr-section-title" id="fdr-topics-title"><?php echo feder_e(feder_text('feder_home', 'topics_heading', 'Themen')); ?></h2>
+        <ul class="fdr-chips">
             <?php foreach ($topics as $topic) : ?>
-                <li><a class="fd-chip" href="<?php echo feder_e($topic['url']); ?>"><?php echo feder_e($topic['name']); ?><span class="fd-chip__count"><?php echo (int) $topic['count']; ?></span></a></li>
+                <li><a class="fdr-chip" href="<?php echo feder_e($topic['url']); ?>"><?php echo feder_e($topic['name']); ?><span class="fdr-chip__count"><?php echo (int) $topic['count']; ?></span></a></li>
             <?php endforeach; ?>
         </ul>
     </section>
@@ -175,19 +175,21 @@ $socialLinks = feder_social_links();
     $boxHeading = feder_text('feder_home', 'newsletter_heading', 'Neue Texte per E-Mail');
     $boxText = feder_text('feder_home', 'newsletter_text');
     $boxLabel = feder_text('feder_home', 'newsletter_cta_label', 'Newsletter abonnieren');
-    $boxUrl = feder_safe_url(feder_text('feder_home', 'newsletter_cta_url', '/kontakt'));
+    // Standardziel ist das Core-Modul Newsletter (/newsletter); der Button erscheint nur, wenn das Ziel existiert.
+    $boxUrl = feder_safe_url(feder_text('feder_home', 'newsletter_cta_url', '/newsletter'));
+    $boxUrl = $boxUrl !== '' && theme_v4_link_available(feder_url($boxUrl)) ? $boxUrl : '';
     ?>
-    <aside class="fd-note fd-measure" aria-label="<?php echo feder_e($boxHeading); ?>">
-        <h2 class="fd-note__title"><?php echo feder_e($boxHeading); ?></h2>
+    <aside class="fdr-note fdr-measure" aria-label="<?php echo feder_e($boxHeading); ?>">
+        <h2 class="fdr-note__title"><?php echo feder_e($boxHeading); ?></h2>
         <?php if ($boxText !== '') : ?>
             <p><?php echo feder_e($boxText); ?></p>
         <?php endif; ?>
-        <div class="fd-note__actions">
+        <div class="fdr-note__actions">
             <?php if ($boxUrl !== '' && $boxLabel !== '') : ?>
-                <a class="fd-button" href="<?php echo feder_e(feder_url($boxUrl)); ?>"><?php echo feder_e($boxLabel); ?></a>
+                <a class="fdr-button" href="<?php echo feder_e(feder_url($boxUrl)); ?>"><?php echo feder_e($boxLabel); ?></a>
             <?php endif; ?>
             <?php if (feder_flag('feder_author', 'show_rss', true)) : ?>
-                <a class="fd-button fd-button--ghost" href="<?php echo feder_e(feder_feed_url()); ?>"><?php echo feder_icon('rss'); ?><span>RSS-Feed</span></a>
+                <a class="fdr-button fdr-button--ghost" href="<?php echo feder_e(feder_feed_url()); ?>"><?php echo feder_icon('rss'); ?><span>RSS-Feed</span></a>
             <?php endif; ?>
         </div>
     </aside>
