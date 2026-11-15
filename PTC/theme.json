@@ -1,8 +1,10 @@
 {
     "name": "PTC – Personalvermittlung & Schulungen",
     "slug": "PTC",
-    "version": "3.1.0",
-    "requires_cms": "3.4.00",
+    "version": "4.0.0",
+    "requires_cms": "4.0.0",
+    "requires_php": "8.4.1",
+    "tested_up_to": "4.1.0",
     "author": "365CMS",
     "description": "Branchentheme für Personalvermittlung und berufliche Weiterbildung. Vertrauen, Kompetenz, Entwicklung – anpassbar über zentrale Design-Tokens.",
     "tags": [
@@ -21,6 +23,7 @@
     "menus": {
         "primary": "Hauptmenü (Header)",
         "footer-nav": "Footer-Navigation",
+        "footer-services": "Footer Leistungen",
         "footer-legal": "Rechtliche Links"
     },
     "templates": {
@@ -31,12 +34,27 @@
         "login": "login.php",
         "register": "register.php",
         "search": "search.php",
+        "contact": "contact.php",
         "404": "404.php",
         "error": "error.php"
     },
     "partials": {
         "header": "header.php",
         "footer": "footer.php"
+    },
+    "login_page": {
+        "colors": {
+            "background_start": "#e8f2f4",
+            "background_end": "#f1f5f9",
+            "card_background": "#ffffff",
+            "text_color": "#334155",
+            "muted_color": "#475569",
+            "primary_color": "#1a4d5c",
+            "primary_text_color": "#ffffff",
+            "link_color": "#1a4d5c",
+            "input_background": "#ffffff",
+            "input_border": "#546e7a"
+        }
     },
     "settings": {
         "hero_badge": "Ihr Spezialist für Personalvermittlung und berufliche Weiterbildung",
@@ -95,7 +113,7 @@
                 "secondary_color": {
                     "label": "Sekundärfarbe (Slate)",
                     "type": "color",
-                    "default": "#607D8B",
+                    "default": "#546e7a",
                     "description": "Schiefergrau für Nebenelemente"
                 },
                 "text_color": {
@@ -119,7 +137,7 @@
                 "muted_color": {
                     "label": "Gedämpfte Textfarbe",
                     "type": "color",
-                    "default": "#94a3b8",
+                    "default": "#5b6b78",
                     "description": "Timestamps, Platzhalter, Hints"
                 },
                 "bg_color": {
@@ -155,13 +173,13 @@
                 "success_color": {
                     "label": "Erfolgsfarbe",
                     "type": "color",
-                    "default": "#22c55e",
+                    "default": "#2e7d4f",
                     "description": "Positivmeldungen und Status-Badges"
                 },
                 "error_color": {
                     "label": "Fehlerfarbe",
                     "type": "color",
-                    "default": "#ef4444",
+                    "default": "#b42318",
                     "description": "Fehlermeldungen und Warnungen"
                 },
                 "cta_bg_color": {

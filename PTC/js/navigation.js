@@ -5,8 +5,10 @@
  *   - Sticky Header (.scrolled)
  *   - Burger Menu (Mobile Drawer)
  *   - Smooth Scroll for Anchor Links
- *   - Active Nav Highlighting
- *   - Back to Top Button
+ *   - Submenus per Tastatur (Escape schließt)
+ *   - Profil-Dropdown (Disclosure)
+ *
+ * Aktive Menüeinträge markiert der Server (class="active" + aria-current="page").
  *
  * @package PTC_Theme
  */
@@ -37,6 +39,10 @@
 
         var lastFocusBeforeMenu = null;
 
+        function isMenuOpen() {
+            return !!(drawer && drawer.classList.contains('is-open'));
+        }
+
         function openMenu() {
             if (!toggle || !drawer || !overlay) return;
             lastFocusBeforeMenu = document.activeElement;
@@ -45,28 +51,37 @@
             toggle.classList.add('is-active');
             toggle.setAttribute('aria-expanded', 'true');
             toggle.setAttribute('aria-label', 'Menü schließen');
-            drawer.setAttribute('aria-hidden', 'false');
+            // Geschlossen ist der Drawer inert (nicht per Tab erreichbar); geöffnet erster Link fokussieren.
+            drawer.inert = false;
+            drawer.removeAttribute('inert');
             document.body.style.overflow = 'hidden';
+            var first = drawer.querySelector('a[href], button:not([disabled])');
+            if (first) {
+                first.focus();
+            }
         }
 
-        function closeMenu() {
-            if (!toggle || !drawer || !overlay) return;
+        function closeMenu(restoreFocus) {
+            if (!toggle || !drawer || !overlay || !isMenuOpen()) return;
             drawer.classList.remove('is-open');
             overlay.classList.remove('is-open');
             toggle.classList.remove('is-active');
             toggle.setAttribute('aria-expanded', 'false');
             toggle.setAttribute('aria-label', 'Menü öffnen');
-            drawer.setAttribute('aria-hidden', 'true');
+            drawer.inert = true;
+            drawer.setAttribute('inert', '');
             document.body.style.overflow = '';
-            var restore = lastFocusBeforeMenu || toggle;
-            if (restore && typeof restore.focus === 'function') {
-                restore.focus();
+            if (restoreFocus !== false) {
+                var restore = lastFocusBeforeMenu || toggle;
+                if (restore && typeof restore.focus === 'function') {
+                    restore.focus();
+                }
             }
         }
 
         if (toggle) {
             toggle.addEventListener('click', function () {
-                if (drawer && drawer.classList.contains('is-open')) {
+                if (isMenuOpen()) {
                     closeMenu();
                 } else {
                     openMenu();
@@ -75,12 +90,47 @@
         }
 
         if (overlay) {
-            overlay.addEventListener('click', closeMenu);
+            overlay.addEventListener('click', function () { closeMenu(); });
         }
 
+        // Escape schließt nur ein offenes Menü (bisher sprang der Fokus bei jedem Escape zum Menüschalter).
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') {
+            if (e.key === 'Escape' && isMenuOpen()) {
                 closeMenu();
+            }
+        });
+
+        // ===== Desktop-Submenüs: öffnen per Hover und Tastaturfokus (:focus-within), Escape schließt =====
+        document.querySelectorAll('.ptc-nav li.has-children').forEach(function (item) {
+            var parentLink = item.querySelector(':scope > a');
+            item.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && item.matches(':focus-within')) {
+                    item.classList.add('is-collapsed');
+                    if (parentLink) {
+                        parentLink.focus();
+                    }
+                    e.stopPropagation();
+                }
+            });
+            item.addEventListener('focusout', function (e) {
+                if (!item.contains(e.relatedTarget)) {
+                    item.classList.remove('is-collapsed');
+                }
+            });
+            item.addEventListener('mouseleave', function () {
+                item.classList.remove('is-collapsed');
+            });
+            if (parentLink) {
+                parentLink.addEventListener('keydown', function (e) {
+                    if (e.key === 'ArrowDown') {
+                        item.classList.remove('is-collapsed');
+                        var firstChild = item.querySelector('.ptc-submenu a');
+                        if (firstChild) {
+                            e.preventDefault();
+                            firstChild.focus();
+                        }
+                    }
+                });
             }
         });
 
@@ -92,8 +142,8 @@
                 var target = hash.length > 1 ? document.querySelector(hash) : null;
                 if (target) {
                     e.preventDefault();
-                    closeMenu();
-                    var delay = drawer && drawer.classList.contains('is-open') ? 350 : 0;
+                    var delay = isMenuOpen() ? 350 : 0;
+                    closeMenu(false);
                     setTimeout(function () {
                         var headerH = header ? header.offsetHeight : 72;
                         var top = target.getBoundingClientRect().top + window.pageYOffset - headerH;
@@ -102,21 +152,16 @@
                         } else {
                             window.scrollTo({ top: top, behavior: 'smooth' });
                         }
+                        // Fokus an das Ziel übergeben, damit Tastatur und Screenreader dort weiterlesen.
+                        if (!target.hasAttribute('tabindex')) {
+                            target.setAttribute('tabindex', '-1');
+                        }
+                        target.focus({ preventScroll: true });
                     }, prefersReducedMotion ? 0 : delay);
                 }
             });
         });
 
-        // ===== Active Nav =====
-        var currentPath = window.location.pathname.replace(/\/$/, '') || '/';
-        document.querySelectorAll('.ptc-nav li a, .ptc-mobile-drawer li a').forEach(function (link) {
-            var linkPath = link.getAttribute('href');
-            if (!linkPath) return;
-            var parsed = linkPath.replace(/\/$/, '') || '/';
-            if (parsed === currentPath) {
-                link.parentElement.classList.add('active');
-            }
-        });
 
         // ===== Flash Messages Auto-Dismiss =====
         document.querySelectorAll('[data-auto-dismiss]').forEach(function (el) {
@@ -132,28 +177,42 @@
         var profileDropdown = document.getElementById('ptcProfileDropdown');
         if (profileDropdown) {
             var profileToggle = profileDropdown.querySelector('.ptc-profile-toggle');
+            var closeProfile = function () {
+                profileDropdown.classList.remove('is-open');
+                if (profileToggle) {
+                    profileToggle.setAttribute('aria-expanded', 'false');
+                }
+            };
             if (profileToggle) {
                 profileToggle.addEventListener('click', function (e) {
                     e.stopPropagation();
                     var isOpen = profileDropdown.classList.toggle('is-open');
                     profileToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+                    if (isOpen) {
+                        var firstItem = profileDropdown.querySelector('.ptc-profile-menu a, .ptc-profile-menu button');
+                        if (firstItem) {
+                            firstItem.focus();
+                        }
+                    }
                 });
             }
+            // Schließen, wenn der Fokus das Dropdown verlässt (Tab)
+            profileDropdown.addEventListener('focusout', function (e) {
+                if (!profileDropdown.contains(e.relatedTarget)) {
+                    closeProfile();
+                }
+            });
             // Schließen per Klick außerhalb
             document.addEventListener('click', function (e) {
                 if (!profileDropdown.contains(e.target)) {
-                    profileDropdown.classList.remove('is-open');
-                    if (profileToggle) {
-                        profileToggle.setAttribute('aria-expanded', 'false');
-                    }
+                    closeProfile();
                 }
             });
             // Schließen per Escape
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape' && profileDropdown.classList.contains('is-open')) {
-                    profileDropdown.classList.remove('is-open');
+                    closeProfile();
                     if (profileToggle) {
-                        profileToggle.setAttribute('aria-expanded', 'false');
                         profileToggle.focus();
                     }
                 }

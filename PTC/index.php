@@ -27,6 +27,6 @@ if (isset($posts) && is_array($posts)) {
 <div class="ptc-page-content">
     <div class="ptc-container ptc-center-block">
         <p class="ptc-text-muted">Bitte nutzen Sie die Navigation oder kehren Sie zur Startseite zurück.</p>
-        <a href="<?php echo ptc_href('/'); ?>" class="btn-ptc btn-ptc-primary">Zur Startseite</a>
+        <a href="<?php echo htmlspecialchars(ptc_href('/'), ENT_QUOTES, 'UTF-8'); ?>" class="btn-ptc btn-ptc-primary">Zur Startseite</a>
     </div>
 </div>

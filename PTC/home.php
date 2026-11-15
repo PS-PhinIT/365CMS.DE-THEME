@@ -14,6 +14,8 @@ if (!defined('ABSPATH')) {
 }
 
 $siteUrl = ptc_site_url();
+// Customizer-URLs nur als http(s), wurzelrelativer Pfad, Anker, mailto: oder tel: ausgeben (kein javascript:/data:).
+$ptcUrl = static fn(mixed $url): string => ptc_safe_url((string) $url, '#');
 
 // ── Customizer-Einstellungen (homepage-Kategorie) ────────────────────────────
 $hp = ptc_customizer_category('homepage');
@@ -63,10 +65,11 @@ $heroBadge        = (string) $hpGet('hero_badge', 'Ihr Spezialist für Personalv
 $heroTitle        = (string) $hpGet('hero_title', 'Menschen verbinden. <span class="highlight">Kompetenz entwickeln.</span>');
 $heroText         = (string) $hpGet('hero_text', 'Personalvermittlung, Arbeitnehmerüberlassung und praxisnahe Qualifizierung – für Kandidaten und Arbeitgeber aus einer Hand.');
 $heroCta1Label    = (string) $hpGet('hero_cta_primary_label', 'Für Kandidaten');
-$heroCta1Url      = (string) $hpGet('hero_cta_primary_url', '#kandidaten');
+$heroCta1Url      = $ptcUrl($hpGet('hero_cta_primary_url', '#kandidaten'));
 $heroCta2Label    = (string) $hpGet('hero_cta_secondary_label', 'Für Arbeitgeber');
-$heroCta2Url      = (string) $hpGet('hero_cta_secondary_url', '#arbeitgeber');
-$heroBgImage      = (string) $hpGet('hero_bg_image', '');
+$heroCta2Url      = $ptcUrl($hpGet('hero_cta_secondary_url', '#arbeitgeber'));
+$heroBgImage      = ptc_safe_url((string) $hpGet('hero_bg_image', ''));
+$heroBgImage      = str_starts_with($heroBgImage, '#') ? '' : $heroBgImage;
 
 // Services
 $servicesTag      = (string) $svcGet('services_tag', 'Unsere Leistungen');
@@ -81,16 +84,17 @@ $servicesShowIcons = $svcBool('services_show_icons', true);
 $servicesMaxItems  = (int) $svcGet('services_max_items', 6);
 $servicesShowCta  = $svcBool('services_show_cta', false);
 $servicesCtaLabel = (string) $svcGet('services_cta_label', 'Alle Leistungen entdecken');
-$servicesCtaUrl   = (string) $svcGet('services_cta_url', '/leistungen');
+$servicesCtaUrl   = $ptcUrl($svcGet('services_cta_url', '/leistungen'));
 
 // Dynamische Service-Karten (1–12)
 $serviceCards = [];
 for ($i = 1; $i <= 12; $i++) {
     $icon  = trim((string) $svcGet("service_{$i}_icon", ''));
-    $image = trim((string) $svcGet("service_{$i}_image", ''));
+    $image = ptc_safe_url(trim((string) $svcGet("service_{$i}_image", '')));
+    $image = str_starts_with($image, '#') ? '' : $image;
     $title = trim((string) $svcGet("service_{$i}_title", ''));
     $text  = trim((string) $svcGet("service_{$i}_text", ''));
-    $url   = trim((string) $svcGet("service_{$i}_url", ''));
+    $url   = ptc_safe_url(trim((string) $svcGet("service_{$i}_url", '')));
     if ($icon !== '' || $title !== '' || $image !== '') {
         $serviceCards[] = ['icon' => $icon, 'image' => $image, 'title' => $title, 'text' => $text, 'url' => $url];
     }
@@ -115,7 +119,7 @@ $eventsEmptyText    = (string) $evtGet('events_empty_text', 'Neue Termine werden
 $eventsEmptyHint    = (string) $evtGet('events_empty_hint', 'Schauen Sie bald wieder vorbei oder kontaktieren Sie uns direkt.');
 $eventsShowCta      = $evtBool('events_show_cta', false);
 $eventsCtaLabel     = (string) $evtGet('events_cta_label', 'Alle Termine ansehen');
-$eventsCtaUrl       = (string) $evtGet('events_cta_url', '/termine');
+$eventsCtaUrl       = $ptcUrl($evtGet('events_cta_url', '/termine'));
 
 // FAQ
 $faqTag            = (string) $faqGet('faq_tag', 'Wissenswertes');
@@ -127,7 +131,7 @@ $faqBgStyle        = (string) $faqGet('faq_bg_style', 'default');
 $faqShowCta        = $faqBool('faq_show_cta', false);
 $faqCtaText        = (string) $faqGet('faq_cta_text', 'Ihre Frage war nicht dabei?');
 $faqCtaLabel       = (string) $faqGet('faq_cta_label', 'Kontaktieren Sie uns');
-$faqCtaUrl         = (string) $faqGet('faq_cta_url', '/#kontakt');
+$faqCtaUrl         = $ptcUrl($faqGet('faq_cta_url', '/#kontakt'));
 
 // Dynamische FAQ-Items (1–8)
 $faqItems = [];
@@ -143,9 +147,9 @@ for ($i = 1; $i <= 8; $i++) {
 $ctaTitle         = (string) $hpGet('cta_title', 'Bereit für den nächsten Karriereschritt?');
 $ctaText          = (string) $hpGet('cta_text', 'Ob Arbeitnehmer auf Jobsuche oder Unternehmen mit Personalbedarf – sprechen Sie uns an. Wir finden die passende Lösung für Sie.');
 $ctaBtnLabel      = (string) $hpGet('cta_button_label', 'Jetzt Kontakt aufnehmen');
-$ctaBtnUrl        = (string) $hpGet('cta_button_url', '/#kontakt');
+$ctaBtnUrl        = $ptcUrl($hpGet('cta_button_url', '/#kontakt'));
 $ctaSecLabel      = (string) $hpGet('cta_secondary_label', 'Unsere Leistungen entdecken');
-$ctaSecUrl        = (string) $hpGet('cta_secondary_url', '/#dienstleistungen');
+$ctaSecUrl        = $ptcUrl($hpGet('cta_secondary_url', '/#dienstleistungen'));
 
 // Footer-Kontaktdaten (für CTA-Buttons)
 $footerEmail = ptc_customizer_get('footer', 'footer_email', '');
@@ -193,9 +197,8 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
             <div class="ptc-hero-visual">
                 <?php if ($heroBgImage !== ''): ?>
                     <div class="ptc-hero-image-box">
-                        <img src="<?php echo htmlspecialchars($heroBgImage, ENT_QUOTES, 'UTF-8'); ?>"
-                             alt="<?php echo ptc_site_title(); ?> – Hero"
-                             class="ptc-hero-img" loading="lazy">
+                        <?php // LCP der Startseite: width/height, fetchpriority="high" (nicht lazy), Fokus-Punkt (4.1.0) ?>
+                        <?php echo theme_v4_img($heroBgImage, '', ['class' => 'ptc-hero-img', 'lcp' => true, 'sizes' => '(max-width: 1024px) 100vw, 50vw']); ?>
                     </div>
                 <?php else: ?>
                     <div class="ptc-hero-image-placeholder" aria-hidden="true">
@@ -273,12 +276,10 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
             <article class="ptc-service-card<?php echo $card['image'] !== '' ? ' ptc-service-card--has-image' : ''; ?>">
                 <?php if ($card['image'] !== ''): ?>
                     <div class="ptc-service-image">
-                        <img src="<?php echo htmlspecialchars($card['image'], ENT_QUOTES, 'UTF-8'); ?>"
-                             alt="<?php echo htmlspecialchars($card['title'], ENT_QUOTES, 'UTF-8'); ?>"
-                             loading="lazy">
+                        <?php echo theme_v4_img($card['image'], '', ['sizes' => '(max-width: 768px) 100vw, 400px']); ?>
                     </div>
                 <?php elseif ($card['icon'] !== ''): ?>
-                    <div class="ptc-service-icon"><?php echo htmlspecialchars($card['icon'], ENT_QUOTES, 'UTF-8'); ?></div>
+                    <div class="ptc-service-icon" aria-hidden="true"><?php echo htmlspecialchars($card['icon'], ENT_QUOTES, 'UTF-8'); ?></div>
                 <?php endif; ?>
                 <div class="ptc-service-body">
                     <?php if ($card['title'] !== ''): ?>
@@ -288,7 +289,7 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
                         <p><?php echo htmlspecialchars($card['text'], ENT_QUOTES, 'UTF-8'); ?></p>
                     <?php endif; ?>
                     <?php if ($card['url'] !== ''): ?>
-                        <a href="<?php echo htmlspecialchars($card['url'], ENT_QUOTES, 'UTF-8'); ?>" class="ptc-service-link">Mehr erfahren →</a>
+                        <a href="<?php echo htmlspecialchars($card['url'], ENT_QUOTES, 'UTF-8'); ?>" class="ptc-service-link">Mehr erfahren<span class="theme-v4-sr-only">: <?php echo htmlspecialchars($card['title'], ENT_QUOTES, 'UTF-8'); ?></span> <span aria-hidden="true">→</span></a>
                     <?php endif; ?>
                 </div>
             </article>
@@ -333,15 +334,20 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
         $usePlugin = ($eventsSource === 'auto' || $eventsSource === 'plugin');
         $useManual = ($eventsSource === 'auto' || $eventsSource === 'manual');
 
-        if ($usePlugin && \CMS\PluginManager::instance()->isPluginActive('cms-events')) {
+        if ($usePlugin) {
             try {
-                $db     = \CMS\Database::instance();
-                $prefix = $db->prefix();
-                $stmt   = $db->prepare(
-                    "SELECT * FROM {$prefix}events WHERE status = 'published' AND event_date >= CURDATE() ORDER BY event_date ASC LIMIT ?"
-                );
-                $stmt->execute([$eventsMaxItems]);
-                $events = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                if (\CMS\PluginManager::instance()->isPluginActive('cms-events')) {
+                    // Ein Prepared Statement; LIMIT als geprüfte Ganzzahl (natives Prepare bindet Strings).
+                    $db     = \CMS\Database::instance();
+                    $limit  = max(1, min(24, $eventsMaxItems));
+                    $events = array_map(
+                        static fn(object $row): array => get_object_vars($row),
+                        $db->get_results(
+                            "SELECT * FROM {$db->getPrefix()}events WHERE status = ? AND event_date >= CURDATE() ORDER BY event_date ASC LIMIT {$limit}",
+                            ['published']
+                        )
+                    );
+                }
             } catch (\Throwable $e) {
                 $events = [];
             }
@@ -356,7 +362,7 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
                         'title'      => $eTitle,
                         'event_date' => trim((string) $evtGet("event_{$i}_date", '')),
                         'text'       => trim((string) $evtGet("event_{$i}_text", '')),
-                        'url'        => trim((string) $evtGet("event_{$i}_url", '')),
+                        'url'        => ptc_safe_url(trim((string) $evtGet("event_{$i}_url", ''))),
                         'is_manual'  => true,
                     ];
                 }
@@ -370,29 +376,28 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
                     <article class="ptc-event-card">
                         <?php if ($eventsDateBadge): ?>
                         <div class="ptc-event-date">
-                            <span class="ptc-event-icon">📅</span>
+                            <span class="ptc-event-icon" aria-hidden="true">📅</span>
                             <strong><?php
-                                if (!empty($event['event_date'])) {
-                                    if (!empty($event['is_manual'])) {
-                                        echo htmlspecialchars($event['event_date'], ENT_QUOTES, 'UTF-8');
-                                    } else {
-                                        $d = new \DateTime($event['event_date']);
-                                        echo htmlspecialchars($d->format('d. M.'), ENT_QUOTES, 'UTF-8');
-                                    }
-                                } else {
+                                $eventDate = (string) ($event['event_date'] ?? '');
+                                if ($eventDate === '') {
                                     echo 'Demnächst';
+                                } elseif (!empty($event['is_manual'])) {
+                                    echo htmlspecialchars($eventDate, ENT_QUOTES, 'UTF-8');
+                                } else {
+                                    $formatted = ptc_format_date($eventDate, 'd.m.Y');
+                                    echo htmlspecialchars($formatted !== '' ? $formatted : $eventDate, ENT_QUOTES, 'UTF-8');
                                 }
                             ?></strong>
                         </div>
                         <?php endif; ?>
-                        <h4><?php echo htmlspecialchars($event['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?></h4>
+                        <h3 class="ptc-event-title"><?php echo htmlspecialchars((string) ($event['title'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></h3>
                         <?php if (!empty($event['text'])): ?>
                             <p class="ptc-text-muted ptc-text-muted--sm"><?php echo htmlspecialchars($event['text'], ENT_QUOTES, 'UTF-8'); ?></p>
                         <?php endif; ?>
                         <?php
                         $eventUrl = '';
                         if (!empty($event['url'])) {
-                            $eventUrl = $event['url'];
+                            $eventUrl = ptc_safe_url((string) $event['url']);
                         } elseif (!empty($event['id']) && empty($event['is_manual'])) {
                             $eventUrl = $siteUrl . '/events/' . (int)$event['id'];
                         }
@@ -407,10 +412,10 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
             <div class="ptc-events-grid">
                 <article class="ptc-event-card">
                     <div class="ptc-event-date">
-                        <span class="ptc-event-icon">📅</span>
+                        <span class="ptc-event-icon" aria-hidden="true">📅</span>
                         <strong>Demnächst</strong>
                     </div>
-                    <h4><?php echo htmlspecialchars($eventsEmptyText, ENT_QUOTES, 'UTF-8'); ?></h4>
+                    <h3 class="ptc-event-title"><?php echo htmlspecialchars($eventsEmptyText, ENT_QUOTES, 'UTF-8'); ?></h3>
                     <?php if ($eventsEmptyHint !== ''): ?>
                         <p class="ptc-text-muted ptc-text-muted--sm"><?php echo htmlspecialchars($eventsEmptyHint, ENT_QUOTES, 'UTF-8'); ?></p>
                     <?php endif; ?>
@@ -444,7 +449,7 @@ $footerPhone = ptc_customizer_get('footer', 'footer_phone', '');
             <?php endif; ?>
             <a href="<?php echo htmlspecialchars($bookingUrl, ENT_QUOTES, 'UTF-8'); ?>"
                class="btn-ptc btn-ptc-primary" target="_blank" rel="noopener noreferrer">
-                📅 <?php echo htmlspecialchars($bookingTitle !== '' ? $bookingTitle : 'Online-Termin buchen', ENT_QUOTES, 'UTF-8'); ?> (öffnet in neuem Fenster)
+                <span aria-hidden="true">📅</span> <?php echo htmlspecialchars($bookingTitle !== '' ? $bookingTitle : 'Online-Termin buchen', ENT_QUOTES, 'UTF-8'); ?> (öffnet in neuem Fenster)
             </a>
         </div>
         <?php endif; ?>

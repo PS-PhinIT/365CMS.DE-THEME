@@ -36,15 +36,21 @@ $showCategory    = ptc_customizer_get('blog', 'blog_show_category',       '1');
 $heroTitle       = ptc_customizer_get('blog', 'blog_hero_title',          'Unser Blog');
 $heroSubtitle    = ptc_customizer_get('blog', 'blog_hero_subtitle',       'Aktuelle Beiträge, Einblicke und Neuigkeiten');
 
-/* ─── Filter-Parameter ─── */
-$activeCategory = htmlspecialchars($_GET['category'] ?? '', ENT_QUOTES, 'UTF-8');
-$activeTag      = htmlspecialchars($_GET['tag'] ?? '', ENT_QUOTES, 'UTF-8');
+/* ─── Archiv-Kontext ─── */
+// Kategorie- und Schlagwort-Archive (/kategorie/<slug>, /tag/<slug>) rendern über index.php → blog.php;
+// der Core übergibt dann `$category` bzw. `$tag`. /blog?category=… leitet der Core per 301 dorthin um.
+$archiveRead = static fn(mixed $source, string $key): string =>
+    (string) (is_array($source) ? ($source[$key] ?? '') : (is_object($source) ? ($source->{$key} ?? '') : ''));
+$activeCategory = isset($category) ? $archiveRead($category, 'slug') : '';
+$activeTag      = isset($tag) && !is_string($tag) ? $archiveRead($tag, 'slug') : '';
+$categoryName   = isset($category) ? $archiveRead($category, 'name') : '';
+$tagName        = isset($tag) && !is_string($tag) ? $archiveRead($tag, 'name') : '';
 
-$pageTitle = $heroTitle;
-if ($activeCategory) {
-    $pageTitle = 'Kategorie: ' . $activeCategory;
-} elseif ($activeTag) {
-    $pageTitle = 'Tag: ' . $activeTag;
+$pageTitle = (string) $heroTitle;
+if ($activeCategory !== '') {
+    $pageTitle = 'Kategorie: ' . ($categoryName !== '' ? $categoryName : $activeCategory);
+} elseif ($activeTag !== '') {
+    $pageTitle = 'Tag: ' . ($tagName !== '' ? $tagName : $activeTag);
 }
 
 /* ─── Sidebar-Daten ─── */
@@ -66,7 +72,7 @@ if ($showSidebar) {
         $categories = $catStmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
         $tagStmt = $db->execute(
-            "SELECT tags FROM {$prefix}posts WHERE status = 'published' AND tags IS NOT NULL AND tags != ''"
+            "SELECT tags FROM {$prefix}posts WHERE status = 'published' AND tags IS NOT NULL AND tags != '' ORDER BY published_at DESC LIMIT 500"
         );
         $tagRows = $tagStmt->fetchAll(\PDO::FETCH_COLUMN) ?: [];
         $tagCounts = [];
@@ -93,12 +99,12 @@ $gridClass = $blogLayout === 'list'
 <section class="ptc-blog-hero">
     <div class="ptc-container">
         <h1><?php echo htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h1>
-        <?php if ($heroSubtitle && !$activeCategory && !$activeTag) : ?>
+        <?php if ($heroSubtitle && $activeCategory === '' && $activeTag === '') : ?>
             <p><?php echo htmlspecialchars($heroSubtitle, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
         <div class="ptc-blog-hero__meta">
-            <span><?php echo $total; ?> Beiträge</span>
-            <?php if ($activeCategory || $activeTag) : ?>
+            <span><?php echo (int) $total; ?> Beiträge</span>
+            <?php if ($activeCategory !== '' || $activeTag !== '') : ?>
                 <span>·</span>
                 <a href="<?php echo htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'); ?>/blog">Alle anzeigen</a>
             <?php endif; ?>
@@ -117,27 +123,25 @@ $gridClass = $blogLayout === 'list'
                     <div class="<?php echo $gridClass; ?>">
                         <?php foreach ($posts as $post) :
                             $p         = (array) $post;
-                            $pTitle    = htmlspecialchars($p['title'] ?? 'Beitrag', ENT_QUOTES, 'UTF-8');
-                            $pSlug     = $p['slug'] ?? '';
-                            $pExcerpt  = $p['excerpt'] ?? '';
+                            $pTitle    = htmlspecialchars((string) ($p['title'] ?? 'Beitrag'), ENT_QUOTES, 'UTF-8');
+                            $pExcerpt  = (string) ($p['excerpt'] ?? '');
                             if (mb_strlen($pExcerpt) > 160) {
                                 $pExcerpt = mb_substr($pExcerpt, 0, 157) . '…';
                             }
                             $pExcerpt  = htmlspecialchars(strip_tags($pExcerpt), ENT_QUOTES, 'UTF-8');
-                            $pDate     = isset($p['published_at']) ? date('d.m.Y', strtotime($p['published_at'])) : '';
-                            $pCat      = htmlspecialchars($p['category_name'] ?? '', ENT_QUOTES, 'UTF-8');
-                            $pCatSlug  = $p['category_slug'] ?? '';
-                            $pImage    = $p['featured_image'] ?? '';
-                            $pUrl      = htmlspecialchars($siteUrl . '/blog/' . $pSlug, ENT_QUOTES, 'UTF-8');
-                            $pAuthor   = htmlspecialchars($p['author_name'] ?? 'Redaktion', ENT_QUOTES, 'UTF-8');
-                            $pTags     = array_filter(array_map('trim', explode(',', $p['tags'] ?? '')));
-                            $hasImage  = $showFeatured && $pImage;
+                            $pDate     = ptc_format_date($p['published_at'] ?? '');
+                            $pCat      = htmlspecialchars((string) ($p['category_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                            $pCatSlug  = (string) ($p['category_slug'] ?? '');
+                            $pImage    = ptc_safe_url((string) ($p['featured_image'] ?? ''));
+                            $pUrl      = htmlspecialchars(theme_post_url($post), ENT_QUOTES, 'UTF-8');
+                            $pAuthor   = htmlspecialchars((string) ($p['author_name'] ?? 'Redaktion'), ENT_QUOTES, 'UTF-8');
+                            $pTags     = is_string($p['tags'] ?? null) ? array_filter(array_map('trim', explode(',', $p['tags']))) : [];
+                            $hasImage  = $showFeatured && $pImage !== '' && !str_starts_with($pImage, '#');
                         ?>
                         <article class="ptc-blog-card<?php echo $hasImage ? ' ptc-blog-card--has-image' : ''; ?>">
                             <?php if ($hasImage) : ?>
-                            <a href="<?php echo $pUrl; ?>" class="ptc-blog-card__image">
-                                <img src="<?php echo htmlspecialchars($pImage, ENT_QUOTES, 'UTF-8'); ?>"
-                                     alt="<?php echo $pTitle; ?>" loading="lazy">
+                            <a href="<?php echo $pUrl; ?>" class="ptc-blog-card__image" tabindex="-1" aria-hidden="true">
+                                <?php echo theme_v4_img($pImage, '', ['item' => $post, 'sizes' => '(max-width: 768px) 100vw, 400px']); ?>
                             </a>
                             <?php endif; ?>
                             <div class="ptc-blog-card__body">
@@ -146,13 +150,13 @@ $gridClass = $blogLayout === 'list'
                                 </h2>
                                 <div class="ptc-blog-card__tags-row">
                                     <?php if ($showCategory && $pCat) : ?>
-                                        <a href="<?php echo htmlspecialchars($siteUrl . '/blog?category=' . urlencode($pCatSlug), ENT_QUOTES, 'UTF-8'); ?>"
+                                        <a href="<?php echo htmlspecialchars(ptc_archive_url('category', $pCatSlug), ENT_QUOTES, 'UTF-8'); ?>"
                                            class="ptc-blog-card__category"><?php echo $pCat; ?></a>
                                     <?php endif; ?>
                                     <?php foreach ($pTags as $pTag) :
                                         $tEsc = htmlspecialchars($pTag, ENT_QUOTES, 'UTF-8');
                                     ?>
-                                        <a href="<?php echo htmlspecialchars($siteUrl . '/blog?tag=' . urlencode($pTag), ENT_QUOTES, 'UTF-8'); ?>"
+                                        <a href="<?php echo htmlspecialchars(ptc_archive_url('tag', $pTag), ENT_QUOTES, 'UTF-8'); ?>"
                                            class="ptc-blog-card__tag"><?php echo $tEsc; ?></a>
                                     <?php endforeach; ?>
                                 </div>
@@ -161,10 +165,10 @@ $gridClass = $blogLayout === 'list'
                                 <?php endif; ?>
                                 <div class="ptc-blog-card__footer">
                                     <?php if ($showAuthor) : ?>
-                                        <span class="ptc-blog-card__author">👤 <?php echo $pAuthor; ?></span>
+                                        <span class="ptc-blog-card__author"><span aria-hidden="true">👤</span> <?php echo $pAuthor; ?></span>
                                     <?php endif; ?>
                                     <?php if ($showDate && $pDate) : ?>
-                                        <span class="ptc-blog-card__date">📅 <?php echo $pDate; ?></span>
+                                        <span class="ptc-blog-card__date"><span aria-hidden="true">📅</span> <?php echo htmlspecialchars($pDate, ENT_QUOTES, 'UTF-8'); ?></span>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -176,11 +180,11 @@ $gridClass = $blogLayout === 'list'
                     <?php if ($totalPages > 1) : ?>
                     <nav class="ptc-blog-pagination" aria-label="Seitennavigation">
                         <?php
-                        $baseUrl = $siteUrl . '/blog';
-                        $qParts  = [];
-                        if ($activeCategory) $qParts[] = 'category=' . urlencode($activeCategory);
-                        if ($activeTag)      $qParts[] = 'tag=' . urlencode($activeTag);
-                        $qBase = $qParts ? '?' . implode('&', $qParts) . '&' : '?';
+                        // Blätter-Links auf der aktuellen Archiv-URL (/blog, /kategorie/<slug>, /tag/<slug>).
+                        $baseUrl     = theme_v4_site_url(theme_v4_request_path());
+                        $qBase       = '?';
+                        $currentPage = (int) $currentPage;
+                        $totalPages  = (int) $totalPages;
                         ?>
                         <?php if ($currentPage > 1) : ?>
                         <a href="<?php echo htmlspecialchars($baseUrl . $qBase . 'p=' . ($currentPage - 1), ENT_QUOTES, 'UTF-8'); ?>"
@@ -199,7 +203,7 @@ $gridClass = $blogLayout === 'list'
                     <div class="ptc-blog-empty">
                         <p class="ptc-empty-icon" aria-hidden="true">📭</p>
                         <p><strong>Keine Artikel gefunden</strong></p>
-                        <?php if ($activeCategory || $activeTag) : ?>
+                        <?php if ($activeCategory !== '' || $activeTag !== '') : ?>
                             <p>Für diese Auswahl gibt es noch keine Beiträge.</p>
                             <a href="<?php echo htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'); ?>/blog"
                                class="btn-ptc btn-ptc-primary ptc-section-cta--spaced">Alle Artikel anzeigen</a>
@@ -216,12 +220,12 @@ $gridClass = $blogLayout === 'list'
 
                 <!-- Suche -->
                 <div class="ptc-blog-sidebar__widget">
-                    <h3>🔍 Suche</h3>
-                    <form action="<?php echo htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'); ?>/search" method="GET" role="search">
+                    <h2 class="ptc-blog-sidebar__title" id="ptc-sidebar-search-title"><span aria-hidden="true">🔍</span> Suche</h2>
+                    <form action="<?php echo htmlspecialchars($siteUrl, ENT_QUOTES, 'UTF-8'); ?>/search" method="GET" role="search" aria-labelledby="ptc-sidebar-search-title">
                         <div class="ptc-blog-sidebar__search">
-                            <input type="search" name="q" placeholder="Artikel suchen …" autocomplete="off"
-                                   value="<?php echo htmlspecialchars($_GET['q'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
-                            <button type="submit" aria-label="Suchen">🔍</button>
+                            <input type="search" name="q" placeholder="Artikel suchen …" autocomplete="off" aria-label="Suchbegriff"
+                                   value="<?php echo htmlspecialchars(is_string($_GET['q'] ?? null) ? $_GET['q'] : '', ENT_QUOTES, 'UTF-8'); ?>">
+                            <button type="submit" aria-label="Suchen"><span aria-hidden="true">🔍</span></button>
                         </div>
                     </form>
                 </div>
@@ -229,16 +233,16 @@ $gridClass = $blogLayout === 'list'
                 <!-- Kategorien -->
                 <?php if (!empty($categories)) : ?>
                 <div class="ptc-blog-sidebar__widget">
-                    <h3>📂 Kategorien</h3>
+                    <h2 class="ptc-blog-sidebar__title"><span aria-hidden="true">📂</span> Kategorien</h2>
                     <ul class="ptc-blog-sidebar__list">
                         <?php foreach ($categories as $cat) :
-                            $cName  = htmlspecialchars($cat['name'] ?? '', ENT_QUOTES, 'UTF-8');
-                            $cSlug  = htmlspecialchars($cat['slug'] ?? '', ENT_QUOTES, 'UTF-8');
+                            $cName  = htmlspecialchars((string) ($cat['name'] ?? ''), ENT_QUOTES, 'UTF-8');
+                            $cSlug  = (string) ($cat['slug'] ?? '');
                             $cCount = (int)($cat['post_count'] ?? 0);
-                            $isActive = ($activeCategory === $cSlug);
+                            $isActive = ($activeCategory !== '' && $activeCategory === $cSlug);
                         ?>
                         <li<?php echo $isActive ? ' class="active"' : ''; ?>>
-                            <a href="<?php echo htmlspecialchars($siteUrl . '/blog?category=' . urlencode($cSlug), ENT_QUOTES, 'UTF-8'); ?>">
+                            <a href="<?php echo htmlspecialchars(ptc_archive_url('category', $cSlug), ENT_QUOTES, 'UTF-8'); ?>"<?php echo $isActive ? ' aria-current="page"' : ''; ?>>
                                 <?php echo $cName; ?>
                                 <span class="ptc-blog-sidebar__count"><?php echo $cCount; ?></span>
                             </a>
@@ -251,14 +255,14 @@ $gridClass = $blogLayout === 'list'
                 <!-- Tags -->
                 <?php if (!empty($tagCloud)) : ?>
                 <div class="ptc-blog-sidebar__widget">
-                    <h3>🏷️ Tags</h3>
+                    <h2 class="ptc-blog-sidebar__title"><span aria-hidden="true">🏷️</span> Tags</h2>
                     <div class="ptc-blog-sidebar__tags">
                         <?php foreach ($tagCloud as $tag) :
                             $tEsc    = htmlspecialchars($tag, ENT_QUOTES, 'UTF-8');
-                            $isActive = ($activeTag === $tag);
+                            $isActive = ($activeTag !== '' && $activeTag === $tag);
                         ?>
-                        <a href="<?php echo htmlspecialchars($siteUrl . '/blog?tag=' . urlencode($tag), ENT_QUOTES, 'UTF-8'); ?>"
-                           class="ptc-tag<?php echo $isActive ? ' ptc-tag--active' : ''; ?>"><?php echo $tEsc; ?></a>
+                        <a href="<?php echo htmlspecialchars(ptc_archive_url('tag', $tag), ENT_QUOTES, 'UTF-8'); ?>"
+                           class="ptc-tag<?php echo $isActive ? ' ptc-tag--active' : ''; ?>"<?php echo $isActive ? ' aria-current="page"' : ''; ?>><?php echo $tEsc; ?></a>
                         <?php endforeach; ?>
                     </div>
                 </div>

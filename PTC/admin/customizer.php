@@ -177,7 +177,7 @@ $config = [
                 'label'       => 'Sekundärfarbe (Slate)',
                 'description' => 'Schiefergrau für Nebenelemente und Labels.',
                 'type'        => 'color',
-                'default'     => '#607D8B',
+                'default'     => '#546e7a',
             ],
             'text_color' => [
                 'label'       => 'Textfarbe',
@@ -201,7 +201,7 @@ $config = [
                 'label'       => 'Gedämpfte Textfarbe',
                 'description' => 'Sehr dezenter Text – Timestamps, Platzhalter, Hints.',
                 'type'        => 'color',
-                'default'     => '#94a3b8',
+                'default'     => '#5b6b78',
             ],
             'bg_color' => [
                 'label'       => 'Seitenhintergrund',
@@ -237,13 +237,13 @@ $config = [
                 'label'       => 'Erfolgsfarbe',
                 'description' => 'Positivmeldungen und Status-Badges (Grün).',
                 'type'        => 'color',
-                'default'     => '#22c55e',
+                'default'     => '#2e7d4f',
             ],
             'error_color' => [
                 'label'       => 'Fehlerfarbe',
                 'description' => 'Fehlermeldungen und Warnungen (Rot).',
                 'type'        => 'color',
-                'default'     => '#ef4444',
+                'default'     => '#b42318',
             ],
 
             // ── CTA-Sektion ──
@@ -345,7 +345,7 @@ $config = [
                 'label'       => 'Network-Bar Text',
                 'description' => 'Textfarbe der Network-Bar.',
                 'type'        => 'color',
-                'default'     => '#FFFFFF59',
+                'default'     => '#FFFFFF',
             ],
 
             // ── Blog-Farben ─────────────────────────────────────
@@ -2268,7 +2268,7 @@ if (!$embedInAdminLayout) :
         <div class="admin-page-header">
             <div>
                 <h2>🎨 Theme Customizer – PTC</h2>
-                <p>Passe das Aussehen des des Themes an.</p>
+                <p>Passe das Aussehen des Themes an.</p>
             </div>
             <div class="header-actions">
                 <a href="<?php echo $esc(SITE_URL); ?>/" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">🌐 Seite ansehen</a>

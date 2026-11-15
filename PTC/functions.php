@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * PTC Theme – Personalvermittlung & Schulungen (365CMS v3.x.x, PHP 8.4)
+ * PTC Theme – Personalvermittlung & Schulungen (365CMS 4.0.0 / 4.1.0, PHP 8.4.1)
  *
  * @package PTC_Theme
  */
@@ -12,12 +12,21 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('PTC_THEME_VERSION')) {
-    define('PTC_THEME_VERSION', '3.1.0');
+    define('PTC_THEME_VERSION', '4.0.0');
 }
 
 if (!defined('PTC_THEME_SLUG')) {
     define('PTC_THEME_SLUG', 'PTC');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">, footer.php schließt es.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 /**
  * Theme bootstrap (singleton).
@@ -41,30 +50,53 @@ final class PTC_Theme
 
     private function registerHooks(): void
     {
+        // Menüpositionen nur über den Filter (ThemeManager::registerMenuLocation() gibt es in 4.0.0 nicht mehr).
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Tabler-Shell und löst ebenfalls `head` aus:
+        // dort kein Frontend-Stylesheet, keine Theme-Scripts und kein eigener Code, nur die Theme-Palette.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'],      1);
-        \CMS\Hooks::addAction('head', [$this, 'outputGoogleFonts'],  5);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'],     10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 15);
 
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
         \CMS\Hooks::addAction('body_end', [$this, 'outputCustomFooterCode'], 99);
+    }
 
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+    /** Memberbereich (inkl. Newsletter-Widget) in der PTC-Palette; das Theme hat keinen Dark Mode. */
+    public function outputMemberTokens(): void
+    {
+        $color = fn(string $group, string $key, string $default): string =>
+            ptc_css_color((string) $this->customizerGet($group, $key, $default), $default);
 
-        \CMS\Hooks::addAction('init',     [$this, 'registerNavMenus'], 10);
-        \CMS\Hooks::addAction('cms_init', [$this, 'registerNavMenus'], 10);
-        \CMS\Hooks::addAction('cms_init', [$this, 'seedDefaultMenus'], 20);
+        echo theme_v4_member_tokens_style([
+            'primary'    => $color('colors', 'primary_color', '#1a4d5c'),
+            'accent'     => $color('colors', 'accent_color', '#2d7a5f'),
+            'bg'         => $color('colors', 'bg_secondary', '#f1f5f9'),
+            'card_bg'    => '#ffffff',
+            'text'       => $color('colors', 'text_color', '#334155'),
+            'text_muted' => $color('colors', 'muted_color', '#5b6b78'),
+            'border'     => $color('colors', 'border_color', '#e2e8f0'),
+            'focus'      => $color('colors', 'primary_color', '#1a4d5c'),
+            'radius'     => ptc_css_number($this->customizerGet('layout', 'border_radius', '10'), 10, 0, 32) . 'px',
+            'font'       => $this->mapFontChoice((string) $this->customizerGet('typography', 'font_family_base', 'system'), 'system'),
+        ]);
     }
 
     public function enqueueStyles(): void
     {
-        $href = htmlspecialchars(
-            $this->themeBaseUrl() . '/style.css?v=' . rawurlencode(PTC_THEME_VERSION),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-        echo '<link rel="preload" href="' . $href . '" as="style">' . "\n";
-        echo '<link rel="stylesheet" href="' . $href . '">' . "\n";
+        $base = $this->themeBaseUrl();
+        $ver  = rawurlencode(PTC_THEME_VERSION);
+        echo '<link rel="stylesheet" href="' . htmlspecialchars($base . '/style.css?v=' . $ver, ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        // Gemeinsame 4.x-Integrationsstile (Downloads, Feeds, Formulare, Knowledgebase, Newsletter …) nach style.css.
+        echo '<link rel="stylesheet" href="' . htmlspecialchars($base . '/css/cms-v4.css?v=' . $ver, ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greift der System-Font-Stack.
     }
 
     public function enqueueScripts(): void
@@ -77,36 +109,19 @@ final class PTC_Theme
         echo '<script src="' . $src . '" defer></script>' . "\n";
     }
 
-    public function outputGoogleFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $families = $this->googleFontFamilies();
-        if ($families === '') {
-            return;
-        }
-        $url = 'https://fonts.googleapis.com/css2?family=' . $families . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    }
-
+    /**
+     * Nur noch `theme-color`: Beschreibung, Canonical, Robots und Open Graph kommen aus dem Core-SEO
+     * (theme_v4_head_tags() in header.php); eigene Ausgaben wären doppelt und im Vorschaufall falsch.
+     */
     public function outputMetaTags(): void
     {
-        $tm         = \CMS\ThemeManager::instance();
-        $siteDesc   = htmlspecialchars((string) $tm->getSiteDescription(), ENT_QUOTES, 'UTF-8');
-        $siteUrl    = htmlspecialchars(ptc_safe_url((string) (defined('SITE_URL') ? SITE_URL : '/'), '/'), ENT_QUOTES, 'UTF-8');
         $themeColor = htmlspecialchars(
             ptc_css_color((string) $this->customizerGet('colors', 'primary_color', '#1a4d5c'), '#1a4d5c'),
             ENT_QUOTES,
             'UTF-8'
         );
 
-        echo '<meta name="description" content="' . $siteDesc . '">' . "\n";
-        echo '<meta property="og:url" content="' . $siteUrl . '">' . "\n";
         echo '<meta name="theme-color" content="' . $themeColor . '">' . "\n";
-        echo '<meta name="robots" content="index,follow">' . "\n";
     }
 
     public function outputCustomStyles(): void
@@ -119,11 +134,17 @@ final class PTC_Theme
             );
         $num = fn(string $g, string $k, string $d, float $min, float $max): string =>
             ptc_css_number($this->customizerGet($g, $k, $d), (float) $d, $min, $max);
+        // Auswahlwerte nur aus einer festen Liste in das CSS übernehmen (kein Ausbruch aus der Deklaration).
+        $choice = function (string $g, string $k, array $allowed, string $d): string {
+            $value = strtolower(trim((string) $this->customizerGet($g, $k, $d)));
+            return in_array($value, $allowed, true) ? $value : $d;
+        };
 
         $baseChoice    = (string) $this->customizerGet('typography', 'font_family_base',    'system');
         $headingChoice = (string) $this->customizerGet('typography', 'font_family_heading', 'system');
-        $baseFont      = htmlspecialchars($this->mapFontChoice($baseChoice, 'system'), ENT_QUOTES, 'UTF-8');
-        $headingFont   = htmlspecialchars($this->mapFontChoice($headingChoice, 'system'), ENT_QUOTES, 'UTF-8');
+        // Feste Stacks aus mapFontChoice() – nicht HTML-escapen: &quot; im <style> machte die Deklaration ungültig.
+        $baseFont      = $this->mapFontChoice($baseChoice, 'system');
+        $headingFont   = $this->mapFontChoice($headingChoice, 'system');
 
         echo '<style id="ptc-custom-vars"' . theme_csp_nonce_attr() . '>:root{';
 
@@ -133,11 +154,11 @@ final class PTC_Theme
         echo '--color-accent:'          . $p('colors', 'accent_color', '#2d7a5f') . ';';
         echo '--color-accent-hover:'    . $p('colors', 'accent_hover', '#236349') . ';';
         echo '--color-accent-light:'    . $p('colors', 'accent_light', '#e6f4ef') . ';';
-        echo '--color-secondary:'       . $p('colors', 'secondary_color', '#5c6f7a') . ';';
-        echo '--color-text:'            . $p('colors', 'text_color', '#24303a') . ';';
+        echo '--color-secondary:'       . $p('colors', 'secondary_color', '#546e7a') . ';';
+        echo '--color-text:'            . $p('colors', 'text_color', '#334155') . ';';
         echo '--color-heading:'         . $p('colors', 'heading_color', '#1a4d5c') . ';';
         echo '--color-on-dark:'         . $p('colors', 'text_light', '#f4f7f8') . ';';
-        echo '--color-muted:'           . $p('colors', 'muted_color', '#6b7c88') . ';';
+        echo '--color-muted:'           . $p('colors', 'muted_color', '#5b6b78') . ';';
         echo '--color-bg:'              . $p('colors', 'bg_color', '#f6f8f9') . ';';
         echo '--color-bg-alt:'          . $p('colors', 'bg_secondary', '#eef2f4') . ';';
         echo '--color-link:'            . $p('colors', 'link_color', '#1a4d5c') . ';';
@@ -162,7 +183,7 @@ final class PTC_Theme
         echo '--color-faq-bg:'           . $p('colors', 'faq_bg_color', '#ffffff') . ';';
         echo '--color-faq-item-bg:'      . $p('colors', 'faq_item_bg', '#ffffff') . ';';
         echo '--color-network-bar-bg:'   . $p('colors', 'network_bar_bg', '#0f2d38') . ';';
-        echo '--color-network-bar-text:' . $p('colors', 'network_bar_text', 'rgba(255,255,255,0.45)') . ';';
+        echo '--color-network-bar-text:' . $p('colors', 'network_bar_text', '#ffffff') . ';';
 
         echo '--color-blog-hero-bg:'     . $p('colors', 'blog_hero_bg', '#1a4d5c') . ';';
         echo '--color-blog-hero-text:'   . $p('colors', 'blog_hero_text', '#ffffff') . ';';
@@ -176,7 +197,7 @@ final class PTC_Theme
         echo '--font-heading:'           . $headingFont . ';';
         echo '--font-size-base:'          . $num('typography', 'font_size_base', '16', 12, 24) . 'px;';
         echo '--line-height-base:'        . $num('typography', 'line_height_base', '1.6', 1.2, 2.5) . ';';
-        echo '--font-weight-heading:'     . htmlspecialchars((string) $this->customizerGet('typography', 'font_weight_heading', '700'), ENT_QUOTES, 'UTF-8') . ';';
+        echo '--font-weight-heading:'     . $choice('typography', 'font_weight_heading', ['400', '500', '600', '700', '800', '900'], '700') . ';';
 
         echo '--layout-container:'        . $num('layout', 'container_width', '1280', 800, 1920) . 'px;';
         echo '--layout-content-pad:'      . $num('layout', 'content_padding', '2', 0.5, 6) . 'rem;';
@@ -198,9 +219,10 @@ final class PTC_Theme
         echo '--btn-radius:'              . $num('buttons', 'button_border_radius', '8', 0, 50) . 'px;';
         echo '--btn-padding-x:'           . $num('buttons', 'button_padding_x', '2', 0.5, 4) . 'rem;';
         echo '--btn-padding-y:'           . $num('buttons', 'button_padding_y', '0.875', 0.25, 2) . 'rem;';
-        echo '--btn-font-weight:'         . htmlspecialchars((string) $this->customizerGet('buttons', 'button_font_weight', '600'), ENT_QUOTES, 'UTF-8') . ';';
-        echo '--btn-text-transform:'      . htmlspecialchars((string) $this->customizerGet('buttons', 'button_transform', 'none'), ENT_QUOTES, 'UTF-8') . ';';
+        echo '--btn-font-weight:'         . $choice('buttons', 'button_font_weight', ['400', '500', '600', '700', '800'], '600') . ';';
+        echo '--btn-text-transform:'      . $choice('buttons', 'button_transform', ['none', 'uppercase', 'capitalize', 'lowercase'], 'none') . ';';
 
+        // Fokusrahmen auf hellen Flächen (Akzent: 5,2:1 auf Weiß); dunkle Flächen nutzen --focus-ring-on-dark (style.css).
         echo '--focus-ring:'              . $p('colors', 'accent_color', '#2d7a5f') . ';';
 
         echo '}';
@@ -243,53 +265,50 @@ final class PTC_Theme
         return $locations;
     }
 
-    public function registerNavMenus(): void
+    /**
+     * Standardeinträge je Menüposition, solange im Admin kein Menü gepflegt ist.
+     *
+     * Bis 3.1.0 wurden sie bei jedem Request (cms_init) in die Datenbank geschrieben; seit 4.0.0 gelten sie
+     * nur noch zur Laufzeit und zeigen interne Ziele nur, wenn Route bzw. veröffentlichte Seite existieren.
+     *
+     * @return list<array{label:string,url:string}>
+     */
+    public static function defaultMenu(string $location): array
     {
-        $tm = \CMS\ThemeManager::instance();
-        if (method_exists($tm, 'registerMenuLocation')) {
-            $tm->registerMenuLocation('primary',         'Hauptnavigation (Header)');
-            $tm->registerMenuLocation('footer-nav',      'Footer-Navigation');
-            $tm->registerMenuLocation('footer-services', 'Footer Leistungen');
-            $tm->registerMenuLocation('footer-legal',    'Footer Rechtliche Links');
-        }
-    }
-
-    public function seedDefaultMenus(): void
-    {
-        $tm = \CMS\ThemeManager::instance();
-
         $defaults = [
             'primary' => [
-                ['label' => 'Start',              'url' => '/',                  'target' => '_self'],
-                ['label' => 'Für Kandidaten',     'url' => '/#kandidaten',       'target' => '_self'],
-                ['label' => 'Für Arbeitgeber',  'url' => '/#arbeitgeber',      'target' => '_self'],
-                ['label' => 'Weiterbildung',     'url' => '/#dienstleistungen', 'target' => '_self'],
-                ['label' => 'Termine',            'url' => '/#termine',          'target' => '_self'],
-                ['label' => 'Kontakt',            'url' => '/#kontakt',          'target' => '_self'],
+                ['label' => 'Start',           'url' => '/'],
+                ['label' => 'Für Kandidaten',  'url' => '/#kandidaten'],
+                ['label' => 'Für Arbeitgeber', 'url' => '/#arbeitgeber'],
+                ['label' => 'Weiterbildung',   'url' => '/#dienstleistungen'],
+                ['label' => 'Termine',         'url' => '/#termine'],
+                ['label' => 'Kontakt',         'url' => '/contact'],
             ],
             'footer-nav' => [
-                ['label' => 'Startseite',         'url' => '/',                  'target' => '_self'],
-                ['label' => 'Leistungen',         'url' => '/#dienstleistungen', 'target' => '_self'],
-                ['label' => 'FAQ',                'url' => '/#faq',              'target' => '_self'],
-                ['label' => 'Kontakt',            'url' => '/#kontakt',          'target' => '_self'],
+                ['label' => 'Startseite', 'url' => '/'],
+                ['label' => 'Leistungen', 'url' => '/#dienstleistungen'],
+                ['label' => 'FAQ',        'url' => '/#faq'],
+                ['label' => 'Newsletter', 'url' => '/newsletter'],
+                ['label' => 'Kontakt',    'url' => '/contact'],
             ],
             'footer-services' => [
-                ['label' => 'Personalvermittlung',     'url' => '/#dienstleistungen', 'target' => '_self'],
-                ['label' => 'Arbeitnehmerüberlassung', 'url' => '/#dienstleistungen', 'target' => '_self'],
-                ['label' => 'Weiterbildung',            'url' => '/#dienstleistungen', 'target' => '_self'],
-                ['label' => 'Qualifizierung',            'url' => '/#dienstleistungen', 'target' => '_self'],
+                ['label' => 'Personalvermittlung',     'url' => '/#dienstleistungen'],
+                ['label' => 'Arbeitnehmerüberlassung', 'url' => '/#dienstleistungen'],
+                ['label' => 'Weiterbildung',           'url' => '/#dienstleistungen'],
+                ['label' => 'Qualifizierung',          'url' => '/#dienstleistungen'],
             ],
             'footer-legal' => [
-                ['label' => 'Impressum',   'url' => '/impressum',   'target' => '_self'],
-                ['label' => 'Datenschutz', 'url' => '/datenschutz', 'target' => '_self'],
+                ['label' => 'Impressum',   'url' => '/impressum'],
+                ['label' => 'Datenschutz', 'url' => '/datenschutz'],
             ],
         ];
 
-        foreach ($defaults as $location => $items) {
-            if (empty($tm->getMenu($location))) {
-                $tm->saveMenu($location, $items);
-            }
-        }
+        $links = array_map(
+            static fn(array $link): array => ['label' => $link['label'], 'url' => theme_v4_site_url($link['url'])],
+            $defaults[$location] ?? []
+        );
+
+        return theme_v4_filter_links($links);
     }
 
     public function getConfig(string $key, mixed $default = ''): mixed
@@ -311,13 +330,7 @@ final class PTC_Theme
 
     private function themeBaseUrl(): string
     {
-        $tm = \CMS\ThemeManager::instance();
-        try {
-            $url = (string) $tm->getThemeUrl(PTC_THEME_SLUG);
-        } catch (\Throwable) {
-            $url = (string) $tm->getThemeUrl();
-        }
-        return rtrim($url, '/');
+        return theme_v4_theme_url(__DIR__);
     }
 
     private function customizerGet(string $group, string $key, mixed $default = null): mixed
@@ -331,8 +344,8 @@ final class PTC_Theme
 
     private function mapFontChoice(string $choice, string $fallback): string
     {
-        $systemStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
-        $serifStack  = 'Georgia, "Times New Roman", serif';
+        $systemStack = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        $serifStack  = 'Georgia, ui-serif, "Times New Roman", serif';
 
         return match ($choice) {
             'system'     => $systemStack,
@@ -346,41 +359,6 @@ final class PTC_Theme
             'georgia'    => $serifStack,
             default      => $fallback === 'system' ? $systemStack : $fallback,
         };
-    }
-
-    private function googleFontFamilies(): string
-    {
-        $base    = (string) $this->customizerGet('typography', 'font_family_base',    'system');
-        $heading = (string) $this->customizerGet('typography', 'font_family_heading', 'system');
-
-        $needed = [];
-        foreach ([$base, $heading] as $choice) {
-            switch ($choice) {
-                case 'inter':
-                    $needed['Inter'] = 'Inter:wght@400;500;600;700';
-                    break;
-                case 'roboto':
-                    $needed['Roboto'] = 'Roboto:wght@400;500;700';
-                    break;
-                case 'open-sans':
-                    $needed['Open Sans'] = 'Open+Sans:wght@400;600;700';
-                    break;
-                case 'lato':
-                    $needed['Lato'] = 'Lato:wght@400;700';
-                    break;
-                case 'montserrat':
-                    $needed['Montserrat'] = 'Montserrat:wght@500;600;700';
-                    break;
-                case 'poppins':
-                    $needed['Poppins'] = 'Poppins:wght@500;600;700';
-                    break;
-                case 'raleway':
-                    $needed['Raleway'] = 'Raleway:wght@500;600;700';
-                    break;
-            }
-        }
-
-        return $needed === [] ? '' : implode('&family=', $needed);
     }
 
     private function sanitizeCustomCss(string $raw): string
@@ -499,63 +477,93 @@ if (!function_exists('ptc_customizer_echo')) {
 }
 
 if (!function_exists('ptc_nav_menu')) {
-    function ptc_nav_menu(string $location = 'primary'): void
+    function ptc_nav_menu(string $location = 'primary', string $mainNavContext = ''): void
     {
-        theme_nav_menu($location);
+        theme_nav_menu($location, $mainNavContext);
+    }
+}
+
+if (!function_exists('ptc_menu_item_active')) {
+    /** Aktiver Menüeintrag: gleicher Pfad (Startseite nur exakt); Anker-Links (/#…) gelten nie als aktiv. */
+    function ptc_menu_item_active(string $url): bool
+    {
+        if ($url === '' || str_contains($url, '#')) {
+            return false;
+        }
+
+        return theme_v4_is_current_path($url);
     }
 }
 
 if (!function_exists('theme_nav_menu')) {
-    function theme_nav_menu(string $location = 'primary'): void
+    /**
+     * Menü einer Position als Liste. Ist im Admin nichts gepflegt, greifen die Standardeinträge des Themes
+     * (PTC_Theme::defaultMenu(), nur vorhandene Ziele). Mit `$mainNavContext` (`desktop`/`mobile`) folgen
+     * direkt nach den Menüeinträgen die Einträge der Core-Module (Hook `main_nav`: Downloads, Knowledgebase,
+     * Newsletter) – auch wenn das Menü leer ist.
+     */
+    function theme_nav_menu(string $location = 'primary', string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
             $items = [];
         }
-        if (empty($items)) {
+        if (!is_array($items) || $items === []) {
+            $items = PTC_Theme::defaultMenu($location);
+        }
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'active']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
-        $requestUri = rtrim((string) ($_SERVER['REQUEST_URI'] ?? '/'), '/');
         echo '<ul>' . "\n";
         foreach ($items as $item) {
-            $rawUrl = (string) ($item['url'] ?? '#');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
-            $isActive = ($path === '' || $path === '/')
-                ? ($requestUri === '' || $requestUri === '/')
-                : str_starts_with($requestUri, $path);
-            $hasChildren = !empty($item['children']) && is_array($item['children']);
-            $classes = [];
+            if (!is_array($item)) {
+                continue;
+            }
+            $url      = ptc_safe_url((string) ($item['url'] ?? '#'), '#');
+            $isActive = ptc_menu_item_active($url);
+            $children = (!empty($item['children']) && is_array($item['children'])) ? $item['children'] : [];
+            $classes  = [];
             if ($isActive) {
                 $classes[] = 'active';
             }
-            if ($hasChildren) {
+            if ($children !== []) {
                 $classes[] = 'has-children';
             }
             $classAttr = $classes !== [] ? ' class="' . implode(' ', $classes) . '"' : '';
-            $target = (!empty($item['target']) && $item['target'] === '_blank')
-                ? ' target="_blank" rel="noopener noreferrer"'
-                : '';
-            $url   = htmlspecialchars(ptc_safe_url($rawUrl, '#'), ENT_QUOTES, 'UTF-8');
-            $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
-            echo '<li' . $classAttr . '><a href="' . $url . '"' . $target . '>' . $label . '</a>' . "\n";
+            $target = (($item['target'] ?? '') === '_blank') ? ' target="_blank" rel="noopener noreferrer"' : '';
+            // Der Core liefert die Beschriftung im Feld `title`, ältere Menüs/Standardeinträge in `label`.
+            $label = htmlspecialchars((string) ($item['label'] ?? $item['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+            echo '<li' . $classAttr . '><a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '"' . $target
+                . ($isActive ? ' aria-current="page"' : '') . '>' . $label . '</a>' . "\n";
 
-            if ($hasChildren) {
+            if ($children !== []) {
                 echo '<ul class="ptc-submenu">' . "\n";
-                foreach ($item['children'] as $child) {
-                    $cUrl   = htmlspecialchars(ptc_safe_url((string) ($child['url'] ?? '#'), '#'), ENT_QUOTES, 'UTF-8');
-                    $cLabel = htmlspecialchars((string) ($child['label'] ?? ''), ENT_QUOTES, 'UTF-8');
-                    $cTarget = (!empty($child['target']) && $child['target'] === '_blank')
-                        ? ' target="_blank" rel="noopener noreferrer"'
-                        : '';
-                    echo '<li><a href="' . $cUrl . '"' . $cTarget . '>' . $cLabel . '</a></li>' . "\n";
+                foreach ($children as $child) {
+                    if (!is_array($child)) {
+                        continue;
+                    }
+                    $cUrl    = ptc_safe_url((string) ($child['url'] ?? '#'), '#');
+                    $cActive = ptc_menu_item_active($cUrl);
+                    $cLabel  = htmlspecialchars((string) ($child['label'] ?? $child['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                    $cTarget = (($child['target'] ?? '') === '_blank') ? ' target="_blank" rel="noopener noreferrer"' : '';
+                    echo '<li' . ($cActive ? ' class="active"' : '') . '><a href="' . htmlspecialchars($cUrl, ENT_QUOTES, 'UTF-8') . '"'
+                        . $cTarget . ($cActive ? ' aria-current="page"' : '') . '>' . $cLabel . '</a></li>' . "\n";
                 }
                 echo '</ul>' . "\n";
             }
 
             echo '</li>' . "\n";
         }
+        echo $coreItems;
         echo '</ul>' . "\n";
     }
 }
@@ -596,7 +604,8 @@ if (!function_exists('ptc_href')) {
             return ptc_safe_url($trimmed, $site . '/');
         }
         if (str_starts_with($trimmed, '#')) {
-            return $site . '/' . ltrim($trimmed, '#');
+            // Anker der Startseite (bis 3.1.0 fiel das # weg und führte auf /<anker>).
+            return preg_match('/^#[A-Za-z][A-Za-z0-9_-]*$/', $trimmed) === 1 ? $site . '/' . $trimmed : $site . '/';
         }
         return ptc_safe_url($site . '/' . ltrim($trimmed, '/'), $site . '/');
     }
@@ -742,25 +751,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 
@@ -794,24 +788,31 @@ if (!function_exists('theme_search_result_url')) {
     }
 }
 
-if (!function_exists('theme_logout_url')) {
-    /** Logout-URL mit CSRF-Token der Aktion „logout“ (PublicRouter::handleLogout verlangt ihn). */
-    function theme_logout_url(): string
+if (!function_exists('ptc_archive_url')) {
+    /** Kanonische Kategorie-/Schlagwort-URL des Cores (/blog?category=… leitet dorthin per 301 um). */
+    function ptc_archive_url(string $type, string $slug): string
     {
-        static $url = null;
-        if ($url !== null) {
-            return $url;
-        }
-        $url = rtrim((string) SITE_URL, '/') . '/logout';
+        $type = $type === 'tag' ? 'tag' : 'category';
         try {
-            $token = (string) \CMS\Security::instance()->generateToken('logout');
+            if (function_exists('cms_get_archive_path')) {
+                return theme_v4_site_url((string) cms_get_archive_path($type, $slug));
+            }
         } catch (\Throwable) {
-            $token = '';
-        }
-        if ($token !== '') {
-            $url .= '?csrf_token=' . rawurlencode($token);
         }
 
-        return $url;
+        return theme_v4_site_url('blog') . '?' . $type . '=' . rawurlencode($slug);
     }
 }
+
+if (!function_exists('ptc_format_date')) {
+    /** Datum aus einem DB-Wert; leer bei fehlendem oder ungültigem Wert (statt Warnung/TypeError). */
+    function ptc_format_date(mixed $value, string $format = 'd.m.Y'): string
+    {
+        $timestamp = is_string($value) && trim($value) !== '' ? strtotime($value) : false;
+
+        return $timestamp !== false ? date($format, $timestamp) : '';
+    }
+}
+
+// Abmelden: nur noch per POST-Formular mit CSRF-Token (theme_v4_logout_form()); der frühere GET-Link
+// theme_logout_url() mit Token in der Adresse ist entfernt.
