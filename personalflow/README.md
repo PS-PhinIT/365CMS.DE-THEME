@@ -1,7 +1,7 @@
 # PersonalFlow Theme
 
-Version: 1.1.0
-Target: 365CMS 3.4.00+, PHP 8.4
+Version: 2.0.0
+Target: 365CMS 4.0.0 – 4.1.0, PHP 8.4.1+
 Constant: `PERSONALFLOW_THEME_VERSION`
 
 PersonalFlow ist ein HR- und Personalvermittlungs-Theme für 365CMS. Es ist
@@ -37,7 +37,8 @@ Recruiting-Pipeline.
   freundlich, rund), JetBrains Mono (KPI-Zahlen, Gehaltsangaben,
   Pipeline-Counts). Stats werden mit `font-feature-settings: "tnum","lnum"`
   in tabellarische Ziffern gerendert – Recruiter:innen können
-  KPI-Spalten vergleichen.
+  KPI-Spalten vergleichen. Schriften kommen aus der Core-Schriftverwaltung
+  (lokal), sonst greift der System-Font-Stack – keine Google Fonts.
 - **Person-Card-Pattern**: Avatar (Image oder Initialen-Plate), Name,
   Rolle, Standort, Stage-Badge, Skill-Chips, Action-Row (Profil ansehen
   / Kontakt aufnehmen). Wiederverwendbar über
@@ -53,8 +54,15 @@ personalflow/
 ├── home.php                # Hero, Pipeline-Ribbon, KPI-Strip, Talent-Pool, Job-Board, CTA
 ├── index.php               # Beitrags-Fallback
 ├── page.php                # Statische CMS-Seiten (Prose)
-├── 404.php                 # Nicht-gefunden-Seite mit Direktlink zu /jobs
-├── error.php               # Generische 50x-Seite
+├── 404.php                 # Nicht-gefunden-Seite (Startseite, Suche, /jobs falls vorhanden)
+├── error.php               # Fehlerseiten-Vertrag 4.0.0, eigenständig als vollständiges Dokument
+├── contact.php             # Core-Kontaktformular mit Kontaktdaten aus dem Customizer
+├── knowledgebase/          # Core-Views (Archiv, Einzelartikel) im Theme-Rahmen
+├── newsletter/             # Core-Views (Seite, Aktion, Ausgabe) im Theme-Rahmen
+├── includes/
+│   └── cms-v4-compat.php   # Gemeinsame 365CMS-4.x-Helfer aller Public Themes (theme_v4_*)
+├── css/
+│   └── cms-v4.css          # Gemeinsame Integrationsstile (Token-Brücke --tv4-*)
 ├── style.css               # WordPress-konformer Header, Tokens, Komponenten, Responsive
 ├── theme.json              # Manifest + Customizer-Schema
 ├── update.json             # Update-Feed
@@ -70,17 +78,16 @@ personalflow/
 
 | Konstante | Wert |
 |---|---|
-| `PERSONALFLOW_THEME_VERSION` | `1.1.0` |
+| `PERSONALFLOW_THEME_VERSION` | `2.0.0` |
 | `PERSONALFLOW_THEME_SLUG` | `personalflow` |
 
 | Hook | Priorität | Aktion |
 |---|---|---|
-| `head` | 1  | `enqueueStyles()` – preload + stylesheet mit `?v=`-Cache-Bust |
-| `head` | 5  | `outputGoogleFonts()` – nur tatsächlich gewählte Familien |
-| `head` | 10 | `outputMetaTags()` – Description, og:url, theme-color, robots |
+| `head` | 1  | `enqueueStyles()` – `style.css` und `css/cms-v4.css` mit `?v=`-Cache-Bust |
+| `head` | 10 | `outputMetaTags()` – nur `theme-color` (SEO-Tags kommen aus dem Core) |
 | `head` | 15 | `outputCustomStyles()` – Customizer → CSS-Variablen + custom_css |
 | `before_footer` | 99 | `enqueueScripts()` – `navigation.js` defer + Cache-Bust |
-| `init` / `cms_init` | 10 | `registerNavMenus()` – beide Hooks für v3-Bootstrap-Kompatibilität |
+| `member_head` | 20 | `outputMemberTokens()` – nur im Mitgliederbereich, statt aller obigen Hooks |
 | `register_menu_locations` (Filter) | – | Menü-Locations für ThemeManager |
 
 ## Helper-Funktionen (`functions.php`)
@@ -89,7 +96,7 @@ personalflow/
 |---|---|---|
 | `theme_is_logged_in()` | `bool` | CMS-Auth-Status |
 | `theme_route_url(string $name)` | `string` | Theme-lokaler Routen-Resolver |
-| `theme_nav_menu(string $location)` | `void` | Rendert ein `<ul>`-Navigationsmenü mit Active-State |
+| `theme_nav_menu(string $location, string $mainNavContext = '')` | `void` | Rendert ein `<ul>`-Navigationsmenü mit `aria-current`; mit Kontext `desktop`/`mobile` folgen die Core-Einträge des Hooks `main_nav` |
 | `get_header()` / `get_footer()` | `void` | Template-Inkludes über `ThemeManager` |
 | `pf_get_setting($sec, $key, $def)` | `mixed` | Sicherer Customizer-Lese-Shortcut |
 | `pf_get_flash()` / `pf_set_flash()` | – | Session-basierte Flash-Messages |
@@ -108,7 +115,7 @@ personalflow/
 | Sektion | Inhalt | Wirkt auf |
 |---|---|---|
 | `colors` | Brand- und Akzentfarben, Pipeline-Stage-Paare, Flächen-/Text-/Border-Tokens, Status (success/warning/error) | CSS-Variablen `--pf-*`, alle Komponenten |
-| `typography` | Body/Heading/Stats-Schriftart, Basis-Schriftgröße, Zeilenhöhe, Heading-Weight | `--pf-font-*`, `outputGoogleFonts()` |
+| `typography` | Body/Heading/Stats-Schriftart, Basis-Schriftgröße, Zeilenhöhe, Heading-Weight | `--pf-font-*` (Font-Stacks mit System-Fallback) |
 | `layout` | Container-Breite, Padding, Eckenradius, Sektionsabstand, Sticky-Header-Toggle | `--pf-max-width`, `--pf-radius`, `--pf-section-pad` |
 | `header` | Logo, Header-Farben, Höhe, Logo-Max, Shadow-Toggle, Such-Toggle + Platzhalter | Header + Search-Panel |
 | `footer` | Hintergrund / Text / Link, Beschreibung, Pipeline-/Arbeitgeber-Spalten-Toggle, Copyright-Template | Footer |
@@ -117,40 +124,40 @@ personalflow/
 | `pipeline` | Stage-Labels (Beworben → Screening → Interview → Angebot → Eingestellt → Archiv) + Beispiel-Counts für das Ribbon | `home.php`, `partials/candidate-card.php` |
 | `hr_content` | Sektions-Titel und -Subtitles, Salary-/Remote-/Available-Labels, KPI-Texte (4 Kennzahlen mit Label + Wert), CTA-Texte | `home.php` |
 | `advanced` | Custom CSS (gegen `</style>`-Injection gefiltert) | `outputCustomStyles()` |
+| `contact` | E-Mail, Telefon, Adresse, Erreichbarkeit | `contact.php` |
 
 Jeder in `theme.json` deklarierte Schlüssel wird tatsächlich als
 CSS-Variable ausgegeben oder im Template gelesen – keine Dead-Keys.
 
 ## Asset-Pipeline
 
-- `enqueueStyles()` (`head:1`) emittiert `<link rel="preload" as="style">`
-  und `<link rel="stylesheet">` für
-  `style.css?v=PERSONALFLOW_THEME_VERSION`. URLs sind
-  `htmlspecialchars`-escaped.
-- `outputGoogleFonts()` (`head:5`) baut die Family-URL dynamisch nur aus
-  Customizer-Auswahlen. Bei reinen System-Stacks (`system-mono`) wird
-  der Request übersprungen. `preconnect` zu `fonts.googleapis.com`
-  und `fonts.gstatic.com` (crossorigin) wird nur ausgegeben, wenn
-  überhaupt eine Web-Font gebraucht wird.
-- `outputMetaTags()` (`head:10`) – Description, OG-URL, Theme-Color,
-  Robots.
-- `outputCustomStyles()` (`head:15`) – CSS-Variablen aus Customizer +
+- `enqueueStyles()` (`head:1`) – `style.css` und `css/cms-v4.css`
+  (`?v=PERSONALFLOW_THEME_VERSION`). URLs sind `htmlspecialchars`-escaped.
+- Keine externen Requests: keine Google Fonts, kein CDN.
+- `outputMetaTags()` (`head:10`) – nur `theme-color`. Beschreibung, Robots,
+  Canonical, Open Graph und JSON-LD kommen aus der Core-SEO
+  (`theme_v4_head_tags()` in `header.php`), in der Vorschau mit `noindex`.
+- `outputCustomStyles()` (`head:15`) – CSS-Variablen aus Customizer
+  (Farben/Zahlen validiert über `pf_css_color()`/`pf_css_number()`) +
   Custom-CSS (regex-gefiltert gegen `</style>`).
+- Im Core-Mitgliederbereich (`/member`) lädt das Theme keine Assets, sondern
+  setzt über `member_head` nur die Palette als `--member-*`-Variablen.
 - `enqueueScripts()` (`before_footer:99`) – defer + Cache-Bust.
 
 ## Sicherheit & Accessibility
 
-- Alle externen Asset-URLs (Google Fonts, Theme-CSS, Navigation-JS) sind
-  `htmlspecialchars`-escaped.
+- `cms_csp_runtime_tags(true)` als erstes Script im `<head>`, Theme-Script mit `defer`.
 - Boolean-Customizer-Werte gehen durch `filter_var(..., FILTER_VALIDATE_BOOLEAN)`.
 - `custom_css` wird via `sanitizeCustomCss()` gegen `</style>`-Injection
   regex-gefiltert.
 - Skip-Link auf `#main` als erstes fokussierbares Element.
 - `:focus:not(:focus-visible) { outline: none }` + sichtbarer
-  `:focus-visible`-Ring mit `--focus-ring`-Token, plus
-  `.pf-focus-shadow`-Utility für Buttons / Links / Inputs.
-- Mobile-Drawer und Search-Panel mit `aria-hidden` / `aria-expanded` /
-  `aria-controls`-Synchronisation, Focus-Restore an den Opener, Escape-
+  `:focus-visible`-Ring mit `--focus-ring`-Token (`#92400e`, 6,9:1), plus
+  `.pf-focus-shadow`-Utility (voller Ring mit Abstand) für Buttons / Links /
+  Inputs; weiß im Amber-CTA, hellgelb im Footer.
+- Mobile-Drawer und Search-Panel mit `aria-expanded` / `aria-controls`;
+  der geschlossene Drawer ist per `visibility: hidden` nicht fokussierbar.
+  Fokus in den Drawer beim Öffnen, Focus-Restore an den Opener, Escape-
   und Outside-Click-Schluss.
 - Body-Scroll-Lock bei offenem Drawer.
 - Reduced-Motion-Aware: keine Reveal-Transitions und keine
@@ -191,14 +198,22 @@ Stage-Badge ohne Karten-Wrapper:
   Platzhalter markiert.
 - `index.php` / `page.php` – generische Beiträge- bzw. Seitenansicht,
   Prose-Layout, keine Inline-Styles.
-- `404.php` – Routet zur Startseite und zu `/jobs`.
-- `error.php` – Generische 50x-Seite mit Error-Code in Stats-Font.
-- `partials/candidate-card.php` – Wiederverwendbare Talent-Card.
+- `404.php` – Routet zur Startseite, zur Suche und (falls vorhanden) zu `/jobs`.
+- `error.php` – Fehlerseiten-Vertrag 4.0.0 (`error_code`/`errorCode`,
+  `error_standalone`, `error_retry_after`), Error-Code in Stats-Font.
+- `contact.php` – Core-Kontaktformular (`$contactFormHtml`) mit Kontaktdaten.
+- `knowledgebase/*.php`, `newsletter/*.php` – Core-Views im Theme-Rahmen.
+- `partials/candidate-card.php` – Wiederverwendbare Talent-Card; Aktionen
+  erscheinen nur, wenn die Profilseite existiert, Avatare nur aus lokalen Uploads.
+- Standardlinks in Footer, Hero und 404 (`/jobs`, `/kandidaten`,
+  `/arbeitgeber`, `/pipeline`, `/preise`) erscheinen nur, wenn Route oder
+  Seite existiert.
 
 ## Versionsabgleich
 
-- `theme.json` → `"version": "1.1.0"`
-- `style.css` → `Version: 1.1.0`, `Requires PHP: 8.4`,
-  `License: GPL-2.0-or-later`, `Text Domain: personalflow`
-- `update.json` → `"version": "1.1.0"`, `"min_cms_version": "3.4.00"`
-- `functions.php` → `define('PERSONALFLOW_THEME_VERSION', '1.1.0')`
+- `theme.json` → `"version": "2.0.0"`, `requires_cms` 4.0.0, `requires_php` 8.4.1,
+  `tested_up_to` 4.1.0
+- `style.css` → `Version: 2.0.0`, `Requires PHP: 8.4.1`, `Requires CMS: 4.0.0`,
+  `Tested up to: 4.1.0`, `License: GPL-2.0-or-later`, `Text Domain: personalflow`
+- `update.json` → `"version": "2.0.0"`, `"min_cms_version": "4.0.0"`
+- `functions.php` → `define('PERSONALFLOW_THEME_VERSION', '2.0.0')`

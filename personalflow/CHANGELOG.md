@@ -1,5 +1,47 @@
 # Changelog
 
+## 2.0.0 - 2026-11-15
+
+### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
+
+Setzt 365CMS 4.0.0 und PHP 8.4.1 voraus (`requires_cms`, `requires_php`, `tested_up_to: 4.1.0`).
+
+#### Core-Verträge 4.0.0
+- `error.php` wertet `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`, `$error_standalone` und `$error_retry_after` aus. 403-, 429- und 503-Seiten antworten mit ihrem Status statt mit HTTP 500; eigenständige Fehler- und Wartungsseiten sind vollständige Dokumente mit Theme-Stylesheet (ohne Header, Hooks und Datenbank), bei 429/503 mit `Retry-After`. Bisher rief `error.php` selbst `get_header()`/`get_footer()` auf; die Fehlerkarte trug `pf-reveal` und blieb ohne `navigation.js` (eigenständige Seite) unsichtbar.
+- Desktop-Navigation und Mobil-Drawer lösen den Core-Hook `main_nav` direkt nach den Menüeinträgen aus (Kontext `desktop` bzw. `mobile`), auch bei leerem Menü.
+- Menüeinträge zeigen die Beschriftung aus `title` (der Core liefert `title`, das Theme las nur `label`), der aktive Eintrag trägt `aria-current="page"`; Menü-URLs mit fremdem Schema werden verworfen.
+- `registerNavMenus()` mit dem nicht existierenden `ThemeManager::registerMenuLocation()` entfernt; Menüpositionen über den Filter `register_menu_locations` (der `menus`-Block in `theme.json` bleibt als Admin-Fallback, der Core dedupliziert nach Slug).
+- `theme_use_local_fonts()` liest `privacy_use_local_fonts` über den `OptionStore` statt per SQL.
+
+#### Vorlagen und Core-Module
+- Neu: `contact.php` gibt das Core-Formular (`$contactFormHtml`) mit Kontaktdaten aus dem neuen Customizer-Bereich „Kontakt“ aus.
+- Neu: `knowledgebase/archive.php`, `knowledgebase/single.php`, `newsletter/page.php`, `newsletter/action.php`, `newsletter/issue.php` binden die Core-Views ein und setzen sie in den Theme-Rahmen (Skip-Link-Ziel `#main`, kein doppeltes `<main>`).
+- Neu: `css/cms-v4.css` (gemeinsam mit allen Public Themes) und die Token-Brücke `--tv4-*` in `style.css` für Downloads, Feeds, Formulare, Hub-Sites, Medien-Credits, Editor.js-Blöcke, Inhaltsverzeichnis und wiederverwendbare Blöcke.
+- Neu: `includes/cms-v4-compat.php` mit den Helfern `theme_v4_*`.
+- Fußzeile, Hero, 404-Seite und Demo-Karten zeigen die Theme-Ziele `/jobs`, `/kandidaten`, `/arbeitgeber`, `/pipeline`, `/preise` (und Downloads, Wissensdatenbank, Newsletter, Kontakt) nur, wenn die Seite bzw. Route existiert; leere Spalten und eine leere „Service“-Spalte entfallen. Logo-Fallback `site_logo`, Favicon `site_favicon`.
+- `partials/candidate-card.php`: Avatare nur aus lokalen Uploads (mit `width`/`height`), Aktionslinks mit Kandidatenname für Screenreader.
+
+#### 4.1.0
+- Memberbereich und Newsletter-Widget übernehmen die Theme-Palette über `member_head` (`--member-*`); im Admin geänderte Member-Farben haben Vorrang. Stylesheet, Custom-Vars und Navigation-Script werden in der Member-Shell nicht mehr geladen.
+- Login: Farbvorschlag `login_page.colors` in `theme.json` für die Core-Loginseite.
+- Beitragsbild mit Fokus-Punkt (`object-position`), `width`/`height` und `fetchpriority="high"` als LCP-Bild statt `loading="lazy"`.
+- Vorschau-Links und nicht veröffentlichte Inhalte: `noindex, nofollow`, keine JSON-LD-Ausgabe, Hinweisleiste.
+
+#### Sicherheit, Datenschutz, Performance
+- Keine Google-Fonts-Requests mehr (auch ohne „Schriften lokal einbinden“); Schriften kommen aus der Core-Schriftverwaltung, sonst System-Font-Stack (`system-ui` bzw. Serif-Fallback ergänzt).
+- Core-SEO-Ausgabe (`theme_v4_head_tags()`) statt der festen Tags aus `outputMetaTags()` (`robots index,follow` auch für Vorschauen, `og:url` der Startseite auf jeder Seite); Dokumenttitel aus Seitentitel/Core-SEO statt immer Site-Titel.
+- `cms_csp_runtime_tags(true)` als erstes Script direkt nach `<meta charset>`; Navigation weiter per `defer`.
+- Customizer-Farben und -Zahlen werden vor der Ausgabe im `<style>`-Block validiert (bisher nur HTML-escaped); `button_transform` nur aus den erlaubten Werten. Copyright-Text wird escaped (Entities bleiben erhalten).
+- Generische Suchformular-Stile auf die Suchseite begrenzt (sie verschoben bisher auch das Header-Suchpanel).
+
+#### Barrierefreiheit
+- Fokus: `.pf-focus-shadow` und Buttons zeigen einen vollen Ring (`#92400e`, 6,9:1) statt eines Schattens mit 22 % Deckkraft (1,4:1); im Amber-CTA weiß (5,0:1), im Footer `#fde68a` (14:1). Suchfeld mit sichtbarem Fokusrand.
+- Muted-Farbe `#78716c` → `#6b645f`: auf `--pf-paper-alt` 4,47:1 → 5,4:1, auf den Stage-Flächen des Pipeline-Ribbons 4,3:1 → ≥ 4,7:1 (auch als Customizer-Standard in `theme.json`).
+- Formularfeld-Rand `--pf-input-border` 3,4:1 statt 1,5:1.
+- „Alle Beiträge“-Button war unsichtbar (weiße Schrift auf weißer Karte).
+- Geschlossener Mobil-Drawer ist per `visibility: hidden` nicht mehr per Tab erreichbar (vorher nur `opacity: 0` + `aria-hidden` mit fokussierbaren Links), Fokus wandert beim Öffnen in den Drawer.
+- Fußzeilen-Überschriften `h2` statt `h3`, Fußzeilen-Spalten als benannte `nav`, Stellentitel als `h3` unter der Abschnitts-`h2`, `html lang` nach Inhaltssprache, redundante `role`-Attribute entfernt.
+
 ## 1.1.0 - 2026-09-26
 
 ### Kompatibilität mit 365CMS 3.4.00 (CSP, Trusted Types, Layout-Hooks)

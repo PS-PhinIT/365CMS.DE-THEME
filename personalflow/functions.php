@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * PersonalFlow Theme – functions.php
  *
- * HR / Personalvermittlungs-Theme für 365CMS v3.x.x auf PHP 8.4.
+ * HR / Personalvermittlungs-Theme für 365CMS 4.0.0 – 4.1.0 auf PHP 8.4.1.
  *
  * @package PersonalFlow_Theme
  */
@@ -14,11 +14,40 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('PERSONALFLOW_THEME_VERSION')) {
-    define('PERSONALFLOW_THEME_VERSION', '1.1.0');
+    define('PERSONALFLOW_THEME_VERSION', '2.0.0');
 }
 
 if (!defined('PERSONALFLOW_THEME_SLUG')) {
     define('PERSONALFLOW_THEME_SLUG', 'personalflow');
+}
+
+// 365CMS 4.x: header.php öffnet kein <main>; die Templates setzen <main id="main"> selbst.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', false);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
+
+if (!function_exists('pf_css_color')) {
+    /** Customizer-Farbe für CSS: nur #rgb/#rrggbb(aa), rgb(a)/hsl(a) – sonst Fallback. */
+    function pf_css_color(string $value, string $fallback): string
+    {
+        $value = trim($value);
+
+        return preg_match('/^(#[0-9a-f]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s\/]+\))$/i', $value) === 1 ? $value : $fallback;
+    }
+}
+
+if (!function_exists('pf_css_number')) {
+    /** Customizer-Zahl für CSS (ohne Einheit) – sonst Fallback. */
+    function pf_css_number(string $value, string $fallback): string
+    {
+        $value = trim($value);
+
+        return preg_match('/^\d{1,4}(?:\.\d{1,3})?$/', $value) === 1 ? $value : $fallback;
+    }
 }
 
 /**
@@ -48,18 +77,41 @@ final class PersonalFlow_Theme
 
     private function registerHooks(): void
     {
+        // Menüpositionen ausschließlich über den Filter (ThemeManager::registerMenuLocation() gibt es im Core nicht).
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Tabler-Shell und löst ebenfalls `head` aus:
+        // dort kein Frontend-Stylesheet, keine Custom-Vars und keine Scripts, nur die Theme-Palette als --member-*.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'],      1);
-        \CMS\Hooks::addAction('head', [$this, 'outputGoogleFonts'],  5);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'],     10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 15);
 
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
+    }
 
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+    /** Memberdashboard (inkl. Newsletter-Widget) in der PersonalFlow-Palette. PersonalFlow hat keinen Dark Mode. */
+    public function outputMemberTokens(): void
+    {
+        $color = fn(string $key, string $default): string =>
+            pf_css_color((string) $this->customizerGet('colors', $key, $default), $default);
 
-        // Auf BEIDEN Hooks für v3-Bootstrap-Kompatibilität.
-        \CMS\Hooks::addAction('init',     [$this, 'registerNavMenus'], 10);
-        \CMS\Hooks::addAction('cms_init', [$this, 'registerNavMenus'], 10);
+        echo theme_v4_member_tokens_style([
+            'primary'    => $color('primary_color', '#b45309'),
+            'accent'     => $color('accent_color', '#0f766e'),
+            'bg'         => $color('bg_color', '#fffbf5'),
+            'card_bg'    => $color('card_bg_color', '#ffffff'),
+            'text'       => $color('text_color', '#1c1917'),
+            'text_muted' => $color('muted_color', '#6b645f'),
+            'border'     => $color('border_color', '#f5e7c4'),
+            'focus'      => $color('secondary_color', '#92400e'),
+            'radius'     => pf_css_number((string) $this->customizerGet('layout', 'border_radius', '12'), '12') . 'px',
+            'font'       => '"Nunito Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+        ]);
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
@@ -71,8 +123,15 @@ final class PersonalFlow_Theme
             ENT_QUOTES,
             'UTF-8'
         );
-        echo '<link rel="preload" href="' . $href . '" as="style">' . "\n";
+        $v4Href = htmlspecialchars(
+            $this->themeBaseUrl() . '/css/cms-v4.css?v=' . rawurlencode(PERSONALFLOW_THEME_VERSION),
+            ENT_QUOTES,
+            'UTF-8'
+        );
         echo '<link rel="stylesheet" href="' . $href . '">' . "\n";
+        echo '<link rel="stylesheet" href="' . $v4Href . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greift der System-Font-Stack (mapFontChoice()/style.css).
     }
 
     public function enqueueScripts(): void
@@ -85,52 +144,33 @@ final class PersonalFlow_Theme
         echo '<script src="' . $src . '" defer></script>' . "\n";
     }
 
-    /**
-     * Google Fonts – preconnect + nur tatsächlich gewählte Familien.
-     * Bei reinen System-Stacks wird die jeweilige Familie übersprungen und
-     * der Request ggf. ganz unterdrückt.
-     */
-    public function outputGoogleFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $families = $this->googleFontFamilies();
-        if ($families === '') {
-            return;
-        }
-        $url = 'https://fonts.googleapis.com/css2?family=' . $families . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    }
-
     // ── Meta ────────────────────────────────────────────────────────────────
 
+    /**
+     * Nur noch `theme-color`. Beschreibung, Robots, Canonical und Open Graph kommen aus der Core-SEO
+     * (theme_v4_head_tags() in header.php); die bisherigen festen Angaben (`index,follow`, `og:url` = Startseite)
+     * hätten Vorschau-Seiten indexierbar gemacht und jede Unterseite als Startseite ausgewiesen.
+     */
     public function outputMetaTags(): void
     {
-        $tm       = \CMS\ThemeManager::instance();
-        $siteDesc = htmlspecialchars((string) $tm->getSiteDescription(), ENT_QUOTES, 'UTF-8');
-        $siteUrl  = htmlspecialchars((string) (defined('SITE_URL') ? SITE_URL : ''), ENT_QUOTES, 'UTF-8');
-
-        $themeColor = htmlspecialchars(
-            (string) $this->customizerGet('header', 'header_bg_color', '#ffffff'),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-
-        echo '<meta name="description" content="' . $siteDesc . '">' . "\n";
-        echo '<meta property="og:url" content="' . $siteUrl . '">' . "\n";
-        echo '<meta name="theme-color" content="' . $themeColor . '">' . "\n";
-        echo '<meta name="robots" content="index,follow">' . "\n";
+        $themeColor = pf_css_color((string) $this->customizerGet('header', 'header_bg_color', '#ffffff'), '#ffffff');
+        echo '<meta name="theme-color" content="' . htmlspecialchars($themeColor, ENT_QUOTES, 'UTF-8') . '">' . "\n";
     }
 
     // ── Customizer-getriebene CSS-Variablen + custom_css ─────────────────────
 
     public function outputCustomStyles(): void
     {
-        $p = fn(string $g, string $k, string $d): string =>
-            htmlspecialchars((string) $this->customizerGet($g, $k, $d), ENT_QUOTES, 'UTF-8');
+        // Customizer-Werte vor der Ausgabe validieren: Farben nur als Hex/rgb(a)/hsl(a), Zahlen nur numerisch,
+        // damit kein Wert den <style>-Block mit `;}` verlassen kann.
+        $p = function (string $g, string $k, string $d): string {
+            $raw = (string) $this->customizerGet($g, $k, $d);
+            return str_starts_with($d, '#') ? pf_css_color($raw, $d) : pf_css_number($raw, $d);
+        };
+        $choice = function (string $g, string $k, array $allowed, string $d): string {
+            $raw = (string) $this->customizerGet($g, $k, $d);
+            return in_array($raw, $allowed, true) ? $raw : $d;
+        };
 
         // Fonts
         $baseChoice    = (string) $this->customizerGet('typography', 'font_family_base',    'nunito-sans');
@@ -170,7 +210,7 @@ final class PersonalFlow_Theme
         echo '--pf-paper-alt:'  . $p('colors', 'bg_secondary',    '#fef6e7') . ';';
         echo '--pf-surface:'    . $p('colors', 'card_bg_color',   '#ffffff') . ';';
         echo '--pf-ink:'        . $p('colors', 'text_color',      '#1c1917') . ';';
-        echo '--pf-text-mute:'  . $p('colors', 'muted_color',     '#78716c') . ';';
+        echo '--pf-text-mute:'  . $p('colors', 'muted_color',     '#6b645f') . ';';
         echo '--pf-rule:'       . $p('colors', 'border_color',    '#f5e7c4') . ';';
         echo '--pf-rule-strong:' . $p('colors', 'border_strong_color', '#e7d39a') . ';';
         echo '--pf-link:'       . $p('colors', 'link_color',      '#92400e') . ';';
@@ -211,11 +251,11 @@ final class PersonalFlow_Theme
         echo '--pf-btn-padding-x:' . $p('buttons', 'button_padding_x',     '1.5')   . 'rem;';
         echo '--pf-btn-padding-y:' . $p('buttons', 'button_padding_y',     '0.75')  . 'rem;';
         echo '--pf-btn-weight:'    . $p('buttons', 'button_font_weight',   '700')   . ';';
-        echo '--pf-btn-transform:' . $p('buttons', 'button_transform',     'none')  . ';';
+        echo '--pf-btn-transform:' . $choice('buttons', 'button_transform', ['none', 'uppercase', 'capitalize'], 'none') . ';';
 
-        // Focus
-        echo '--focus-ring:'        . $p('colors', 'primary_color', '#b45309') . ';';
-        echo '--focus-ring-shadow:' . '0 0 0 .2rem rgba(180, 83, 9, .22);';
+        // Focus: --focus-ring-shadow (style.css) ist jetzt ein voller Ring statt 22 % Deckkraft;
+        // Amber- und dunkle Flächen setzen --focus-ring in style.css um.
+        echo '--focus-ring:'        . $p('colors', 'secondary_color', '#92400e') . ';';
 
         echo '}';
 
@@ -256,27 +296,11 @@ final class PersonalFlow_Theme
         return $locations;
     }
 
-    public function registerNavMenus(): void
-    {
-        $tm = \CMS\ThemeManager::instance();
-        if (method_exists($tm, 'registerMenuLocation')) {
-            $tm->registerMenuLocation('primary-nav',  'Hauptmenü');
-            $tm->registerMenuLocation('footer-nav',   'Fußzeilen-Navigation');
-            $tm->registerMenuLocation('footer-legal', 'Rechtliche Links');
-        }
-    }
-
     // ── Internal helpers ────────────────────────────────────────────────────
 
     private function themeBaseUrl(): string
     {
-        $tm = \CMS\ThemeManager::instance();
-        try {
-            $url = (string) $tm->getThemeUrl(PERSONALFLOW_THEME_SLUG);
-        } catch (\Throwable) {
-            $url = (string) $tm->getThemeUrl();
-        }
-        return rtrim($url, '/');
+        return rtrim(theme_v4_theme_url(__DIR__), '/');
     }
 
     private function customizerGet(string $group, string $key, mixed $default = null): mixed
@@ -296,7 +320,7 @@ final class PersonalFlow_Theme
      */
     private function mapFontChoice(string $choice, string $slot): string
     {
-        $sansStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        $sansStack = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
         $monoStack = 'ui-monospace, SFMono-Regular, "JetBrains Mono", "IBM Plex Mono", Menlo, Consolas, monospace';
 
         return match ($choice) {
@@ -311,7 +335,7 @@ final class PersonalFlow_Theme
             'manrope'      => 'Manrope, ' . $sansStack,
             'raleway'      => 'Raleway, ' . $sansStack,
             'montserrat'   => 'Montserrat, ' . $sansStack,
-            'playfair-display' => '"Playfair Display", Georgia, "Times New Roman", serif',
+            'playfair-display' => '"Playfair Display", Georgia, Cambria, "Times New Roman", Times, serif',
 
             // Stats / KPI
             'jetbrains-mono'   => '"JetBrains Mono", ' . $monoStack,
@@ -326,75 +350,6 @@ final class PersonalFlow_Theme
                 default   => '"Nunito Sans", ' . $sansStack,
             },
         };
-    }
-
-    /**
-     * Liefert die `family=…&family=…`-URL-Stückliste für Google Fonts –
-     * nur tatsächlich gewählte Familien werden geladen. System-Stacks
-     * (z. B. `system-mono`) werden übersprungen.
-     */
-    private function googleFontFamilies(): string
-    {
-        $base    = (string) $this->customizerGet('typography', 'font_family_base',    'nunito-sans');
-        $heading = (string) $this->customizerGet('typography', 'font_family_heading', 'nunito');
-        $stats   = (string) $this->customizerGet('typography', 'font_family_stats',   'jetbrains-mono');
-
-        $needed = [];
-        foreach ([$base, $heading, $stats] as $choice) {
-            switch ($choice) {
-                case 'nunito-sans':
-                    $needed['Nunito Sans']      = 'Nunito+Sans:wght@400;600;700';
-                    break;
-                case 'nunito':
-                    $needed['Nunito']           = 'Nunito:wght@400;600;700;800';
-                    break;
-                case 'inter':
-                    $needed['Inter']            = 'Inter:wght@400;500;600;700';
-                    break;
-                case 'open-sans':
-                    $needed['Open Sans']        = 'Open+Sans:wght@400;600;700';
-                    break;
-                case 'lato':
-                    $needed['Lato']             = 'Lato:wght@400;700';
-                    break;
-                case 'roboto':
-                    $needed['Roboto']           = 'Roboto:wght@400;500;700';
-                    break;
-                case 'poppins':
-                    $needed['Poppins']          = 'Poppins:wght@500;600;700';
-                    break;
-                case 'manrope':
-                    $needed['Manrope']          = 'Manrope:wght@500;600;700';
-                    break;
-                case 'raleway':
-                    $needed['Raleway']          = 'Raleway:wght@500;600;700';
-                    break;
-                case 'montserrat':
-                    $needed['Montserrat']       = 'Montserrat:wght@500;600;700';
-                    break;
-                case 'playfair-display':
-                    $needed['Playfair Display'] = 'Playfair+Display:wght@600;700';
-                    break;
-                case 'jetbrains-mono':
-                    $needed['JetBrains Mono']   = 'JetBrains+Mono:wght@500;700';
-                    break;
-                case 'roboto-mono':
-                    $needed['Roboto Mono']      = 'Roboto+Mono:wght@500;700';
-                    break;
-                case 'roboto-condensed':
-                    $needed['Roboto Condensed'] = 'Roboto+Condensed:wght@500;700';
-                    break;
-                case 'oswald':
-                    $needed['Oswald']           = 'Oswald:wght@500;700';
-                    break;
-                // 'system-mono' bleibt System-Schrift.
-            }
-        }
-
-        if ($needed === []) {
-            return '';
-        }
-        return implode('&family=', $needed);
     }
 
     private function sanitizeCustomCss(string $raw): string
@@ -459,34 +414,43 @@ if (!function_exists('theme_route_url')) {
 
 if (!function_exists('theme_nav_menu')) {
     /**
-     * Render a registered navigation menu as a <ul> list.
+     * Menü einer Position als <ul>. Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den
+     * Menüeinträgen die optionalen Einträge der Core-Module (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) –
+     * auch dann, wenn das Menü selbst leer ist.
      */
-    function theme_nav_menu(string $location): void
+    function theme_nav_menu(string $location, string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
             $items = [];
         }
-        if (empty($items)) {
+
+        $coreItems = '';
+        if ($mainNavContext !== '' && function_exists('theme_v4_main_nav')) {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'current-menu-item']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
-        $cur = rtrim(parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/', '/');
+
         echo '<ul>';
         foreach ($items as $item) {
-            $rawUrl = (string) ($item['url']   ?? '#');
-            $label  = (string) ($item['label'] ?? '');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
-
-            $isActive = ($path === '' || $path === '/')
-                ? ($cur === '' || $cur === '/')
-                : str_starts_with($cur, $path);
+            $rawUrl = (string) ($item['url'] ?? '#');
+            // Der Core liefert die Beschriftung in `title`; `label` bleibt als Fallback älterer Menüs.
+            $label  = (string) ($item['label'] ?? $item['title'] ?? '');
 
             $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
                 ? $rawUrl
                 : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
                     ? $rawUrl
                     : '#');
+            if (!in_array(strtolower((string) parse_url($sanitizedUrl, PHP_URL_SCHEME)), ['', 'http', 'https'], true)) {
+                $sanitizedUrl = '#';
+            }
+            $isActive = !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'
@@ -495,10 +459,11 @@ if (!function_exists('theme_nav_menu')) {
             $cls = $isActive ? ' class="current-menu-item"' : '';
             echo '<li' . $cls . '><a href="'
                 . htmlspecialchars($sanitizedUrl, ENT_QUOTES, 'UTF-8')
-                . '"' . $target . '>'
+                . '"' . $target . ($isActive ? ' aria-current="page"' : '') . '>'
                 . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
                 . '</a></li>';
         }
+        echo $coreItems;
         echo '</ul>';
     }
 }
@@ -699,7 +664,7 @@ if (!function_exists('pf_stage_label')) {
     }
 }
 
-// ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
+// ── 365CMS-Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────────
 
 if (!function_exists('theme_csp_nonce_attr')) {
     /** Liefert ` nonce="…"` für Inline-<style>/<script> unter der 365CMS-CSP. */
@@ -716,25 +681,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

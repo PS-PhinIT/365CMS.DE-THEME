@@ -15,7 +15,7 @@ $page = isset($page) && is_array($page) && $page !== [] ? (object) $page : null;
 
 $safe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 ?>
-<main id="main" class="pf-main pf-page-shell" role="main">
+<main id="main" class="pf-main pf-page-shell">
     <div class="pf-container">
         <?php if (!empty($page)) : ?>
             <article class="pf-card pf-prose-wrap">
