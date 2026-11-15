@@ -18,16 +18,16 @@ if (!headers_sent()) {
 $recent = feder_get_posts(['limit' => 4]);
 ?>
 
-<section class="fd-notfound fd-measure" aria-labelledby="fd-notfound-title">
-    <p class="fd-notfound__code" aria-hidden="true">404</p>
-    <p class="fd-kicker">Seite nicht gefunden</p>
-    <h1 class="fd-archive-head__title" id="fd-notfound-title">Diese Seite ist wohl zwischen den Zeilen verloren gegangen.</h1>
-    <p class="fd-archive-head__text">Vielleicht wurde der Text verschoben oder die Adresse hat sich geändert. Die Suche oder einer der neuesten Beiträge helfen weiter.</p>
-    <?php feder_search_form('fd-search-404', '', 'fd-searchform--large'); ?>
+<section class="fdr-notfound fdr-measure" aria-labelledby="fdr-notfound-title">
+    <p class="fdr-notfound__code" aria-hidden="true">404</p>
+    <p class="fdr-kicker">Seite nicht gefunden</p>
+    <h1 class="fdr-archive-head__title" id="fdr-notfound-title">Diese Seite ist wohl zwischen den Zeilen verloren gegangen.</h1>
+    <p class="fdr-archive-head__text">Vielleicht wurde der Text verschoben oder die Adresse hat sich geändert. Die Suche oder einer der neuesten Beiträge helfen weiter.</p>
+    <?php feder_search_form('fdr-search-404', '', 'fdr-searchform--large'); ?>
 
     <?php if ($recent !== []) : ?>
-        <h2 class="fd-section-title">Zuletzt erschienen</h2>
-        <ul class="fd-simplelist">
+        <h2 class="fdr-section-title">Zuletzt erschienen</h2>
+        <ul class="fdr-simplelist">
             <?php foreach ($recent as $item) : ?>
                 <li>
                     <a href="<?php echo feder_e(feder_post_link($item)); ?>"><?php echo feder_e((string) ($item->title ?? '')); ?></a>
@@ -37,5 +37,5 @@ $recent = feder_get_posts(['limit' => 4]);
         </ul>
     <?php endif; ?>
 
-    <p><a class="fd-button" href="<?php echo feder_e(feder_url('/')); ?>">Zur Startseite</a></p>
+    <p><a class="fdr-button" href="<?php echo feder_e(feder_url('/')); ?>">Zur Startseite</a></p>
 </section>

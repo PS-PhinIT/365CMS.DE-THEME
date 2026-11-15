@@ -2,11 +2,15 @@
 declare(strict_types=1);
 
 /**
- * Feder – Fehlerseite
+ * Feder – Fehlerseite für alle Status außer 404 (Router::renderError(), 365CMS 4.0.0)
  *
- * Wird vom Fatal-Handler in index.php direkt eingebunden (ohne header/footer) und
- * rendert deshalb ein eigenständiges Dokument. Bewusst ohne Abhängigkeit von
- * functions.php, damit die Seite auch bei einem Fehler im Theme erscheint.
+ * Router-Vertrag: `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`;
+ * eigenständig (Wartungsmodus, Fatal-Handler) zusätzlich `$error_standalone` und bei 503 `$error_retry_after`.
+ *
+ * - Eigenständig: vollständiges Dokument mit Theme-Stylesheet, ohne Header/Footer, Hooks, Customizer
+ *   und Datenbank; eigenes <main>.
+ * - Sonst rendert der Core header.php/footer.php; header.php öffnet <main id="main-content"> bereits,
+ *   deshalb hier nur der Inhalt.
  *
  * @package Feder_Theme
  */
@@ -15,42 +19,55 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$errorCode = (int) ($GLOBALS['error_code'] ?? $errorCode ?? 500);
-$errorCode = $errorCode >= 400 && $errorCode < 600 ? $errorCode : 500;
-$errorMessage = (string) ($GLOBALS['error_message'] ?? $errorMessage ?? 'Beim Laden der Seite ist ein unerwarteter Fehler aufgetreten.');
-$siteUrl = rtrim(defined('SITE_URL') ? (string) SITE_URL : '', '/');
-$siteName = defined('SITE_NAME') ? (string) SITE_NAME : '365CMS';
-$esc = static fn(string $value): string => htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
-
-if (!headers_sent()) {
-    http_response_code($errorCode);
+// Auch vom Fatal-Handler (index.php) direkt eingebunden – dann ohne functions.php.
+if (!function_exists('theme_v4_error_context')) {
+    require_once __DIR__ . '/includes/cms-v4-compat.php';
 }
 
-$inner = '<section class="fd-notfound fd-measure" aria-labelledby="fd-error-title">'
-    . '<p class="fd-notfound__code" aria-hidden="true">' . $errorCode . '</p>'
-    . '<p class="fd-kicker">Fehler ' . $errorCode . '</p>'
-    . '<h1 class="fd-archive-head__title" id="fd-error-title">Hier ist etwas schiefgelaufen.</h1>'
-    . '<p class="fd-archive-head__text">' . $esc($errorMessage) . '</p>'
-    . '<p><a class="fd-button" href="' . $esc($siteUrl . '/') . '">Zur Startseite</a></p>'
-    . '</section>';
+$fdrError    = theme_v4_error_context(get_defined_vars());
+$fdrLocale   = theme_v4_locale($contentLocale ?? null);
+$fdrDefaults = theme_v4_error_texts($fdrError['code'], $fdrLocale);
+$fdrTitle    = $fdrError['title'] !== '' ? $fdrError['title'] : $fdrDefaults['title'];
+$fdrMessage  = $fdrError['message'] !== '' ? $fdrError['message'] : $fdrDefaults['message'];
+$fdrHome     = theme_v4_site_url() . '/';
+$fdrBack     = $fdrError['standalone'] ? '' : theme_v4_safe_back_url();
+$fdrVersion  = defined('FEDER_THEME_VERSION') ? (string) FEDER_THEME_VERSION : '2.0.0';
 
-if (defined('CMS_THEME_HEADER_RENDERED')) {
-    echo $inner;
-    return;
+if ($fdrError['standalone']) {
+    $fdrThemeUrl = theme_v4_theme_url(__DIR__);
+    theme_v4_standalone_open(
+        $fdrError['code'] . ' – ' . $fdrTitle,
+        [
+            $fdrThemeUrl . '/style.css?v=' . rawurlencode($fdrVersion),
+            $fdrThemeUrl . '/css/cms-v4.css?v=' . rawurlencode($fdrVersion),
+        ],
+        $fdrLocale,
+        'feder is-error'
+    );
+    echo '<main id="main-content" class="fdr-main">' . "\n";
 }
 ?>
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="robots" content="noindex">
-    <title><?php echo $esc('Fehler ' . $errorCode . ' – ' . $siteName); ?></title>
-    <link rel="stylesheet" href="<?php echo $esc($siteUrl . '/themes/feder/style.css'); ?>">
-</head>
-<body class="feder is-error">
-<main id="main-content" class="fd-main">
-    <?php echo $inner; ?>
-</main>
-</body>
-</html>
+<section class="fdr-notfound fdr-measure" aria-labelledby="fdr-error-title">
+    <p class="fdr-notfound__code" aria-hidden="true"><?php echo (int) $fdrError['code']; ?></p>
+    <p class="fdr-kicker"><?php echo theme_v4_e(theme_v4_t('Fehler', 'Error', $fdrLocale) . ' ' . $fdrError['code']); ?></p>
+    <h1 class="fdr-archive-head__title" id="fdr-error-title"><?php echo theme_v4_e($fdrTitle); ?></h1>
+    <p class="fdr-archive-head__text theme-v4-error__message"><?php echo theme_v4_e($fdrMessage); ?></p>
+    <?php if ($fdrError['retry_after'] > 0) : ?>
+        <p class="fdr-meta theme-v4-error__retry"><?php echo theme_v4_e(theme_v4_t(
+            'Bitte versuchen Sie es in etwa ' . max(1, (int) ceil($fdrError['retry_after'] / 60)) . ' Minute(n) erneut.',
+            'Please try again in about ' . max(1, (int) ceil($fdrError['retry_after'] / 60)) . ' minute(s).',
+            $fdrLocale
+        )); ?></p>
+    <?php endif; ?>
+    <p class="fdr-error-actions">
+        <a class="fdr-button" href="<?php echo theme_v4_e($fdrHome); ?>"><?php echo theme_v4_e(theme_v4_t('Zur Startseite', 'Back to home', $fdrLocale)); ?></a>
+        <?php if ($fdrBack !== '') : ?>
+            <a class="fdr-button fdr-button--ghost" href="<?php echo theme_v4_e($fdrBack); ?>"><?php echo theme_v4_e(theme_v4_t('Zurück', 'Back', $fdrLocale)); ?></a>
+        <?php endif; ?>
+    </p>
+</section>
+<?php
+if ($fdrError['standalone']) {
+    echo "</main>\n";
+    theme_v4_standalone_close();
+}

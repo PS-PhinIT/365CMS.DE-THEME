@@ -1,9 +1,10 @@
 {
     "name": "Feder",
     "slug": "feder",
-    "version": "1.0.0",
-    "requires_cms": "3.4.00",
-    "requires_php": "8.4",
+    "version": "2.0.0",
+    "requires_cms": "4.0.0",
+    "requires_php": "8.4.1",
+    "tested_up_to": "4.1.0",
     "author": "PHINIT.DE / Andreas Hepp",
     "description": "Lesefokussiertes Blog-Theme für Autor:innen, Essays und persönliche Blogs – Serifen-Typografie (Fraunces + Literata), Papier-Palette mit Bordeaux-Akzent, Hell-/Dunkelmodus, Lesefortschritt, Autorenbox und verwandte Beiträge.",
     "textdomain": "feder",
@@ -19,9 +20,24 @@
         "blog-single": "blog-single.php",
         "page": "page.php",
         "search": "search.php",
+        "contact": "contact.php",
         "404": "404.php",
         "error": "error.php",
         "index": "index.php"
+    },
+    "login_page": {
+        "colors": {
+            "background_start": "#fbf8f3",
+            "background_end": "#efe6d9",
+            "card_background": "#ffffff",
+            "text_color": "#211c19",
+            "muted_color": "#6d6258",
+            "primary_color": "#8e2c3a",
+            "primary_text_color": "#ffffff",
+            "link_color": "#8e2c3a",
+            "input_background": "#ffffff",
+            "input_border": "#8f8173"
+        }
     },
     "menus": {
         "primary": "Hauptnavigation (Header)",
@@ -160,7 +176,7 @@
                 "newsletter_heading": { "label": "Box: Überschrift", "type": "text", "default": "Neue Texte per E-Mail" },
                 "newsletter_text": { "label": "Box: Text", "type": "textarea", "default": "Einmal im Monat eine kurze Mail mit neuen Beiträgen und Leseempfehlungen. Kein Spam, jederzeit abbestellbar." },
                 "newsletter_cta_label": { "label": "Box: Button-Text", "type": "text", "default": "Newsletter abonnieren" },
-                "newsletter_cta_url": { "label": "Box: Button-Link", "type": "text", "default": "/kontakt" }
+                "newsletter_cta_url": { "label": "Box: Button-Link", "type": "text", "default": "/newsletter", "description": "Standard: Core-Newsletter. Der Button erscheint nur, wenn die Seite bzw. das Modul existiert." }
             }
         },
         "feder_article": {
@@ -186,7 +202,17 @@
         "advanced": {
             "label": "Erweitert",
             "settings": {
-                "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und javascript:-URLs werden entfernt." }
+                "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und Script-URLs werden entfernt." }
+            }
+        },
+        "contact": {
+            "label": "Kontakt",
+            "description": "Kontaktdaten neben dem Core-Kontaktformular (/kontakt). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+            "settings": {
+                "contact_email": { "label": "Angezeigte E-Mail-Adresse", "type": "text", "default": "", "description": "Leer = E-Mail aus „Autor:in“, sonst Administrator-Adresse." },
+                "contact_phone": { "label": "Telefon", "type": "text", "default": "" },
+                "contact_address": { "label": "Adresse", "type": "textarea", "default": "" },
+                "contact_hours": { "label": "Erreichbarkeit", "type": "textarea", "default": "" }
             }
         }
     }

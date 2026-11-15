@@ -23,18 +23,18 @@ $recent = feder_get_posts(['limit' => 10]);
 $topics = feder_get_categories();
 ?>
 
-<header class="fd-archive-head fd-measure">
-    <p class="fd-kicker">Übersicht</p>
-    <h1 class="fd-archive-head__title"><?php echo feder_e(feder_site_title()); ?></h1>
+<header class="fdr-archive-head fdr-measure">
+    <p class="fdr-kicker">Übersicht</p>
+    <h1 class="fdr-archive-head__title"><?php echo feder_e(feder_site_title()); ?></h1>
     <?php if (feder_site_description() !== '') : ?>
-        <p class="fd-archive-head__text"><?php echo feder_e(feder_site_description()); ?></p>
+        <p class="fdr-archive-head__text"><?php echo feder_e(feder_site_description()); ?></p>
     <?php endif; ?>
 </header>
 
-<section class="fd-archive fd-measure" aria-label="Inhalte">
+<section class="fdr-archive fdr-measure" aria-label="Inhalte">
     <?php if ($recent !== []) : ?>
-        <h2 class="fd-section-title">Neueste Texte</h2>
-        <ul class="fd-simplelist">
+        <h2 class="fdr-section-title">Neueste Texte</h2>
+        <ul class="fdr-simplelist">
             <?php foreach ($recent as $item) : ?>
                 <li>
                     <a href="<?php echo feder_e(feder_post_link($item)); ?>"><?php echo feder_e((string) ($item->title ?? '')); ?></a>
@@ -45,15 +45,15 @@ $topics = feder_get_categories();
     <?php endif; ?>
 
     <?php if ($topics !== []) : ?>
-        <h2 class="fd-section-title">Themen</h2>
-        <ul class="fd-chips">
+        <h2 class="fdr-section-title">Themen</h2>
+        <ul class="fdr-chips">
             <?php foreach ($topics as $topic) : ?>
-                <li><a class="fd-chip" href="<?php echo feder_e($topic['url']); ?>"><?php echo feder_e($topic['name']); ?><span class="fd-chip__count"><?php echo (int) $topic['count']; ?></span></a></li>
+                <li><a class="fdr-chip" href="<?php echo feder_e($topic['url']); ?>"><?php echo feder_e($topic['name']); ?><span class="fdr-chip__count"><?php echo (int) $topic['count']; ?></span></a></li>
             <?php endforeach; ?>
         </ul>
     <?php endif; ?>
 
     <?php if ($recent === [] && $topics === []) : ?>
-        <p class="fd-empty">Hier gibt es noch keine Inhalte.</p>
+        <p class="fdr-empty">Hier gibt es noch keine Inhalte.</p>
     <?php endif; ?>
 </section>
