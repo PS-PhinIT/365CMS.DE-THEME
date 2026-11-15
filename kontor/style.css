@@ -4,10 +4,10 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: Business-Theme für Mittelstand, Kanzleien, Beratungen und Dienstleister – Tannengrün mit Mint-Akzent, Manrope-Typografie, vollständig pflegbare Startseite (Hero, Leistungen, Über uns, Kennzahlen, Ablauf, Referenz, FAQ, Aktuelles, Kontakt-CTA) und seriöse Unterseiten mit Kontaktkarte.
-Version: 1.0.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
-Tested up to CMS: 3.4.00
+Version: 2.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GPL-2.0-or-later
 Text Domain: kontor
 Tags: business, unternehmen, mittelstand, beratung, kanzlei, dienstleister, corporate, responsive
@@ -107,8 +107,10 @@ a:hover {
     color: var(--kt-primary-hover);
 }
 
+/* Fokus auf hellen Flächen in Tannengrün-Tinte (14,4:1 auf Weiß); Mint erreichte dort nur 1,8:1 (WCAG 1.4.11
+   verlangt 3:1). Auf dunklen Flächen (Hero, Kontaktleiste, CTA-Band, Footer …) Weiß, s. Abschnitt Barrierefreiheit. */
 :focus-visible {
-    outline: 3px solid var(--kt-accent);
+    outline: 3px solid var(--kt-ink);
     outline-offset: 3px;
 }
 
@@ -2513,4 +2515,55 @@ address {
         font-size: 0.8em;
         word-break: break-all;
     }
+}
+
+/* ==========================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die Kontor-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites,
+   Inhaltsverzeichnis, Login-Showcase). Die Werte verweisen auf die --kt-*-Tokens
+   und folgen damit dem Customizer. Kontor hat keinen Dunkelmodus.
+   ========================================================================== */
+:root {
+    --tv4-primary: var(--kt-primary);
+    --tv4-primary-hover: var(--kt-primary-hover);
+    --tv4-on-primary: #ffffff;              /* 6,5:1 auf Tannengrün */
+    --tv4-link: var(--kt-primary);
+    --tv4-text: var(--kt-text);
+    --tv4-muted: var(--kt-muted);
+    --tv4-bg: var(--kt-paper);
+    --tv4-surface: var(--kt-paper);
+    --tv4-surface-alt: var(--kt-sand);
+    --tv4-border: var(--kt-border);
+    --tv4-border-strong: var(--kt-muted);   /* 5,6:1 auf Weiß */
+    --tv4-radius: var(--kt-radius);
+    --tv4-btn-radius: 999px;                /* Pillenform wie .kt-button */
+    --tv4-focus: var(--kt-ink);             /* 14,4:1 auf Weiß */
+    --tv4-font-body: var(--kt-font-body);
+    --tv4-font-heading: var(--kt-font-head);
+    --tv4-hero-start: var(--kt-ink);
+    --tv4-hero-end: var(--kt-primary);
+    --tv4-max: var(--kt-container);
+}
+
+/* Core-Module (Knowledgebase, Newsletter) im Kontor-Rahmen. Der Header ist sticky (nicht fixiert) und
+   verdrängt den Inhalt selbst; Sprungmarken berücksichtigt bereits scroll-padding-top. */
+.theme-v4-module {
+    width: min(100% - 2 * var(--kt-gutter), var(--kt-container));
+    margin-inline: auto;
+    padding-block: clamp(2.5rem, 1.5rem + 3vw, 4.5rem);
+}
+
+/* Kontaktseite */
+.kt-contactpage {
+    padding-block: clamp(2.5rem, 1.5rem + 3vw, 4.5rem);
+}
+
+.theme-v4-contact__aside h2 {
+    font-family: var(--kt-font-head);
+    color: var(--kt-ink);
+}
+
+body.error-standalone .kt-main {
+    width: 100%;
 }

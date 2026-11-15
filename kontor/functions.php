@@ -15,27 +15,39 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('KONTOR_THEME_VERSION')) {
-    define('KONTOR_THEME_VERSION', '1.0.0');
+    define('KONTOR_THEME_VERSION', '2.0.0');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 final class Kontor_Theme
 {
     public const SLUG = 'kontor';
 
     /**
-     * Schriftwahl → [CSS-Stack, Google-Fonts-Familie (leer = keine Webfont), Font-Manager-Slug].
+     * Schriftwahl → [CSS-Stack, Font-Manager-Slug (leer = Systemschrift)].
      *
-     * @var array<string, array{0:string,1:string,2:string}>
+     * Webfonts liefert ausschließlich die Core-Schriftverwaltung (Filter local_font_slugs); ohne lokale
+     * Schriftdatei greift der System-Fallback des Stacks. Keine Requests an Google Fonts.
+     *
+     * @var array<string, array{0:string,1:string}>
      */
     private const FONTS = [
-        'manrope'           => ['"Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'Manrope:wght@400..800', 'manrope'],
-        'plus-jakarta-sans' => ['"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif', 'Plus+Jakarta+Sans:wght@400..800', 'plus-jakarta-sans'],
-        'sora'              => ['"Sora", system-ui, -apple-system, "Segoe UI", sans-serif', 'Sora:wght@400..800', 'sora'],
-        'montserrat'        => ['"Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif', 'Montserrat:wght@400..800', 'montserrat'],
-        'source-serif'      => ['"Source Serif 4", Georgia, "Times New Roman", serif', 'Source+Serif+4:ital,opsz,wght@0,8..60,400..700;1,8..60,400..700', 'source-serif-4'],
-        'inter'             => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'Inter:wght@400;500;600;700', 'inter'],
-        'source-sans'       => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", sans-serif', 'Source+Sans+3:wght@400;600;700', 'source-sans'],
-        'system'            => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', '', ''],
+        'manrope'           => ['"Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'manrope'],
+        'plus-jakarta-sans' => ['"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'plus-jakarta-sans'],
+        'sora'              => ['"Sora", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'sora'],
+        'montserrat'        => ['"Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'montserrat'],
+        'source-serif'      => ['"Source Serif 4", ui-serif, Georgia, Cambria, "Times New Roman", serif', 'source-serif-4'],
+        'inter'             => ['"Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'inter'],
+        'source-sans'       => ['"Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', 'source-sans'],
+        'system'            => ['system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif', ''],
     ];
 
     private static ?self $instance = null;
@@ -51,21 +63,29 @@ final class Kontor_Theme
 
     private function __construct()
     {
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Shell und löst ebenfalls `head` aus:
+        // dort keine Frontend-Assets, nur die Kontor-Palette als --member-*-Variablen.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'], 1);
-        \CMS\Hooks::addAction('head', [$this, 'outputFonts'], 5);
-        \CMS\Hooks::addAction('head', [$this, 'outputSeoTags'], 8);
+        \CMS\Hooks::addAction('head', [$this, 'outputCustomHeaderCode'], 8);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'], 10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 16);
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'], 99);
-
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
-        \CMS\Hooks::addFilter('local_font_slugs', [$this, 'localFontSlugs']);
     }
 
     public function enqueueStyles(): void
     {
-        $href = $this->themeUrl() . '/style.css?v=' . rawurlencode(KONTOR_THEME_VERSION);
-        echo '<link rel="stylesheet" href="' . kontor_e($href) . '">' . "\n";
+        $version = rawurlencode(KONTOR_THEME_VERSION);
+        echo '<link rel="stylesheet" href="' . kontor_e($this->themeUrl() . '/style.css?v=' . $version) . '">' . "\n";
+        // Gemeinsame 4.x-Integrationsstile (Downloads, Feeds, Formulare, KB, Newsletter) nach dem Theme-Stylesheet.
+        echo '<link rel="stylesheet" href="' . kontor_e($this->themeUrl() . '/css/cms-v4.css?v=' . $version) . '">' . "\n";
     }
 
     public function enqueueScripts(): void
@@ -74,30 +94,9 @@ final class Kontor_Theme
         echo '<script src="' . kontor_e($src) . '" defer></script>' . "\n";
     }
 
-    public function outputFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet über local_font_slugs lokal gespeicherte Schriften ein (DSGVO).
-        }
-
-        $families = [];
-        foreach ($this->selectedFontKeys() as $key) {
-            $family = self::FONTS[$key][1] ?? '';
-            if ($family !== '') {
-                $families[$family] = true;
-            }
-        }
-        if ($families === []) {
-            return;
-        }
-
-        $url = 'https://fonts.googleapis.com/css2?family=' . implode('&family=', array_keys($families)) . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . kontor_e($url) . '">' . "\n";
-    }
-
     /**
+     * Lokale Schriften der Core-Schriftverwaltung für die gewählten Schriften (keine Google-Fonts-Requests).
+     *
      * @param mixed $slugs
      * @return array<int, string>
      */
@@ -105,7 +104,7 @@ final class Kontor_Theme
     {
         $slugs = is_array($slugs) ? $slugs : [];
         foreach ($this->selectedFontKeys() as $key) {
-            $slug = self::FONTS[$key][2] ?? '';
+            $slug = self::FONTS[$key][1] ?? '';
             if ($slug !== '') {
                 $slugs[] = $slug;
             }
@@ -114,30 +113,39 @@ final class Kontor_Theme
         return array_values(array_unique(array_map('strval', $slugs)));
     }
 
-    public function outputSeoTags(): void
+    /**
+     * Eigener Header-Code aus SEO → Technik (Altbestand; laut Core weiterhin in jedem <head>).
+     * Beschreibung, Robots, Canonical, Open Graph und JSON-LD gibt header.php über theme_v4_head_tags() aus.
+     */
+    public function outputCustomHeaderCode(): void
     {
-        $html = '';
         try {
             if (class_exists('\\CMS\\Services\\SEOService')) {
-                $seo = \CMS\Services\SEOService::getInstance();
-                $html = (string) $seo->renderCurrentHeadTags();
-                $custom = trim((string) $seo->getCustomHeaderCode());
+                $custom = trim((string) \CMS\Services\SEOService::getInstance()->getCustomHeaderCode());
                 if ($custom !== '') {
-                    $html .= $custom . "\n";
+                    echo $custom . "\n"; // Vom Administrator gepflegter Head-Code, bewusst unverändert.
                 }
             }
         } catch (\Throwable) {
-            $html = '';
         }
+    }
 
-        if (trim($html) === '') {
-            $description = kontor_site_description();
-            if ($description !== '') {
-                $html = '<meta name="description" content="' . kontor_e($description) . '">' . "\n";
-            }
-        }
+    /** Memberbereich (inkl. Newsletter-Widget) in der Kontor-Palette (das Theme hat keinen Dunkelmodus). */
+    public function outputMemberTokens(): void
+    {
+        $c = static fn(string $key, string $default): string => kontor_css_color((string) kontor_setting('colors', $key, $default), $default);
 
-        echo $html;
+        echo theme_v4_member_tokens_style([
+            'primary'    => $c('primary_color', '#156b52'),
+            'accent'     => $c('ink_color', '#0e2f28'),
+            'bg'         => $c('sand_color', '#f5f2eb'),
+            'card_bg'    => $c('paper_color', '#ffffff'),
+            'text'       => $c('text_color', '#1c2b27'),
+            'text_muted' => $c('muted_color', '#5a6b65'),
+            'border'     => $c('border_color', '#e3e6e1'),
+            'radius'     => kontor_css_number(kontor_setting('layout', 'border_radius', 14), 14, 0, 28) . 'px',
+            'font'       => $this->fontStack((string) kontor_setting('typography', 'font_body', 'manrope'), 'manrope'),
+        ]);
     }
 
     public function outputMetaTags(): void
@@ -725,17 +733,24 @@ if (!function_exists('kontor_get_categories')) {
     /** @return array<int, array{id:int,name:string,slug:string,count:int,url:string}> */
     function kontor_get_categories(): array
     {
-        try {
-            $db = \CMS\Database::instance();
-            $prefix = $db->getPrefix();
-            $rows = $db->get_results(
-                "SELECT c.id, c.name, c.slug,
-                        (SELECT COUNT(*) FROM {$prefix}posts p WHERE p.category_id = c.id AND " . cms_post_publication_where('p') . ") AS post_count
-                 FROM {$prefix}post_categories c
-                 ORDER BY c.sort_order ASC, c.name ASC"
-            ) ?: [];
-        } catch (\Throwable) {
-            return [];
+        // Eine Abfrage je Request: JOIN + GROUP BY statt einer Zählabfrage je Kategorie;
+        // nur veröffentlichte Beiträge (4.1.0: `pending` zählt nicht).
+        static $rows = null;
+        if ($rows === null) {
+            try {
+                $db = \CMS\Database::instance();
+                $prefix = $db->getPrefix();
+                $rows = $db->get_results(
+                    "SELECT c.id, c.name, c.slug, c.sort_order, COUNT(p.id) AS post_count
+                     FROM {$prefix}post_categories c
+                     INNER JOIN {$prefix}posts p ON p.category_id = c.id AND " . cms_post_publication_where('p') . "
+                     GROUP BY c.id, c.name, c.slug, c.sort_order
+                     ORDER BY c.sort_order ASC, c.name ASC",
+                    []
+                ) ?: [];
+            } catch (\Throwable) {
+                $rows = [];
+            }
         }
 
         $items = [];
@@ -783,9 +798,15 @@ if (!function_exists('kontor_post_tags')) {
 
 if (!function_exists('kontor_nav_menu')) {
     /**
+     * Menü als Liste. Ohne gepflegtes Menü greift $fallback; Standardlinks erscheinen nur, wenn ihr Ziel als
+     * Route oder veröffentlichte Seite existiert (365CMS 4.0.0).
+     *
+     * Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den Menüeinträgen die Einträge der
+     * Core-Module (Hook `main_nav`: Downloads, Knowledgebase, Newsletter) – auch bei leerem Menü.
+     *
      * @param array<int, array{label:string,url:string}> $fallback
      */
-    function kontor_nav_menu(string $location, string $class = '', array $fallback = []): void
+    function kontor_nav_menu(string $location, string $class = '', array $fallback = [], string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
@@ -793,9 +814,16 @@ if (!function_exists('kontor_nav_menu')) {
             $items = [];
         }
         if (!is_array($items) || $items === []) {
-            $items = $fallback;
+            $items = theme_v4_filter_links($fallback);
         }
-        if ($items === []) {
+
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'is-active']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
@@ -829,6 +857,7 @@ if (!function_exists('kontor_nav_menu')) {
 
             echo '<li' . ($isActive ? ' class="is-active"' : '') . '><a href="' . kontor_e($href) . '"' . $attrs . '>' . kontor_e($label) . '</a></li>';
         }
+        echo $coreItems; // Core-HTML aus theme_v4_main_nav() (Links des Cores, bereits escaped)
         echo '</ul>';
     }
 }
@@ -849,6 +878,7 @@ if (!function_exists('kontor_default_menu')) {
                 ['label' => 'Über uns', 'url' => '/ueber-uns'],
                 ['label' => 'Aktuelles', 'url' => '/blog'],
                 ['label' => 'Kontakt', 'url' => '/kontakt'],
+                ['label' => 'Newsletter', 'url' => '/newsletter'],
                 ['label' => 'Suche', 'url' => '/search'],
             ],
             'footer-legal' => [
@@ -936,7 +966,8 @@ if (!function_exists('kontor_button')) {
     function kontor_button(string $label, string $url, string $variant = 'primary', bool $arrow = false): string
     {
         $safe = kontor_safe_url($url, '');
-        if ($label === '' || $safe === '') {
+        // Interne Ziele (Standard z. B. /kontakt, /ueber-uns) nur verlinken, wenn Route bzw. Seite existiert (365CMS 4.0.0).
+        if ($label === '' || $safe === '' || !theme_v4_link_available(kontor_url($safe))) {
             return '';
         }
         $href = kontor_url($safe, kontor_is_home_request());
@@ -1009,6 +1040,23 @@ if (!function_exists('kontor_search_form')) {
     }
 }
 
+if (!function_exists('kontor_img')) {
+    /**
+     * Bild über theme_v4_img(): width/height (echte Maße lokaler Uploads, sonst die Layout-Maße),
+     * `loading="lazy"` bzw. für das LCP-Bild `fetchpriority="high"` und Fokus-Punkt (4.1.0).
+     *
+     * @param array{class?:string,lcp?:bool,item?:mixed,sizes?:string} $options
+     */
+    function kontor_img(string $src, string $alt, array $options = [], int $width = 0, int $height = 0): string
+    {
+        if ($width > 0 && $height > 0) {
+            [$options['width'], $options['height']] = theme_v4_image_dimensions($src) ?? [$width, $height];
+        }
+
+        return theme_v4_img($src, $alt, $options);
+    }
+}
+
 if (!function_exists('kontor_post_card')) {
     function kontor_post_card(object $post, string $headingTag = 'h3'): void
     {
@@ -1022,7 +1070,7 @@ if (!function_exists('kontor_post_card')) {
         <article class="kt-postcard">
             <a class="kt-postcard__media<?php echo $image === '' ? ' kt-postcard__media--empty' : ''; ?>" href="<?php echo kontor_e($url); ?>" tabindex="-1" aria-hidden="true">
                 <?php if ($image !== '') : ?>
-                    <img src="<?php echo kontor_e($image); ?>" alt="" width="640" height="400" loading="lazy" decoding="async">
+                    <?php echo kontor_img($image, '', ['item' => $post], 640, 400); ?>
                 <?php else : ?>
                     <?php echo kontor_icon('document', 'kt-postcard__placeholder'); ?>
                 <?php endif; ?>
@@ -1073,8 +1121,16 @@ if (!function_exists('kontor_contact_card')) {
 }
 
 if (!function_exists('kontor_page_title')) {
+    /**
+     * Dokumenttitel: übergebener Seitentitel (`$title` der Core-Module, Kontakt- und Fehlerseiten),
+     * sonst SEO-Titel für Inhalte, sonst „Bezeichnung – Seitentitel“ (über den Filter page_title).
+     */
     function kontor_page_title(array $context): string
     {
+        if (isset($context['title']) && is_string($context['title']) && trim($context['title']) !== '') {
+            return theme_v4_document_title($context['title']);
+        }
+
         $site = kontor_site_title();
         $label = '';
 
@@ -1134,25 +1190,13 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /**
+     * true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL).
+     * Kontor lädt in keinem Fall Google Fonts; die Funktion bleibt für Plugins/Child-Code erhalten.
+     */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

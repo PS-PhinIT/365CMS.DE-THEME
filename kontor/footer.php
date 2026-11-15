@@ -71,14 +71,20 @@ $services = kontor_services();
             <?php kontor_nav_menu('footer-nav', 'kt-footer__list', kontor_default_menu('footer-nav')); ?>
         </nav>
 
+        <?php
+        $serviceFallback = array_map(static fn(array $s): array => ['label' => $s['title'], 'url' => $s['url'] !== '' ? $s['url'] : '/#leistungen'], array_slice($services, 0, 6));
+        ob_start();
+        kontor_nav_menu('footer-services', 'kt-footer__list', $serviceFallback);
+        $serviceNav = (string) ob_get_clean();
+        ?>
+        <?php if ($serviceNav !== '') : // leere Spalte ausblenden ?>
         <nav class="kt-footer__col" aria-label="Leistungen">
             <h2 class="kt-footer__title">Leistungen</h2>
-            <?php
-            $serviceFallback = array_map(static fn(array $s): array => ['label' => $s['title'], 'url' => $s['url'] !== '' ? $s['url'] : '/#leistungen'], array_slice($services, 0, 6));
-            kontor_nav_menu('footer-services', 'kt-footer__list', $serviceFallback);
-            ?>
+            <?php echo $serviceNav; // bereits escaptes Menü-HTML aus kontor_nav_menu() ?>
         </nav>
+        <?php endif; ?>
 
+        <?php if ($contact['address'] !== [] || $contact['phone_href'] !== '' || $contact['email_href'] !== '' || $contact['hours'] !== []) : // leere Spalte ausblenden ?>
         <div class="kt-footer__col">
             <h2 class="kt-footer__title">Kontakt</h2>
             <ul class="kt-contactlist kt-contactlist--footer">
@@ -96,6 +102,7 @@ $services = kontor_services();
                 <?php endif; ?>
             </ul>
         </div>
+        <?php endif; ?>
     </div>
 
     <div class="kt-footer__bottom">
