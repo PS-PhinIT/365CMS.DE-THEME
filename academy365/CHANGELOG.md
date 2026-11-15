@@ -1,5 +1,41 @@
 # Changelog
 
+## 4.0.0 - 2026-11-15
+
+### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
+
+Setzt 365CMS 4.0.0 und PHP 8.4.1 voraus (`requires_cms`, `tested_up_to: 4.1.0`, `requires_php`).
+
+#### Core-Verträge 4.0.0
+- `error.php` wertet `$error_code` (Fallback `$errorCode`), `$error_title`, `$error_message`, `$error_standalone` und `$error_retry_after` aus. 403-, 429- und 503-Seiten antworten mit ihrem Status statt mit HTTP 500; eigenständige Fehler- und Wartungsseiten sind vollständige Dokumente mit Theme-Stylesheet (ohne Header, Hooks und Datenbank), bei 429/503 mit `Retry-After`.
+- Die Hauptnavigation löst den Core-Hook `main_nav` direkt nach den Menüeinträgen aus (Downloads, Knowledgebase, Newsletter). Die Navigation ist für Desktop und Mobil dieselbe, deshalb einmal mit dem Kontext `desktop`.
+- Menüeinträge zeigen die Beschriftung aus `title` (der Core liefert `title`, das Theme las nur `label`), der aktive Eintrag trägt `aria-current="page"`.
+- `theme_use_local_fonts()` liest `privacy_use_local_fonts` über den `OptionStore` statt per SQL.
+
+#### Vorlagen und Core-Module
+- Neu: `contact.php` gibt das Core-Formular (`$contactFormHtml`) mit Kontaktdaten aus dem neuen Customizer-Bereich „Kontakt“ aus.
+- Neu: `knowledgebase/archive.php`, `knowledgebase/single.php`, `newsletter/page.php`, `newsletter/action.php`, `newsletter/issue.php` binden die Core-Views ein und setzen sie in den Theme-Rahmen (Skip-Link-Ziel `#main`, kein doppeltes `<main>`); `show_category_sidebar`, CSRF und Honeypot bleiben Sache des Cores.
+- Neu: `css/cms-v4.css` (gemeinsam mit allen Public Themes) und die Token-Brücke `--tv4-*` in `style.css`: Downloads inkl. Block-Layout `button`, Feeds, Formulare, Hub-Sites, `cms-media-credit`, Editor.js-Bild/-Medien-Text/-Zitat/-Button, Inhaltsverzeichnis (`show_title_toc`), wiederverwendbare Blöcke.
+- Neu: `includes/cms-v4-compat.php` mit den Helfern `theme_v4_*` (Fehlerseiten, `main_nav`, Standardlinks, OptionStore, SEO/Vorschau, Logout-Formular, Fokus-Punkt, Memberbereich).
+- Fußzeile und 404-Seite verlinken nur noch vorhandene Seiten und Routen (z. B. `/courses`, `/newsletter`, `/barrierefreiheit` nur, wenn veröffentlicht bzw. aktiv). Logo-Fallback `site_logo`, Favicon `site_favicon`.
+
+#### 4.1.0
+- Memberbereich und Newsletter-Widget übernehmen die Theme-Palette über `member_head` (`--member-*`); im Admin geänderte Member-Farben haben Vorrang. Das Frontend-Stylesheet wird in der Member-Shell nicht mehr geladen.
+- Login: Farbvorschlag `login_page.colors` in `theme.json` für die Core-Loginseite und den Login-Showcase; Showcase-Stile für den Legacy-Modus in `css/cms-v4.css`.
+- Beitragsbild mit Fokus-Punkt (`object-position` aus `focal_x`/`focal_y` bzw. Filter `cms_media_focal_point`).
+- Vorschau-Links (`$isPreview`) und nicht veröffentlichte Inhalte: `noindex, nofollow`, keine JSON-LD-Ausgabe, Hinweisleiste.
+
+#### Sicherheit, Datenschutz, Performance
+- Keine Google-Fonts-Requests mehr; Schriften kommen aus der Core-Schriftverwaltung, sonst System-Font-Stack.
+- Core-SEO-Ausgabe (`SEOService::renderCurrentHeadTags()`) statt nur Site-Titel/-Beschreibung: Seitentitel, Canonical, Robots, Open Graph, JSON-LD.
+- `cms_csp_runtime_tags(true)` als erstes Script im `<head>`; Navigation weiter per `defer`.
+- Beitragsbild als LCP-Bild mit `width`/`height` und `fetchpriority="high"` statt `loading="lazy"`.
+
+#### Barrierefreiheit
+- Kontraste: Badge-Texte (bisher 2,0–3,4:1), Standard-Muted-Farbe (`#9ca3af`, 2,4:1 → `#6b7280`, 4,5:1) und Fokusrahmen (Gold 2,2:1 → Indigo 9:1, auf dunklen Flächen Gold 7,4:1).
+- Fußzeilen-Überschriften `h2` statt `h4` (keine übersprungenen Ebenen), `aria-controls` an Menü- und Suchschalter, `html lang` nach Inhaltssprache.
+- `supports` ohne `dark-mode`: Das Theme hat keinen Dark Mode.
+
 ## 3.1.0 - 2026-09-26
 
 ### Kompatibilität mit 365CMS 3.4.00 (CSP, Trusted Types, Layout-Hooks)

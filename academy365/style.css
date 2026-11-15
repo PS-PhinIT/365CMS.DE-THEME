@@ -4,9 +4,10 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://365cms.de
 Description: Bildung & Weiterbildung Theme. Violett als Lern-Identität, Gold als Zertifikat-Akzent, dunkles Indigo als Wissenstiefe.
-Version: 3.1.0
-Requires PHP: 8.4
-Requires CMS: 3.4.00
+Version: 4.0.0
+Requires PHP: 8.4.1
+Requires CMS: 4.0.0
+Tested up to: 4.1.0
 License: GNU General Public License v2 or later
 */
 
@@ -36,7 +37,7 @@ License: GNU General Public License v2 or later
     --text-primary:     #1e1b4b;
     --text-secondary:   #374151;
     --link-color:       #7c3aed;
-    --muted-color:      #9ca3af;
+    --muted-color:      #6b7280;   /* 4.5:1 auf --bg-primary (WCAG AA) */
     --border-color:     #ddd6fe;
 
     --badge-free:       #10b981;
@@ -66,8 +67,8 @@ License: GNU General Public License v2 or later
     --shadow-md:        0 10px 26px rgba(91,33,182,.14);
     --shadow-gold:      0 8px 24px rgba(245,158,11,.18);
 
-    --font-body:        "Open Sans", sans-serif;
-    --font-heading:     Raleway, sans-serif;
+    --font-body:        "Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-heading:     Raleway, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
     --font-ui:          "Plus Jakarta Sans", sans-serif;
     --font-size-base:   16px;
     --line-height-base: 1.7;
@@ -106,7 +107,7 @@ License: GNU General Public License v2 or later
     --btn-weight:       700;
     --btn-transform:    none;
 
-    --focus-ring:       #f59e0b;
+    --focus-ring:       #5b21b6;   /* Indigo: 9:1 auf Weiß; auf dunklen Flächen Gold (s. Fokus-Regeln) */
 }
 
 /* ================================================================
@@ -134,6 +135,10 @@ ul  { list-style: none; }
     outline-offset: 2px;
     border-radius: 4px;
 }
+/* Auf dunklen Flächen (Hero, CTA, Footer) Gold statt Indigo – jeweils mindestens 3:1 (WCAG 1.4.11) */
+.ac-hero :focus-visible,
+.ac-cta-section :focus-visible,
+.ac-site-footer :focus-visible { outline-color: var(--accent-color); }
 
 /* ================================================================
    3. Layout
@@ -362,9 +367,10 @@ ul  { list-style: none; }
     font-size: var(--font-xs); font-weight: 700; font-family: var(--font-ui);
     background: var(--bg-secondary);
 }
-.ac-badge--free      { background: #ecfdf5; color: var(--badge-free); }
-.ac-badge--cert      { background: #fffbeb; color: var(--badge-cert); }
-.ac-badge--new       { background: #eff6ff; color: var(--badge-new); }
+/* Textfarben abgedunkelt: Badge-Grundfarben erreichten auf hellem Grund nur 2–3,4:1 (WCAG AA verlangt 4,5:1) */
+.ac-badge--free      { background: #ecfdf5; color: #047857; }
+.ac-badge--cert      { background: #fffbeb; color: #92400e; }
+.ac-badge--new       { background: #eff6ff; color: #1d4ed8; }
 .ac-badge--bestseller{ background: #f5f3ff; color: var(--badge-best); }
 
 /* Rating: visual 5-star bar driven by --rating (0..5) set via JS */
@@ -506,6 +512,7 @@ ul  { list-style: none; }
 }
 .ac-site-footer h3,
 .ac-site-footer h4,
+.ac-site-footer .ac-footer-heading,
 .ac-footer h3,
 .ac-footer h4 { color: #fff; font-family: var(--font-heading); font-weight: 700; margin-bottom: .75rem; }
 .ac-site-footer a,
@@ -565,3 +572,35 @@ ul  { list-style: none; }
 .cms-pagination { display: flex; align-items: center; justify-content: center; gap: 1rem; margin: 2rem 0 0; flex-wrap: wrap; }
 form[role="search"] { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0 2rem; }
 form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; padding: .65rem .9rem; border: 1px solid currentColor; border-radius: 6px; font: inherit; background: transparent; color: inherit; }
+
+/* ================================================================
+   365CMS 4.x Token-Brücke
+   Übergibt die Academy365-Palette an css/cms-v4.css und damit an die Core-Module
+   (Downloads, Knowledgebase/Glossar, Newsletter, Feeds, Formulare, Hub-Sites, Inhaltsverzeichnis).
+   ================================================================ */
+:root {
+    --tv4-primary:        var(--primary-color);
+    --tv4-primary-hover:  var(--primary-dark);
+    --tv4-on-primary:     #ffffff;
+    --tv4-link:           var(--primary-dark);
+    --tv4-text:           var(--text-primary);
+    --tv4-muted:          var(--muted-color);
+    --tv4-bg:             var(--bg-primary);
+    --tv4-surface:        var(--bg-card);
+    --tv4-surface-alt:    #f5f3ff;
+    --tv4-border:         var(--border-color);
+    --tv4-border-strong:  #a78bfa;
+    --tv4-radius:         var(--radius-md, 12px);
+    --tv4-btn-radius:     var(--btn-radius, 8px);
+    --tv4-focus:          var(--focus-ring, #5b21b6);
+    --tv4-font-body:      var(--font-body);
+    --tv4-font-heading:   var(--font-heading);
+    --tv4-hero-start:     var(--hero-depth);
+    --tv4-hero-end:       var(--hero-brand);
+    --tv4-max:            var(--container-max, 1240px);
+}
+.ac-site-footer .ac-footer-heading { font-size: 1rem; letter-spacing: .01em; }
+.theme-v4-module { max-width: var(--container-max, 1240px); margin-inline: auto; padding: 2rem var(--content-padding, 1.5rem) 3rem; }
+.theme-v4-module .cms-newsletter,
+.theme-v4-module .cms-kb-content { padding-top: 0; }
+

@@ -62,13 +62,11 @@
   if (searchToggle && searchPanel) {
     const openSearch = () => {
       searchPanel.hidden = false;
-      searchPanel.setAttribute('aria-hidden', 'false');
       searchToggle.setAttribute('aria-expanded', 'true');
       if (searchInput) setTimeout(() => searchInput.focus(), 50);
     };
     const closeSearch = () => {
       searchPanel.hidden = true;
-      searchPanel.setAttribute('aria-hidden', 'true');
       searchToggle.setAttribute('aria-expanded', 'false');
       searchToggle.focus();
     };

@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('ACADEMY365_THEME_VERSION')) {
-    define('ACADEMY365_THEME_VERSION', '3.1.0');
+    define('ACADEMY365_THEME_VERSION', '4.0.0');
 }
 if (!defined('ACADEMY365_THEME_SLUG')) {
     define('ACADEMY365_THEME_SLUG', 'academy365');
@@ -14,17 +14,53 @@ if (!defined('THEME_VERSION')) {
     define('THEME_VERSION', ACADEMY365_THEME_VERSION);
 }
 
+// 365CMS 4.x: header.php öffnet kein <main>; die Templates setzen <main id="main"> selbst.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', false);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
+
 final class Academy365_Theme {
     private static ?self $instance = null;
     public static function instance(): self { if (self::$instance === null) self::$instance = new self(); return self::$instance; }
     private function __construct() { $this->registerHooks(); }
 
     private function registerHooks(): void {
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Tabler-Shell und löst ebenfalls `head` aus:
+        // dort kein Frontend-Stylesheet, sondern nur die Theme-Palette als --member-*-Variablen.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         \CMS\Hooks::addAction('head',          [$this, 'enqueueStyles'],         3);
-        \CMS\Hooks::addAction('head',          [$this, 'outputGoogleFonts'],     5);
         \CMS\Hooks::addAction('head',          [$this, 'outputCustomStyles'],   15);
         \CMS\Hooks::addAction('before_footer', [$this, 'outputNavigationScript'],99);
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+    }
+
+    /** Memberdashboard (inkl. Newsletter-Widget) in der Academy365-Palette. */
+    public function outputMemberTokens(): void {
+        try { $c = \CMS\Services\ThemeCustomizer::instance(); } catch (\Throwable) { $c = null; }
+        $color = static function (string $key, string $default) use ($c): string {
+            return academy365_css_color($c ? (string) $c->get('colors', $key, $default) : $default, $default);
+        };
+        echo theme_v4_member_tokens_style([
+            'primary'    => $color('primary_color', '#7c3aed'),
+            'accent'     => $color('accent_color', '#f59e0b'),
+            'bg'         => $color('bg_color', '#faf5ff'),
+            'card_bg'    => $color('card_bg_color', '#ffffff'),
+            'text'       => $color('text_color', '#1e1b4b'),
+            'text_muted' => $color('muted_color', '#6b7280'),
+            'border'     => $color('border_color', '#e9d5ff'),
+            'focus'      => '#5b21b6',
+            'radius'     => '12px',
+            'font'       => '"Open Sans", system-ui, -apple-system, "Segoe UI", sans-serif',
+        ]);
     }
 
     /**
@@ -42,35 +78,27 @@ final class Academy365_Theme {
     }
 
     public function enqueueStyles(): void {
-        $baseUrl   = \CMS\ThemeManager::instance()->getThemeUrl('academy365');
+        $baseUrl   = \CMS\ThemeManager::instance()->getThemeUrl();
         $styleUrl  = htmlspecialchars($baseUrl . '/style.css?v=' . ACADEMY365_THEME_VERSION, ENT_QUOTES, 'UTF-8');
-        echo '<link rel="preload" href="' . $styleUrl . '" as="style">' . "\n";
+        $v4Url     = htmlspecialchars($baseUrl . '/css/cms-v4.css?v=' . ACADEMY365_THEME_VERSION, ENT_QUOTES, 'UTF-8');
         echo '<link rel="stylesheet" href="' . $styleUrl . '">' . "\n";
-    }
-
-    public function outputGoogleFonts(): void {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $fonts = 'Open+Sans:wght@400;600;700&family=Raleway:wght@700;800;900&family=Plus+Jakarta+Sans:wght@400;500;700';
-        echo '<link rel="preconnect" href="' . htmlspecialchars('https://fonts.googleapis.com', ENT_QUOTES, 'UTF-8') . '">' . "\n";
-        echo '<link rel="preconnect" href="' . htmlspecialchars('https://fonts.gstatic.com', ENT_QUOTES, 'UTF-8') . '" crossorigin>' . "\n";
-        $url = 'https://fonts.googleapis.com/css2?family=' . $fonts . '&display=swap';
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        echo '<link rel="stylesheet" href="' . $v4Url . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greift der System-Font-Stack aus style.css.
     }
 
     private function mapFontChoice(string $fontChoice, string $fallback): string
     {
         return match ($fontChoice) {
-            'open-sans'         => '"Open Sans", sans-serif',
-            'inter'             => 'Inter, sans-serif',
-            'lato'              => 'Lato, sans-serif',
-            'nunito-sans'       => '"Nunito Sans", sans-serif',
-            'raleway'           => 'Raleway, sans-serif',
-            'poppins'           => 'Poppins, sans-serif',
-            'nunito'            => 'Nunito, sans-serif',
-            'montserrat'        => 'Montserrat, sans-serif',
-            'plus-jakarta-sans' => '"Plus Jakarta Sans", sans-serif',
+            'open-sans'         => '"Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'inter'             => 'Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'lato'              => 'Lato, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'nunito-sans'       => '"Nunito Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'raleway'           => 'Raleway, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'poppins'           => 'Poppins, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'nunito'            => 'Nunito, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'montserrat'        => 'Montserrat, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+            'plus-jakarta-sans' => '"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
             default             => $fallback,
         };
     }
@@ -96,9 +124,9 @@ final class Academy365_Theme {
         $bodyFontChoice    = (string) $c->get('typography', 'font_family_base',    'open-sans');
         $headingFontChoice = (string) $c->get('typography', 'font_family_heading', 'raleway');
         $displayFontChoice = (string) $c->get('typography', 'font_family_display', 'plus-jakarta-sans');
-        $bodyFont    = $safe($this->mapFontChoice($bodyFontChoice,    '"Open Sans", sans-serif'));
-        $headingFont = $safe($this->mapFontChoice($headingFontChoice, 'Raleway, sans-serif'));
-        $displayFont = $safe($this->mapFontChoice($displayFontChoice, '"Plus Jakarta Sans", sans-serif'));
+        $bodyFont    = $safe($this->mapFontChoice($bodyFontChoice,    '"Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'));
+        $headingFont = $safe($this->mapFontChoice($headingFontChoice, 'Raleway, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'));
+        $displayFont = $safe($this->mapFontChoice($displayFontChoice, '"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'));
 
         // Layout switches
         $stickyHeader  = $bool('layout', 'enable_sticky_header',  true);
@@ -160,7 +188,7 @@ final class Academy365_Theme {
         echo '--btn-weight:'       . $choice('buttons', 'button_font_weight', ['600', '700'], '700') . ';';
         echo '--btn-transform:'    . $choice('buttons', 'button_transform', ['none', 'capitalize'], 'none') . ';';
         // Tokens used by focus rings & sticky header
-        echo '--focus-ring:'       . $color('colors', 'accent_color', '#f59e0b') . ';';
+        echo '--focus-ring:'       . $color('colors', 'secondary_color', '#5b21b6') . ';'; // Gold erreicht auf Weiß nur 2,2:1
         echo '--header-shadow:'    . ($headerShadow ? '0 1px 4px rgba(124,58,237,.08)' : 'none') . ';';
         echo '--header-position:'  . ($stickyHeader ? 'fixed' : 'absolute') . ';';
         echo '}';
@@ -173,7 +201,7 @@ final class Academy365_Theme {
     }
 
     public function outputNavigationScript(): void {
-        $baseUrl = \CMS\ThemeManager::instance()->getThemeUrl('academy365');
+        $baseUrl = \CMS\ThemeManager::instance()->getThemeUrl();
         $jsUrl   = htmlspecialchars($baseUrl . '/js/navigation.js?v=' . ACADEMY365_THEME_VERSION, ENT_QUOTES, 'UTF-8');
         echo '<script src="' . $jsUrl . '" defer></script>' . "\n";
     }
@@ -296,33 +324,39 @@ if (!function_exists('theme_route_url')) {
 }
 
 if (!function_exists('theme_nav_menu')) {
-    function theme_nav_menu(string $location): void
+    /**
+     * Menü einer Position als Liste. Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den
+     * Menüeinträgen die optionalen Einträge der Core-Module (Hook `main_nav`: Downloads, Knowledgebase, Newsletter).
+     */
+    function theme_nav_menu(string $location, string $mainNavContext = ''): void
     {
         try {
             $items = \CMS\ThemeManager::instance()->getMenu($location);
         } catch (\Throwable) {
             $items = [];
         }
-        if ($items === []) {
+
+        $coreItems = '';
+        if ($mainNavContext !== '' && function_exists('theme_v4_main_nav')) {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'current-menu-item']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
-        $cur = rtrim(parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/', '/');
         echo '<ul>';
         foreach ($items as $item) {
             $rawUrl = (string) ($item['url'] ?? '#');
-            $label  = (string) ($item['label'] ?? '');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
-
-            $isActive = ($path === '' || $path === '/')
-                ? ($cur === '' || $cur === '/')
-                : str_starts_with($cur, $path);
+            $label  = (string) ($item['label'] ?? $item['title'] ?? '');
 
             $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
                 ? $rawUrl
                 : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
                     ? $rawUrl
                     : '#');
+            $isActive = $sanitizedUrl !== '#' && !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'
@@ -331,10 +365,11 @@ if (!function_exists('theme_nav_menu')) {
             $cls = $isActive ? ' class="current-menu-item"' : '';
             echo '<li' . $cls . '><a href="'
                 . htmlspecialchars($sanitizedUrl, ENT_QUOTES, 'UTF-8')
-                . '"' . $target . '>'
+                . '"' . $target . ($isActive ? ' aria-current="page"' : '') . '>'
                 . htmlspecialchars($label, ENT_QUOTES, 'UTF-8')
                 . '</a></li>';
         }
+        echo $coreItems;
         echo '</ul>';
     }
 }
@@ -373,7 +408,7 @@ if (!function_exists('get_footer')) {
     }
 }
 
-// ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
+// ── 365CMS-Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
 
 if (!function_exists('theme_csp_nonce_attr')) {
     /** Liefert ` nonce="…"` für Inline-<style>/<script> unter der 365CMS-CSP. */
@@ -390,25 +425,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

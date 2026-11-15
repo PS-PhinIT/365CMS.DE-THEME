@@ -1,7 +1,7 @@
 # academy365 Theme
 
-Version: 3.1.0
-Target: 365CMS 3.4.00+, PHP 8.4
+Version: 4.0.0
+Target: 365CMS 4.0.0 – 4.1.0, PHP 8.4.1+
 
 ## Focus
 
@@ -9,9 +9,11 @@ E-Learning- und Weiterbildungs-Theme: Kurskatalog, Dozenten-Profile, Fortschritt
 
 ## Architektur
 
-- `functions.php` — `Academy365_Theme::instance()` registriert Hooks (`init` + `cms_init`), liefert Stylesheet als `preload`+`stylesheet`, schreibt alle Customizer-Werte als CSS-Variablen in den `<head>`.
+- `functions.php` — `Academy365_Theme::instance()` registriert Hooks (`init` + `cms_init`), liefert `style.css` und `css/cms-v4.css`, schreibt alle Customizer-Werte als CSS-Variablen in den `<head>`.
 - `header.php`, `footer.php`, `home.php`, `page.php`, `index.php`, `404.php`, `error.php` — semantische Templates, alle URLs über `theme_route_url`/`SITE_URL`-Helper, alle Ausgaben über `htmlspecialchars` + `safeHeadline`/`slugify`.
 - `style.css` — Token-System (`--primary-color`, `--accent-color`, `--hero-depth`, `--hero-brand`, `--hero-highlight`, …), identitätsstiftender Hero-Verlauf, `:focus-visible`-Outlines, `prefers-reduced-motion`-Guard.
+- `includes/cms-v4-compat.php`, `css/cms-v4.css` — gemeinsame 365CMS-4.x-Schicht aller Public Themes (Fehlerseiten-Vertrag, `main_nav`, Standardlinks, SEO/Vorschau, Memberbereich, Token-Brücke `--tv4-*` zu den Core-Modulen).
+- `contact.php`, `knowledgebase/*.php`, `newsletter/*.php` — Core-Formular bzw. Core-Views im Theme-Rahmen.
 - `js/navigation.js` — Vanilla-JS: Sticky-Header, Mobile-Nav, Suchpanel mit `aria-hidden`/Fokus-Rückgabe, Progress-Bar-Animation (IntersectionObserver + Reduced-Motion-Fallback), Counter-Animation, Rating-Sterne aus `data-rating`.
 
 ## Customizer-Mapping
@@ -40,6 +42,8 @@ Boolean-Werte laufen ausschließlich über `filter_var(..., FILTER_VALIDATE_BOOL
 - `home.php` baut Routen über `theme_route_url` (mit Fallback auf `SITE_URL`/Pfad-Helper) statt String-Konkatenation.
 - Hero-Bereich verwendet jetzt einen identitätsstiftenden Drei-Stop-Verlauf (Indigo-Tiefe → Violett-Brand → Gold-Korona) statt eines generischen 135°-Two-Stop-Gradients.
 - Progress-Bar verläuft Violett → Indigo → Gold und visualisiert damit den Lernpfad „Studium → Fortschritt → Zertifikat".
+- `includes/cms-v4-compat.php`, `css/cms-v4.css` — gemeinsame 365CMS-4.x-Schicht aller Public Themes (Fehlerseiten-Vertrag, `main_nav`, Standardlinks, SEO/Vorschau, Memberbereich, Token-Brücke `--tv4-*` zu den Core-Modulen).
+- `contact.php`, `knowledgebase/*.php`, `newsletter/*.php` — Core-Formular bzw. Core-Views im Theme-Rahmen.
 - `js/navigation.js` setzt Progress-Bar-Breite direkt (kein Animations-Run) wenn `prefers-reduced-motion: reduce` aktiv ist.
 - `:focus-visible`-Outline, `:focus:not(:focus-visible){outline:none}` und globaler Reduced-Motion-Reset im Stylesheet.
 
@@ -52,5 +56,7 @@ Boolean-Werte laufen ausschließlich über `filter_var(..., FILTER_VALIDATE_BOOL
 - `index.php`, `page.php` — Archiv- und Seiten-Loops.
 - `404.php`, `error.php` — Fehlerseiten mit konsistentem `.ac-error-page`-Layout.
 - `style.css` — Token-System, Hero-Layering, Card-/Badge-/Progress-Styles, Responsive- und Reduced-Motion-Regeln.
+- `includes/cms-v4-compat.php`, `css/cms-v4.css` — gemeinsame 365CMS-4.x-Schicht aller Public Themes (Fehlerseiten-Vertrag, `main_nav`, Standardlinks, SEO/Vorschau, Memberbereich, Token-Brücke `--tv4-*` zu den Core-Modulen).
+- `contact.php`, `knowledgebase/*.php`, `newsletter/*.php` — Core-Formular bzw. Core-Views im Theme-Rahmen.
 - `js/navigation.js` — Vanilla-JS für Header, Suche, Progress-Bars, Rating, Reveal- und Counter-Animationen.
 - `update.json` — Update-Manifest für 365CMS.
