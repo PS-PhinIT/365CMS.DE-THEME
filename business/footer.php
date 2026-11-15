@@ -38,16 +38,39 @@ $copyText = htmlspecialchars(
     ENT_QUOTES,
     'UTF-8'
 );
+
+// Spalten vorab rendern: Menüs (bzw. Standardeinträge) und Standardlinks nur mit vorhandenen Zielen,
+// leere Spalten entfallen (365CMS 4.0.0).
+$bizFooterMenu = static function (string $location): string {
+    ob_start();
+    biz_nav_menu($location);
+    return trim((string) ob_get_clean());
+};
+$bizFooterNavHtml   = $bizFooterMenu('footer-nav');
+$bizFooterLegalHtml = $bizFooterMenu('footer-legal');
+$bizServiceLinks = theme_v4_filter_links([
+    ['label' => 'Beratung',    'url' => biz_href('#leistungen')],
+    ['label' => 'Entwicklung', 'url' => biz_href('#leistungen')],
+    ['label' => 'Support',     'url' => biz_href('#leistungen')],
+    ['label' => 'Schulungen',  'url' => biz_href('#leistungen')],
+    ['label' => 'Downloads',   'url' => biz_href('/downloads')],
+]);
+$bizContactLinks = theme_v4_filter_links([
+    ['label' => 'Kontaktformular', 'url' => biz_href('/contact')],
+    ['label' => 'Newsletter',      'url' => biz_href('/newsletter')],
+    ['label' => 'Impressum',       'url' => biz_href('/impressum')],
+    ['label' => 'Datenschutz',     'url' => biz_href('/datenschutz')],
+]);
 ?>
     </main><!-- /#main-content -->
 
-    <footer class="biz-footer" id="biz-footer" role="contentinfo">
+    <footer class="biz-footer" id="biz-footer">
         <div class="biz-container">
             <div class="biz-footer-grid">
 
                 <!-- Brand -->
                 <div class="biz-footer-brand">
-                    <a href="<?php echo htmlspecialchars(biz_href('/'), ENT_QUOTES, 'UTF-8'); ?>" class="biz-logo biz-footer-brand-link biz-focus-shadow">
+                    <a href="<?php echo htmlspecialchars(biz_href('/'), ENT_QUOTES, 'UTF-8'); ?>" class="biz-logo biz-footer-brand-link biz-focus-shadow" rel="home">
                         <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"
                              aria-hidden="true" focusable="false" class="biz-footer-brand-icon">
                             <rect width="32" height="32" rx="6" fill="#c08a2e"/>
@@ -56,48 +79,51 @@ $copyText = htmlspecialchars(
                         <span class="biz-logo-text"><?php echo $siteTitle; ?></span>
                     </a>
                     <p><?php echo htmlspecialchars($tagline, ENT_QUOTES, 'UTF-8'); ?></p>
-                    <div class="biz-social">
-                        <a href="#" aria-label="LinkedIn">in</a>
-                        <a href="#" aria-label="Twitter/X">𝕏</a>
-                        <a href="#" aria-label="E-Mail">✉</a>
-                    </div>
+                    <?php // Die Social-Icons verlinkten bisher fest auf „#“ (ohne Ziel) und sind entfernt. ?>
                 </div>
 
                 <!-- Navigation -->
-                <div class="biz-footer-col">
-                    <h4>Navigation</h4>
-                    <?php biz_nav_menu('footer-nav'); ?>
-                </div>
+                <?php if ($bizFooterNavHtml !== '') : ?>
+                <nav class="biz-footer-col" aria-labelledby="biz-footer-nav-title">
+                    <h2 class="biz-footer-heading" id="biz-footer-nav-title">Navigation</h2>
+                    <?php echo $bizFooterNavHtml; // biz_nav_menu(): alle Werte escaped ?>
+                </nav>
+                <?php endif; ?>
 
                 <!-- Services -->
+                <?php if ($bizServiceLinks !== []) : ?>
                 <div class="biz-footer-col">
-                    <h4>Leistungen</h4>
+                    <h2 class="biz-footer-heading">Leistungen</h2>
                     <ul>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('#leistungen'), ENT_QUOTES, 'UTF-8'); ?>">Beratung</a></li>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('#leistungen'), ENT_QUOTES, 'UTF-8'); ?>">Entwicklung</a></li>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('#leistungen'), ENT_QUOTES, 'UTF-8'); ?>">Support</a></li>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('#leistungen'), ENT_QUOTES, 'UTF-8'); ?>">Schulungen</a></li>
+                        <?php foreach ($bizServiceLinks as $bizLink) : ?>
+                        <li><a href="<?php echo htmlspecialchars($bizLink['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($bizLink['label'], ENT_QUOTES, 'UTF-8'); ?></a></li>
+                        <?php endforeach; ?>
                     </ul>
                 </div>
+                <?php endif; ?>
 
                 <!-- Kontakt -->
+                <?php if ($bizContactLinks !== []) : ?>
                 <div class="biz-footer-col">
-                    <h4>Kontakt</h4>
+                    <h2 class="biz-footer-heading">Kontakt</h2>
                     <ul>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('#kontakt'), ENT_QUOTES, 'UTF-8'); ?>">Kontaktformular</a></li>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('/impressum'), ENT_QUOTES, 'UTF-8'); ?>">Impressum</a></li>
-                        <li><a href="<?php echo htmlspecialchars(biz_href('/datenschutz'), ENT_QUOTES, 'UTF-8'); ?>">Datenschutz</a></li>
+                        <?php foreach ($bizContactLinks as $bizLink) : ?>
+                        <li><a href="<?php echo htmlspecialchars($bizLink['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($bizLink['label'], ENT_QUOTES, 'UTF-8'); ?></a></li>
+                        <?php endforeach; ?>
                     </ul>
                 </div>
+                <?php endif; ?>
 
             </div>
 
             <!-- Bottom Bar -->
             <div class="biz-footer-bottom">
                 <span><?php echo $copyText; ?></span>
+                <?php if ($bizFooterLegalHtml !== '') : ?>
                 <nav class="biz-footer-legal" aria-label="Rechtliche Links">
-                    <?php biz_nav_menu('footer-legal'); ?>
+                    <?php echo $bizFooterLegalHtml; // biz_nav_menu(): alle Werte escaped ?>
                 </nav>
+                <?php endif; ?>
             </div>
         </div>
     </footer>

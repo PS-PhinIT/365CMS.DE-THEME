@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Beitragsübersicht (Blog, Kategorie, Schlagwort)
  *
- * Datenvertrag (365CMS 3.4, ThemeRouter): $posts (Objekte), $currentPage, $totalPages; bei Archiven zusätzlich $category bzw. $tag.
+ * Datenvertrag (365CMS 4.x, ThemeRouter): $posts (Objekte), $currentPage, $totalPages; bei Archiven zusätzlich $category bzw. $tag.
  */
 
 if (!defined('ABSPATH')) {
@@ -83,11 +83,11 @@ $pageUrl = static function (int $number) use ($requestPath): string {
         <?php if ($totalPages > 1) : ?>
             <nav class="cms-pagination" aria-label="Seitennavigation">
                 <?php if ($currentPage > 1) : ?>
-                    <a href="<?php echo $safe($pageUrl($currentPage - 1)); ?>" class="btn-biz btn-biz-outline" rel="prev">← Zurück</a>
+                    <a href="<?php echo $safe($pageUrl($currentPage - 1)); ?>" class="btn-biz btn-biz-ghost" rel="prev"><span aria-hidden="true">←</span> Zurück</a>
                 <?php endif; ?>
-                <span>Seite <?php echo $currentPage; ?> von <?php echo $totalPages; ?></span>
+                <span aria-current="page">Seite <?php echo $currentPage; ?> von <?php echo $totalPages; ?></span>
                 <?php if ($currentPage < $totalPages) : ?>
-                    <a href="<?php echo $safe($pageUrl($currentPage + 1)); ?>" class="btn-biz btn-biz-outline" rel="next">Weiter →</a>
+                    <a href="<?php echo $safe($pageUrl($currentPage + 1)); ?>" class="btn-biz btn-biz-ghost" rel="next">Weiter <span aria-hidden="true">→</span></a>
                 <?php endif; ?>
             </nav>
         <?php endif; ?>

@@ -11,7 +11,15 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-http_response_code(404);
+if (!headers_sent()) {
+    http_response_code(404); // der Core setzt den Status meist schon vor header.php
+}
+$bizLocale = theme_v4_locale($contentLocale ?? null);
+// Standard-CTAs nur zu vorhandenen Zielen (Kontakt und Suche sind ab 365CMS 4.0.0 Core-Routen).
+$bizNotFoundLinks = theme_v4_filter_links([
+    ['label' => 'Kontakt aufnehmen', 'url' => biz_href('/contact')],
+    ['label' => 'Suche öffnen',      'url' => biz_href('/search')],
+]);
 ?>
 
 <section class="biz-page-hero">
@@ -25,14 +33,16 @@ http_response_code(404);
 <div class="biz-page-content">
     <div class="biz-container">
         <div class="biz-error-wrap">
-            <div class="biz-error-icon" aria-hidden="true">🔍</div>
+            <p class="biz-error-icon" aria-hidden="true">🔍</p>
             <h2 class="biz-error-title">Ups – hier gibt es nichts zu sehen.</h2>
             <p class="biz-error-text">
                 Möglicherweise wurde die Seite umbenannt oder gelöscht. Nutzen Sie die Navigation oder kehren Sie zur Startseite zurück.
             </p>
             <div class="biz-error-actions">
                 <a href="<?php echo htmlspecialchars(biz_href('/'), ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-primary btn-biz-lg">Zur Startseite</a>
-                <a href="<?php echo htmlspecialchars(biz_href('#kontakt'), ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-ghost btn-biz-lg">Kontakt aufnehmen</a>
+                <?php foreach ($bizNotFoundLinks as $bizLink) : ?>
+                <a href="<?php echo htmlspecialchars($bizLink['url'], ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-ghost btn-biz-lg"><?php echo htmlspecialchars($bizLink['label'], ENT_QUOTES, 'UTF-8'); ?></a>
+                <?php endforeach; ?>
             </div>
         </div>
     </div>

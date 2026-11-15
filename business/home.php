@@ -22,6 +22,20 @@ try {
     $aboutImg = '';
 }
 $aboutImg = biz_safe_url($aboutImg);
+$aboutImg = str_starts_with($aboutImg, '#') ? '' : $aboutImg;
+
+// Kontakt-CTA: Kontaktdaten aus dem Customizer-Bereich „contact“ statt fest verdrahteter Platzhalter
+// (bisher mailto:info@example.com / tel:+491234567890); Formular über die Core-Route /contact.
+try {
+    $bizCustomizer = \CMS\Services\ThemeCustomizer::instance();
+    $ctaEmail = (string) (filter_var(trim((string) $bizCustomizer->get('contact', 'contact_email', '')), FILTER_VALIDATE_EMAIL) ?: '');
+    $ctaPhone = trim((string) $bizCustomizer->get('contact', 'contact_phone', ''));
+} catch (\Throwable) {
+    $ctaEmail = '';
+    $ctaPhone = '';
+}
+$ctaPhoneHref = preg_replace('/[^0-9+]/', '', $ctaPhone) ?? '';
+$ctaContactUrl = biz_href('/contact');
 ?>
 
 <!-- ██ HERO ██████████████████████████████████████████████████████████████ -->
@@ -128,8 +142,7 @@ $aboutImg = biz_safe_url($aboutImg);
             <!-- Visual -->
             <div class="biz-about-visual">
                 <?php if ($aboutImg !== '') : ?>
-                    <img src="<?php echo htmlspecialchars($aboutImg, ENT_QUOTES, 'UTF-8'); ?>"
-                         alt="Über uns" loading="lazy">
+                    <?php echo theme_v4_img($aboutImg, 'Über uns', ['sizes' => '(max-width: 768px) 100vw, 600px']); ?>
                 <?php else : ?>
                     <span aria-hidden="true">🏢</span>
                 <?php endif; ?>
@@ -152,7 +165,7 @@ $aboutImg = biz_safe_url($aboutImg);
                 </ul>
 
                 <a href="<?php echo htmlspecialchars(biz_href('#kontakt'), ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-primary">
-                    Jetzt kennenlernen →
+                    Jetzt kennenlernen <span aria-hidden="true">→</span>
                 </a>
             </div>
 
@@ -202,12 +215,19 @@ $aboutImg = biz_safe_url($aboutImg);
         <p><?php echo htmlspecialchars((string) biz_config('cta_text', 'Kontaktieren Sie uns noch heute für ein unverbindliches Erstgespräch. Wir freuen uns auf Ihre Anfrage.'), ENT_QUOTES, 'UTF-8'); ?></p>
 
         <div class="biz-cta-actions">
-            <a href="<?php echo htmlspecialchars(biz_href('mailto:info@example.com'), ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-white btn-biz-lg">
-                ✉ E-Mail schreiben
+            <a href="<?php echo htmlspecialchars($ctaContactUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-white btn-biz-lg">
+                Kontaktformular öffnen
             </a>
-            <a href="<?php echo htmlspecialchars(biz_href('tel:+491234567890'), ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-outline-white btn-biz-lg">
-                📞 Jetzt anrufen
+            <?php if ($ctaEmail !== '') : ?>
+            <a href="<?php echo htmlspecialchars('mailto:' . $ctaEmail, ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-outline-white btn-biz-lg">
+                <span aria-hidden="true">✉</span> E-Mail schreiben
             </a>
+            <?php endif; ?>
+            <?php if ($ctaPhoneHref !== '') : ?>
+            <a href="<?php echo htmlspecialchars('tel:' . $ctaPhoneHref, ENT_QUOTES, 'UTF-8'); ?>" class="btn-biz btn-biz-outline-white btn-biz-lg">
+                <span aria-hidden="true">📞</span> Jetzt anrufen
+            </a>
+            <?php endif; ?>
         </div>
 
     </div>

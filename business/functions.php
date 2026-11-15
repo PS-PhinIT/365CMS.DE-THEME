@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Business Presentation Theme – functions.php
  *
- * Editorial B2B / Corporate Landing Theme for 365CMS v3.x.x on PHP 8.4.
+ * Editorial B2B / Corporate Landing Theme for 365CMS 4.0.0 / 4.1.0 on PHP 8.4.1.
  *
  * @package IT_Business_Theme
  */
@@ -14,8 +14,17 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BUSINESS_THEME_VERSION')) {
-    define('BUSINESS_THEME_VERSION', '3.1.0');
+    define('BUSINESS_THEME_VERSION', '4.0.0');
 }
+
+// 365CMS 4.x: header.php öffnet <main id="main-content">, footer.php schließt es.
+if (!defined('THEME_V4_HEADER_HAS_MAIN')) {
+    define('THEME_V4_HEADER_HAS_MAIN', true);
+}
+if (!defined('THEME_V4_MAIN_ID')) {
+    define('THEME_V4_MAIN_ID', 'main-content');
+}
+require_once __DIR__ . '/includes/cms-v4-compat.php';
 
 /**
  * Business Theme Singleton
@@ -39,24 +48,46 @@ final class IT_Business_Theme
 
     private function registerHooks(): void
     {
+        // Menü-Positionen nur über den Filter (ThemeManager::registerMenuLocation() gibt es in 4.0.0 nicht mehr).
+        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+
+        // Der Core-Mitgliederbereich (/member) ist eine eigene Tabler-Shell und löst ebenfalls `head` aus:
+        // dort kein Frontend-Stylesheet und keine Theme-Scripts, nur die Theme-Palette als --member-*.
+        if (theme_v4_is_member_area()) {
+            \CMS\Hooks::addAction('member_head', [$this, 'outputMemberTokens'], 20);
+            return;
+        }
+
         // Assets in <head>
         \CMS\Hooks::addAction('head',          [$this, 'enqueueStyles'],      1);
-        \CMS\Hooks::addAction('head',          [$this, 'outputGoogleFonts'],  5);
         \CMS\Hooks::addAction('head',          [$this, 'outputMetaTags'],     10);
         \CMS\Hooks::addAction('head',          [$this, 'outputCustomStyles'], 15);
 
         // Deferred script before </body>
         \CMS\Hooks::addAction('before_footer', [$this, 'enqueueScripts'],     99);
+    }
 
-        // Menü-Positionen via Filter registrieren
-        \CMS\Hooks::addFilter('register_menu_locations', [$this, 'registerMenuLocations']);
+    /**
+     * Memberbereich (inkl. Newsletter-Widget) in der Business-Palette; das Theme hat keinen Dark Mode.
+     * Primärfarbe ist das dunkle Kupfer (weiße Schrift 5,6:1); das helle Kupfer erreicht nur 3,0:1.
+     */
+    public function outputMemberTokens(): void
+    {
+        $color = fn(string $key, string $default): string =>
+            biz_css_color((string) $this->customizerGet('colors', $key, $default), $default);
 
-        // Menüs registrieren – auf BEIDEN Hooks für v3-Bootstrap-Kompatibilität
-        \CMS\Hooks::addAction('init',     [$this, 'registerNavMenus'], 10);
-        \CMS\Hooks::addAction('cms_init', [$this, 'registerNavMenus'], 10);
-
-        // Standard-Menüs beim ersten Start anlegen
-        \CMS\Hooks::addAction('cms_init', [$this, 'seedDefaultMenus'], 20);
+        echo theme_v4_member_tokens_style([
+            'primary'    => $color('primary_hover', '#8a5f17'),
+            'accent'     => $color('primary_color', '#c08a2e'),
+            'bg'         => $color('paper_color', '#f7f5f0'),
+            'card_bg'    => '#ffffff',
+            'text'       => $color('text_color', '#1a2030'),
+            'text_muted' => $color('muted_color', '#5a6479'),
+            'border'     => $color('border_color', '#dcd9d1'),
+            'focus'      => $color('ink_color', '#0c1320'),
+            'radius'     => biz_css_number($this->customizerGet('layout', 'border_radius', '6'), 6, 0, 16) . 'px',
+            'font'       => $this->mapFontChoice((string) $this->customizerGet('typography', 'font_family_base', 'system'), 'system'),
+        ]);
     }
 
     // ── Assets ───────────────────────────────────────────────────────────────
@@ -69,8 +100,11 @@ final class IT_Business_Theme
             ENT_QUOTES,
             'UTF-8'
         );
-        echo '<link rel="preload" href="' . $href . '" as="style">' . "\n";
         echo '<link rel="stylesheet" href="' . $href . '">' . "\n";
+        // Gemeinsame 4.x-Integrationsstile (Downloads, Feeds, Formulare, Knowledgebase, Newsletter …) nach style.css.
+        echo '<link rel="stylesheet" href="' . htmlspecialchars($themeUrl . '/css/cms-v4.css?v=' . rawurlencode(BUSINESS_THEME_VERSION), ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        // Schriften: keine Google-Fonts-Requests (DSGVO). Lokale Schriften liefert die Core-Schriftverwaltung,
+        // sonst greift der System-Font-Stack.
     }
 
     public function enqueueScripts(): void
@@ -84,39 +118,17 @@ final class IT_Business_Theme
         echo '<script src="' . $src . '" defer></script>' . "\n";
     }
 
-    /**
-     * Optional Google Fonts – nur wenn Customizer das nicht-Default-Family wählt.
-     * Bei "system" (Standard) wird nichts geladen, der OS-Stack reicht.
-     */
-    public function outputGoogleFonts(): void
-    {
-        if (theme_use_local_fonts()) {
-            return; // Core bindet lokale Schriften ein (DSGVO)
-        }
-        $families = $this->googleFontFamilies();
-        if ($families === '') {
-            return;
-        }
-        $url = 'https://fonts.googleapis.com/css2?family=' . $families . '&display=swap';
-        echo '<link rel="preconnect" href="https://fonts.googleapis.com">' . "\n";
-        echo '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>' . "\n";
-        echo '<link rel="stylesheet" href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . "\n";
-    }
-
     // ── Meta ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Nur noch `theme-color`: Beschreibung, Canonical, Robots und Open Graph kommen aus dem Core-SEO
+     * (theme_v4_head_tags() in header.php); eigene Ausgaben wären doppelt und im Vorschaufall falsch.
+     */
     public function outputMetaTags(): void
     {
-        $tm       = \CMS\ThemeManager::instance();
-        $siteDesc = htmlspecialchars($tm->getSiteDescription(), ENT_QUOTES, 'UTF-8');
-        $siteUrl  = htmlspecialchars(biz_safe_url((string) SITE_URL, '/'), ENT_QUOTES, 'UTF-8');
-
         $themeColor = biz_css_color((string) $this->customizerGet('colors', 'ink_color', '#0c1320'), '#0c1320');
 
-        echo '<meta name="description" content="' . $siteDesc . '">' . "\n";
-        echo '<meta property="og:url" content="' . $siteUrl . '">' . "\n";
-        echo '<meta name="theme-color" content="' . $themeColor . '">' . "\n";
-        echo '<meta name="robots" content="index,follow">' . "\n";
+        echo '<meta name="theme-color" content="' . htmlspecialchars($themeColor, ENT_QUOTES, 'UTF-8') . '">' . "\n";
     }
 
     // ── Customizer-getriebene CSS-Variablen + custom_css ─────────────────────
@@ -131,29 +143,25 @@ final class IT_Business_Theme
         $baseFontChoice    = (string) $this->customizerGet('typography', 'font_family_base',    'system');
         $headingFontChoice = (string) $this->customizerGet('typography', 'font_family_heading', 'system');
 
-        $baseFont    = htmlspecialchars(
-            $this->mapFontChoice($baseFontChoice, 'system'),
-            ENT_QUOTES,
-            'UTF-8'
-        );
-        $headingFont = htmlspecialchars(
-            $this->mapFontChoice($headingFontChoice, 'system'),
-            ENT_QUOTES,
-            'UTF-8'
-        );
+        // Feste Stacks aus mapFontChoice() – nicht HTML-escapen: &quot; im <style> machte die Deklaration ungültig.
+        $baseFont    = $this->mapFontChoice($baseFontChoice, 'system');
+        $headingFont = $this->mapFontChoice($headingFontChoice, 'system');
 
         echo '<style id="biz-custom-vars"' . theme_csp_nonce_attr() . '>:root{';
 
         // Colors
         echo '--biz-accent:'         . $color('colors', 'primary_color', '#c08a2e') . ';';
-        echo '--biz-accent-hover:'   . $color('colors', 'primary_hover', '#a16f1e') . ';';
+        echo '--biz-accent-hover:'   . $color('colors', 'primary_hover', '#8a5f17') . ';';
         echo '--biz-ink:'            . $color('colors', 'ink_color',     '#0c1320') . ';';
         echo '--biz-ink-soft:'       . $color('colors', 'ink_soft',      '#18243a') . ';';
         echo '--biz-paper:'          . $color('colors', 'paper_color',   '#f7f5f0') . ';';
         echo '--biz-text:'           . $color('colors', 'text_color',    '#1a2030') . ';';
         echo '--biz-text-mute:'      . $color('colors', 'muted_color',   '#5a6479') . ';';
         echo '--biz-rule:'           . $color('colors', 'border_color',  '#dcd9d1') . ';';
-        echo '--focus-ring:'         . $color('colors', 'primary_color', '#c08a2e') . ';';
+        // Fokus: auf hellen Flächen dunkles Kupfer (5,2:1 auf Papier; helles Kupfer nur 2,8:1),
+        // auf dunklen Flächen helles Kupfer (6,1:1 auf Ink) – siehe style.css.
+        echo '--focus-ring:'         . $color('colors', 'primary_hover', '#8a5f17') . ';';
+        echo '--focus-ring-on-dark:' . $color('colors', 'primary_color', '#c08a2e') . ';';
 
         // Typography
         echo '--biz-font-body:'      . $baseFont    . ';';
@@ -196,48 +204,43 @@ final class IT_Business_Theme
         return $locations;
     }
 
-    public function registerNavMenus(): void
-    {
-        $tm = \CMS\ThemeManager::instance();
-        if (method_exists($tm, 'registerMenuLocation')) {
-            $tm->registerMenuLocation('primary',      'Hauptnavigation (Header)');
-            $tm->registerMenuLocation('footer-nav',   'Footer-Navigation');
-            $tm->registerMenuLocation('footer-legal', 'Footer Rechtliche Links');
-        }
-    }
-
     /**
-     * Standard-Menüeinträge beim ersten Start anlegen (nur wenn leer)
+     * Standardeinträge je Menüposition, solange im Admin kein Menü gepflegt ist.
+     *
+     * Bis 3.1.0 wurden sie bei jedem Request (cms_init) in die Datenbank geschrieben; seit 4.0.0 gelten sie
+     * nur noch zur Laufzeit und zeigen interne Ziele nur, wenn Route bzw. veröffentlichte Seite existieren.
+     *
+     * @return list<array{label:string,url:string}>
      */
-    public function seedDefaultMenus(): void
+    public static function defaultMenu(string $location): array
     {
-        $tm = \CMS\ThemeManager::instance();
-
         $defaults = [
             'primary' => [
-                ['label' => 'Start',       'url' => '/',            'target' => '_self'],
-                ['label' => 'Über uns',    'url' => '/#ueber-uns',  'target' => '_self'],
-                ['label' => 'Leistungen',  'url' => '/#leistungen', 'target' => '_self'],
-                ['label' => 'Kontakt',     'url' => '/#kontakt',    'target' => '_self'],
+                ['label' => 'Start',       'url' => '/'],
+                ['label' => 'Über uns',    'url' => '/#ueber-uns'],
+                ['label' => 'Leistungen',  'url' => '/#leistungen'],
+                ['label' => 'Kontakt',     'url' => '/contact'],
             ],
             'footer-nav' => [
-                ['label' => 'Startseite',  'url' => '/',            'target' => '_self'],
-                ['label' => 'Über uns',    'url' => '/#ueber-uns',  'target' => '_self'],
-                ['label' => 'Leistungen',  'url' => '/#leistungen', 'target' => '_self'],
-                ['label' => 'Kontakt',     'url' => '/#kontakt',    'target' => '_self'],
+                ['label' => 'Startseite',  'url' => '/'],
+                ['label' => 'Über uns',    'url' => '/#ueber-uns'],
+                ['label' => 'Leistungen',  'url' => '/#leistungen'],
+                ['label' => 'Newsletter',  'url' => '/newsletter'],
+                ['label' => 'Kontakt',     'url' => '/contact'],
             ],
             'footer-legal' => [
-                ['label' => 'Impressum',   'url' => '/impressum',   'target' => '_self'],
-                ['label' => 'Datenschutz', 'url' => '/datenschutz', 'target' => '_self'],
-                ['label' => 'AGB',         'url' => '/agb',         'target' => '_self'],
+                ['label' => 'Impressum',   'url' => '/impressum'],
+                ['label' => 'Datenschutz', 'url' => '/datenschutz'],
+                ['label' => 'AGB',         'url' => '/agb'],
             ],
         ];
 
-        foreach ($defaults as $location => $items) {
-            if (empty($tm->getMenu($location))) {
-                $tm->saveMenu($location, $items);
-            }
-        }
+        $links = array_map(
+            static fn(array $link): array => ['label' => $link['label'], 'url' => theme_v4_site_url($link['url'])],
+            $defaults[$location] ?? []
+        );
+
+        return theme_v4_filter_links($links);
     }
 
     /**
@@ -248,7 +251,7 @@ final class IT_Business_Theme
         static $config = null;
 
         if ($config === null) {
-            $jsonFile = THEME_PATH . 'business/theme.json';
+            $jsonFile = __DIR__ . '/theme.json'; // unabhängig vom Ordnernamen und von THEME_PATH
             if (file_exists($jsonFile)) {
                 $decoded = json_decode((string) file_get_contents($jsonFile), true);
                 $config  = is_array($decoded) ? ($decoded['settings'] ?? []) : [];
@@ -264,12 +267,7 @@ final class IT_Business_Theme
 
     private function themeBaseUrl(): string
     {
-        try {
-            $url = (string) \CMS\ThemeManager::instance()->getThemeUrl('business');
-        } catch (\Throwable) {
-            $url = (string) \CMS\ThemeManager::instance()->getThemeUrl();
-        }
-        return rtrim($url, '/');
+        return rtrim(theme_v4_theme_url(__DIR__), '/');
     }
 
     private function customizerGet(string $group, string $key, mixed $default = null): mixed
@@ -283,39 +281,14 @@ final class IT_Business_Theme
 
     private function mapFontChoice(string $choice, string $fallback): string
     {
-        $systemStack = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+        $systemStack = 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
         return match ($choice) {
             'system'       => $systemStack,
             'inter'        => 'Inter, ' . $systemStack,
             'source-sans'  => '"Source Sans 3", ' . $systemStack,
-            'source-serif' => '"Source Serif 4", Georgia, "Times New Roman", serif',
+            'source-serif' => '"Source Serif 4", Georgia, ui-serif, "Times New Roman", serif',
             default        => $fallback === 'system' ? $systemStack : $fallback,
         };
-    }
-
-    private function googleFontFamilies(): string
-    {
-        $base    = (string) $this->customizerGet('typography', 'font_family_base',    'system');
-        $heading = (string) $this->customizerGet('typography', 'font_family_heading', 'system');
-
-        $needed = [];
-        foreach ([$base, $heading] as $choice) {
-            switch ($choice) {
-                case 'inter':
-                    $needed['Inter']             = 'Inter:wght@400;500;700';
-                    break;
-                case 'source-sans':
-                    $needed['Source Sans 3']     = 'Source+Sans+3:wght@400;600;700';
-                    break;
-                case 'source-serif':
-                    $needed['Source Serif 4']    = 'Source+Serif+4:wght@500;700';
-                    break;
-            }
-        }
-        if ($needed === []) {
-            return '';
-        }
-        return implode('&family=', $needed);
     }
 
     private function sanitizeCustomCss(string $raw): string
@@ -435,32 +408,52 @@ if (!function_exists('biz_sanitize_content_html')) {
 }
 
 if (!function_exists('biz_nav_menu')) {
-    function biz_nav_menu(string $location = 'primary'): void
+    /**
+     * Menü einer Position als Liste. Ist im Admin nichts gepflegt, greifen die Standardeinträge des Themes
+     * (IT_Business_Theme::defaultMenu(), nur vorhandene Ziele). Mit `$mainNavContext` (`desktop`/`mobile`)
+     * folgen direkt nach den Menüeinträgen die Einträge der Core-Module (Hook `main_nav`) – auch bei leerem Menü.
+     */
+    function biz_nav_menu(string $location = 'primary', string $mainNavContext = ''): void
     {
-        $tm    = \CMS\ThemeManager::instance();
-        $items = $tm->getMenu($location);
+        try {
+            $items = \CMS\ThemeManager::instance()->getMenu($location);
+        } catch (\Throwable) {
+            $items = [];
+        }
+        if (!is_array($items) || $items === []) {
+            $items = IT_Business_Theme::defaultMenu($location);
+        }
 
-        if (empty($items)) {
+        $coreItems = '';
+        if ($mainNavContext !== '') {
+            ob_start();
+            theme_v4_main_nav($mainNavContext, ['wrap' => 'li', 'active_item_class' => 'active']);
+            $coreItems = (string) ob_get_clean();
+        }
+        if ($items === [] && $coreItems === '') {
             return;
         }
 
-        $requestUri = rtrim($_SERVER['REQUEST_URI'] ?? '/', '/');
         echo '<ul>' . "\n";
         foreach ($items as $item) {
-            $rawUrl = (string) ($item['url'] ?? '#');
-            $path   = rtrim(parse_url($rawUrl, PHP_URL_PATH) ?? '/', '/');
-            $isActive = ($path === '' || $path === '/')
-                ? ($requestUri === '' || $requestUri === '/')
-                : str_starts_with($requestUri, $path);
+            if (!is_array($item)) {
+                continue;
+            }
+            $sanitizedUrl = biz_safe_url((string) ($item['url'] ?? '#'), '#');
+            // Aktiv: gleicher Pfad (Startseite nur exakt); Anker, mailto: und tel: nie.
+            $isActive = !str_contains($sanitizedUrl, '#')
+                && preg_match('/^(?:mailto|tel):/i', $sanitizedUrl) !== 1
+                && theme_v4_is_current_path($sanitizedUrl);
             $class   = $isActive ? ' class="active"' : '';
             $target  = !empty($item['target']) && $item['target'] === '_blank'
                 ? ' target="_blank" rel="noopener noreferrer"'
                 : '';
-            $sanitizedUrl = biz_safe_url($rawUrl, '#');
-            $url   = htmlspecialchars($sanitizedUrl,           ENT_QUOTES, 'UTF-8');
-            $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
-            echo '<li' . $class . '><a href="' . $url . '"' . $target . '>' . $label . '</a></li>' . "\n";
+            $url   = htmlspecialchars($sanitizedUrl, ENT_QUOTES, 'UTF-8');
+            // Der Core liefert die Beschriftung im Feld `title`, ältere Menüs/Standardeinträge in `label`.
+            $label = htmlspecialchars((string) ($item['label'] ?? $item['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+            echo '<li' . $class . '><a href="' . $url . '"' . $target . ($isActive ? ' aria-current="page"' : '') . '>' . $label . '</a></li>' . "\n";
         }
+        echo $coreItems;
         echo '</ul>' . "\n";
     }
 }
@@ -582,7 +575,7 @@ if (!function_exists('biz_body_class')) {
     }
 }
 
-// ── 365CMS 3.4 Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────
+// ── 365CMS-Laufzeit-Helfer (CSP-Nonce, lokale Schriften) ──────────────────────
 
 if (!function_exists('theme_csp_nonce_attr')) {
     /** Liefert ` nonce="…"` für Inline-<style>/<script> unter der 365CMS-CSP. */
@@ -599,25 +592,10 @@ if (!function_exists('theme_csp_nonce_attr')) {
 }
 
 if (!function_exists('theme_use_local_fonts')) {
-    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist – dann keine Google-Fonts. */
+    /** true, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (OptionStore statt SQL). */
     function theme_use_local_fonts(): bool
     {
-        static $useLocal = null;
-        if ($useLocal !== null) {
-            return $useLocal;
-        }
-
-        try {
-            $db  = \CMS\Database::instance();
-            $row = $db->get_row(
-                "SELECT option_value FROM {$db->getPrefix()}settings WHERE option_name = 'privacy_use_local_fonts' LIMIT 1"
-            );
-            $useLocal = $row !== null && (string) ($row->option_value ?? '0') === '1';
-        } catch (\Throwable) {
-            $useLocal = false;
-        }
-
-        return $useLocal;
+        return theme_v4_use_local_fonts();
     }
 }
 

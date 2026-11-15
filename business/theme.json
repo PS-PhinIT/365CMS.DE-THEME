@@ -1,21 +1,56 @@
 {
   "name": "Business Presentation",
   "slug": "business",
-  "version": "3.1.0",
-  "requires_cms": "3.4.00",
+  "version": "4.0.0",
+  "requires_cms": "4.0.0",
+  "requires_php": "8.4.1",
+  "tested_up_to": "4.1.0",
   "description": "Editorial B2B-Corporate-Theme – Slate-Anker, Kupfer-Gold-Akzent, redaktionelle Whitespace-Disziplin. Für IT-Beratung, Dienstleister und Consultancies.",
   "author": "PHIN IT Solutions",
   "textdomain": "biz-theme",
   "template": "business",
-  "tags": ["business", "corporate", "consulting", "b2b", "landing", "editorial"],
-  "supports": ["custom-logo", "sticky-header", "custom-css"],
-
+  "tags": [
+    "business",
+    "corporate",
+    "consulting",
+    "b2b",
+    "landing",
+    "editorial"
+  ],
+  "supports": [
+    "custom-logo",
+    "sticky-header",
+    "custom-css"
+  ],
   "menus": {
     "primary": "Hauptnavigation",
     "footer-nav": "Footer-Navigation",
     "footer-legal": "Rechtliche Links"
   },
-
+  "templates": {
+    "home": "home.php",
+    "page": "page.php",
+    "blog": "blog.php",
+    "blog-single": "blog-single.php",
+    "search": "search.php",
+    "contact": "contact.php",
+    "404": "404.php",
+    "error": "error.php"
+  },
+  "login_page": {
+    "colors": {
+      "background_start": "#f7f5f0",
+      "background_end": "#ecebe5",
+      "card_background": "#ffffff",
+      "text_color": "#1a2030",
+      "muted_color": "#5a6479",
+      "primary_color": "#8a5f17",
+      "primary_text_color": "#ffffff",
+      "link_color": "#8a5f17",
+      "input_background": "#ffffff",
+      "input_border": "#8b8f99"
+    }
+  },
   "settings": {
     "hero_badge": "Ihr verlässlicher IT-Partner",
     "hero_headline": "Wir bringen <span class=\"highlight\">Ihr Unternehmen</span> erfolgreich in die Zukunft.",
@@ -29,9 +64,7 @@
     "cta_text": "Kontaktieren Sie uns noch heute für ein unverbindliches Erstgespräch. Wir freuen uns auf Ihre Anfrage.",
     "footer_tagline": "Ihr Partner für digitale Innovation und maßgeschneiderte IT-Lösungen."
   },
-
   "customization": {
-
     "colors": {
       "label": "Farben",
       "description": "Deep-Slate-Anker mit einem warmen, deliberaten Kupfer-Gold-Akzent.",
@@ -45,7 +78,7 @@
         "primary_hover": {
           "label": "Primär Hover",
           "type": "color",
-          "default": "#a16f1e"
+          "default": "#8a5f17"
         },
         "ink_color": {
           "label": "Anker / Ink",
@@ -81,7 +114,6 @@
         }
       }
     },
-
     "typography": {
       "label": "Typografie",
       "description": "Klare Hierarchie mit System-UI als Body, optional Inter / Source Serif für Display.",
@@ -90,9 +122,9 @@
           "label": "Basis-Schriftart",
           "type": "select",
           "options": {
-            "system":     "System-UI (empfohlen)",
-            "inter":      "Inter",
-            "source-sans":"Source Sans 3"
+            "system": "System-UI (empfohlen)",
+            "inter": "Inter",
+            "source-sans": "Source Sans 3"
           },
           "default": "system"
         },
@@ -100,9 +132,9 @@
           "label": "Überschriften-Schriftart",
           "type": "select",
           "options": {
-            "system":      "System-UI (empfohlen)",
-            "inter":       "Inter",
-            "source-serif":"Source Serif 4 (redaktionell)"
+            "system": "System-UI (empfohlen)",
+            "inter": "Inter",
+            "source-serif": "Source Serif 4 (redaktionell)"
           },
           "default": "system"
         },
@@ -123,7 +155,6 @@
         }
       }
     },
-
     "layout": {
       "label": "Layout",
       "description": "Editorial-Whitespace, klare Container.",
@@ -153,7 +184,6 @@
         }
       }
     },
-
     "header": {
       "label": "Header",
       "settings": {
@@ -170,7 +200,6 @@
         }
       }
     },
-
     "footer": {
       "label": "Footer",
       "settings": {
@@ -187,7 +216,6 @@
         }
       }
     },
-
     "biz_hero": {
       "label": "Hero-Bereich",
       "description": "Texte für den Hero-Einstiegsbereich.",
@@ -230,7 +258,6 @@
         }
       }
     },
-
     "biz_content": {
       "label": "Seiteninhalte",
       "description": "Über-uns, CTA und Footer-Texte.",
@@ -263,7 +290,6 @@
         }
       }
     },
-
     "advanced": {
       "label": "Erweitert",
       "settings": {
@@ -274,7 +300,33 @@
           "description": "Zusätzliches CSS wird im <head> nach den Theme-Variablen ausgegeben."
         }
       }
+    },
+    "contact": {
+      "label": "Kontakt",
+      "description": "Kontaktdaten neben dem Core-Kontaktformular (/contact) und für die Kontakt-Buttons der Startseite. Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+      "settings": {
+        "contact_email": {
+          "label": "Angezeigte E-Mail-Adresse",
+          "type": "text",
+          "default": "",
+          "description": "Leer = Administrator-Adresse auf der Kontaktseite; auf der Startseite kein E-Mail-Button"
+        },
+        "contact_phone": {
+          "label": "Telefon",
+          "type": "text",
+          "default": ""
+        },
+        "contact_address": {
+          "label": "Adresse",
+          "type": "textarea",
+          "default": ""
+        },
+        "contact_hours": {
+          "label": "Erreichbarkeit",
+          "type": "textarea",
+          "default": ""
+        }
+      }
     }
-
   }
 }
