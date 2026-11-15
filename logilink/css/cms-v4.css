@@ -1,5 +1,5 @@
 /*
- * 365CMS 4.0.0 / 4.1.0 – gemeinsame Integrationsstile der öffentlichen Themes (Version 1.0.0)
+ * 365CMS 4.0.0 / 4.1.0 – gemeinsame Integrationsstile der öffentlichen Themes (Version 1.0.1)
  *
  * Die Datei ist in allen Public Themes identisch. Sie setzt keine eigenen Farben, sondern liest die
  * Token-Brücke des Themes (`--tv4-*`, definiert in style.css, Abschnitt „365CMS 4.x Token-Brücke“)
@@ -8,7 +8,8 @@
  *   Downloads (downloads.css)            --color-*, --radius-md   auf .cms-dl*
  *   Newsletter (newsletter-public.css)   --color-*                auf .cms-newsletter*
  *   Knowledgebase (knowledgebase-*.css)  --kb-*
- *   Feed-Aggregator (feeds.css)          --fd-*                   (Core definiert sie auf :root)
+ *   Feed-Aggregator (feeds.css)          --fd-*                   auf .fd-aggregator/.fd-body (nicht global:
+ *                                                                Themes dürfen das Präfix fd- selbst nutzen)
  *   Formulare/Kontakt (forms-public.css) --cms-form-*             auf .cms-form
  *   Hub-Sites (hub-sites.css)            --cms-hub-*
  *
@@ -32,7 +33,24 @@ body {
     --kb-tooltip-bg: var(--tv4-text, #0f172a);
     --kb-tooltip-text: var(--tv4-bg, #fff);
 
-    /* Feed-Aggregator (feeds.css setzt die Werte auf :root – body gewinnt für alle Nachfahren) */
+    /* Hub-Sites */
+    --cms-hub-accent: var(--tv4-primary, #2563eb);
+    --cms-hub-border: var(--tv4-border, #e2e8f0);
+    --cms-hub-text-muted: var(--tv4-muted, #64748b);
+    --cms-hub-surface: var(--tv4-surface-alt, #f8fafc);
+    --cms-hub-card-bg: var(--tv4-surface, #fff);
+    --cms-hub-card-text: var(--tv4-text, #1e293b);
+    --cms-hub-section-bg: var(--tv4-surface-alt, #f8fafc);
+    --cms-hub-radius: var(--tv4-radius, 10px);
+    --cms-hub-card-radius: var(--tv4-radius, 10px);
+    --cms-hub-hero-start: var(--tv4-hero-start, var(--tv4-primary, #1e3a8a));
+    --cms-hub-hero-end: var(--tv4-hero-end, var(--tv4-primary-hover, #2563eb));
+}
+
+/* Feed-Aggregator: Core setzt die Werte auf :root; der Wurzelcontainer der Feed-Views gewinnt für alle Nachfahren.
+   Bewusst nicht auf body, damit Themes mit eigenem fd-Präfix unberührt bleiben. */
+.fd-aggregator,
+.fd-body {
     --fd-primary: var(--tv4-primary, #0891b2);
     --fd-accent: var(--tv4-surface-alt, #e0f2fe);
     --fd-bg: var(--tv4-bg, #f1f5f9);
@@ -48,19 +66,6 @@ body {
     --fd-hdr-to: var(--tv4-hero-end, var(--tv4-primary-hover, #0891b2));
     --fd-hdr-title: var(--tv4-on-primary, #fff);
     --fd-content-max: var(--tv4-max, 1100px);
-
-    /* Hub-Sites */
-    --cms-hub-accent: var(--tv4-primary, #2563eb);
-    --cms-hub-border: var(--tv4-border, #e2e8f0);
-    --cms-hub-text-muted: var(--tv4-muted, #64748b);
-    --cms-hub-surface: var(--tv4-surface-alt, #f8fafc);
-    --cms-hub-card-bg: var(--tv4-surface, #fff);
-    --cms-hub-card-text: var(--tv4-text, #1e293b);
-    --cms-hub-section-bg: var(--tv4-surface-alt, #f8fafc);
-    --cms-hub-radius: var(--tv4-radius, 10px);
-    --cms-hub-card-radius: var(--tv4-radius, 10px);
-    --cms-hub-hero-start: var(--tv4-hero-start, var(--tv4-primary, #1e3a8a));
-    --cms-hub-hero-end: var(--tv4-hero-end, var(--tv4-primary-hover, #2563eb));
 }
 
 /* Downloads (Archiv, Kategorie, Einzelseite, Editor-Block inkl. Layout „button“) und Newsletter */

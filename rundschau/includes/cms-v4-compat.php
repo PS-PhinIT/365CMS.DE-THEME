@@ -26,7 +26,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('THEME_V4_COMPAT_VERSION')) {
-    define('THEME_V4_COMPAT_VERSION', '1.0.0');
+    define('THEME_V4_COMPAT_VERSION', '1.0.1');
 }
 
 // ── Basis ────────────────────────────────────────────────────────────────────
@@ -794,8 +794,12 @@ if (!function_exists('theme_v4_is_member_area')) {
 if (!function_exists('theme_v4_member_tokens_style')) {
     /**
      * Nonce-`<style>` für den Hook `member_head`: setzt die `--member-*`-Variablen des Core-Mitgliederbereichs
-     * (inkl. Newsletter-Widget) auf die Palette des Themes. `$dark` (optional) gilt bei
-     * `prefers-color-scheme: dark`, wenn das Theme einen Dark Mode hat.
+     * (inkl. Newsletter-Widget) auf die Palette des Themes.
+     *
+     * `focus` ist eine Farbe; daraus entsteht der box-shadow-Wert von `--member-focus-ring`.
+     * `$dark` wird bewusst nicht angewendet: Die Tabler-Shell des Mitgliederbereichs hat keinen Dunkelmodus
+     * (ihre light-dark()-Farben bleiben ohne color-scheme: dark hell, z. B. .text-secondary ≈ 3,6:1 auf
+     * dunklen Karten). Der Parameter bleibt für spätere Core-Versionen mit Dunkelmodus erhalten.
      *
      * @param array<string, string> $light Schlüssel: primary, accent, bg, card_bg, text, text_muted, border, radius, font
      * @param array<string, string> $dark
@@ -805,7 +809,7 @@ if (!function_exists('theme_v4_member_tokens_style')) {
         $map = [
             'primary' => '--member-primary', 'accent' => '--member-accent', 'bg' => '--member-bg',
             'card_bg' => '--member-card-bg', 'text' => '--member-text', 'text_muted' => '--member-text-muted',
-            'border' => '--member-border', 'radius' => '--member-radius', 'focus' => '--member-focus-ring',
+            'border' => '--member-border', 'radius' => '--member-radius',
         ];
         $clean = static function (string $value): string {
             $value = trim($value);
@@ -823,6 +827,10 @@ if (!function_exists('theme_v4_member_tokens_style')) {
             if (isset($tokens['primary']) && $clean((string) $tokens['primary']) !== '') {
                 $css .= '--tblr-primary:' . $clean((string) $tokens['primary']) . ';';
                 $css .= '--member-primary-soft:color-mix(in srgb,' . $clean((string) $tokens['primary']) . ' 12%,transparent);';
+            }
+            $focus = $clean((string) ($tokens['focus'] ?? ''));
+            if ($focus !== '' && preg_match('/^(#|rgb|hsl)/i', $focus) === 1) {
+                $css .= '--member-focus-ring:0 0 0 3px color-mix(in srgb,' . $focus . ' 45%,transparent);';
             }
             if (isset($tokens['font']) && preg_match('/^[a-z0-9 ,"\'-]+$/i', (string) $tokens['font']) === 1) {
                 $css .= '--tblr-font-sans-serif:' . str_replace(['<', '>'], '', (string) $tokens['font']) . ';';
@@ -852,10 +860,8 @@ if (!function_exists('theme_v4_member_tokens_style')) {
             $nonce = (string) \CMS\Security::instance()->nonceAttr();
         } catch (\Throwable) {
         }
+        unset($dark); // siehe Docblock: kein Dunkelmodus in der Member-Shell
         $css = 'body.member-shell{' . $render($light) . '}';
-        if ($dark !== []) {
-            $css .= '@media (prefers-color-scheme: dark){body.member-shell{' . $render($dark) . '}}';
-        }
 
         return '<style id="theme-v4-member-tokens"' . ($nonce !== '' ? ' ' . $nonce : '') . '>' . $css . '</style>' . "\n";
     }

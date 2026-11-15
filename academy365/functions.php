@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('ACADEMY365_THEME_VERSION')) {
-    define('ACADEMY365_THEME_VERSION', '4.0.0');
+    define('ACADEMY365_THEME_VERSION', '4.0.1');
 }
 if (!defined('ACADEMY365_THEME_SLUG')) {
     define('ACADEMY365_THEME_SLUG', 'academy365');

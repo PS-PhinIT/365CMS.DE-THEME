@@ -1,6 +1,6 @@
 # academy365 Theme
 
-Version: 4.0.0
+Version: 4.0.1
 Target: 365CMS 4.0.0 – 4.1.0, PHP 8.4.1+
 
 ## Focus
