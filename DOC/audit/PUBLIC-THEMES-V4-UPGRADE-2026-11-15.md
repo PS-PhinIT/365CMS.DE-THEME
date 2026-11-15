@@ -2,6 +2,7 @@
 
 > **Stand:** 2026-11-15 | **Core-Referenz:** `PS-PhinIT/365CMS.DE` (`CMS\Version::CURRENT` 4.0.0, 4.1.0 in Entwicklung, `MIN_PHP` 8.4.1) | **Repository:** `PS-PhinIT/365CMS.DE-THEME`
 > **Ausgeschlossen:** das private Theme `cms-phinit` (weder geprüft noch verändert, nicht in öffentliche Manifeste aufgenommen).
+> **Umsetzung:** academy365 als Referenz in [PS-PhinIT/365CMS.DE-THEME#3](https://github.com/PS-PhinIT/365CMS.DE-THEME/pull/3) (gemergt). Die übrigen 12 Themes, Kit 1.0.1 und dieses Protokoll liegen auf Wunsch in **einem** Sammel-PR vom Branch `cld/admiring-rubin-0ctgww`. Je Theme gibt es genau einen Commit, der nur den Theme-Ordner ändert; die Einzel-Branches `cld/admiring-rubin-0ctgww-<slug>` bleiben lokal als Arbeitsstand.
 
 ## Inhalt
 
@@ -18,18 +19,18 @@
 
 | Theme (Ordner) | Name | Version alt → neu | Header öffnet `<main>` | Dark Mode | Login-Vorlagen | Status |
 |---|---|---|---|---|---|---|
-| `academy365` | Academy365 | 3.1.0 → 4.0.0 | nein | nein (`supports` bereinigt) | – | [x] (gemergt, [PS-PhinIT/365CMS.DE-THEME#3](https://github.com/PS-PhinIT/365CMS.DE-THEME/pull/3)) |
+| `academy365` | Academy365 | 3.1.0 → 4.0.0 → 4.0.1 (Kit 1.0.1) | nein | nein (`supports` bereinigt) | – | [x] (gemergt, [PS-PhinIT/365CMS.DE-THEME#3](https://github.com/PS-PhinIT/365CMS.DE-THEME/pull/3)) |
 | `buildbase` | BuildBase | 3.1.0 → 4.0.0 | nein | nein (`supports` bereinigt) | – | [x] |
 | `business` | Business Presentation | 3.1.0 → 4.0.0 | ja | nein | – | [x] |
 | `feder` | Feder | 1.0.0 → 2.0.0 | ja | ja (`data-theme`, `prefers-color-scheme`) | – | [x] |
 | `kompass` | Kompass | 1.0.0 → 2.0.0 | ja | nein (Hochkontrastmodus) | – | [x] |
 | `kontor` | Kontor | 1.0.0 → 2.0.0 | ja | nein | – | [x] |
 | `logilink` | LogiLink | 1.1.0 → 2.0.0 | nein | nein (`supports` bereinigt) | – | [x] |
-| `medcarepro` | MedCare Pro | 1.1.0 → 2.0.0 | nein | ja | `login.php` | <!--C-medcarepro--> |
-| `newspaper` | CMS Newspaper (Index-Slug `cms-newspaper`) | 1.1.0 → 2.0.0 | ja | ja | – | <!--C-newspaper--> |
+| `medcarepro` | MedCare Pro | 1.1.0 → 2.0.0 | nein | nein (`supports` bereinigt) | `login.php`, `register.php` | [x] |
+| `newspaper` | CMS Newspaper (Index-Slug `cms-newspaper`) | 1.1.0 → 2.0.0 | ja | nein (`supports` bereinigt) | – | [x] |
 | `personalflow` | PersonalFlow | 1.1.0 → 2.0.0 | nein | nein | – | [x] |
 | `PTC` | PTC – Personalvermittlung & Schulungen | 3.1.0 → 4.0.0 | ja | nein | `login.php`, `register.php` | [x] |
-| `rundschau` | Rundschau | 1.0.0 → 2.0.0 | ja | ja | – | <!--C-rundschau--> |
+| `rundschau` | Rundschau | 1.0.0 → 2.0.0 | ja | nein | – | [x] |
 | `technexus` | TechNexus | 1.1.0 → 2.0.0 | nein | ja (`data-theme`) | – | [x] |
 | `cms-default` | Meridian CMS Default | 1.1.0 (unverändert) | ja | nein | `login.php`, `register.php`, `forgot-password.php` | [ ] nur Audit, liegt im Core-Repository (siehe Abschnitt 5) |
 
@@ -129,7 +130,26 @@ Für alle Themes umgesetzt (Details unten nur, wo abweichend oder auffällig):
 - [x] **2:** `page.php` zeigte Inhalte ohne Titel nicht (Downloads/Feeds als „Seite nicht gefunden“); Logo-Link `…//`; `/it-experts`, `/companies`, `/events`, `/jobs` nur bei Ziel.
 - [x] **5:** Dark Mode war wirkungslos (Customizer-`:root` überschrieb `[data-theme="dark"]`) → `:root[data-theme="dark"]`. Mobiles Kartenraster mit 2–3 Spalten → einspaltig. Hell: Weiß/Primär 3,7 → 5,4, Code 2,2 → 4,7, Fokus 1,7 → 5,1; Dunkel: Link 8,1, Muted 5,7, Fokus 9,9 (alter Link 2,8). `aria-pressed` am Farbschalter, Fokusführung im Mobilmenü, ISO-`datetime`.
 
-<!--C-SECTIONS-->
+### medcarepro — 1.1.0 → 2.0.0
+- [x] **1:** `error.php` rief `get_header()/get_footer()` selbst auf → Vertrag mit eigenem `<main id="main">`. `registerMenuLocation()` entfernt; `main_nav` einmal (`desktop`, eine responsive Navigation). `login.php`/`register.php` (Legacy-Modus) posten an die Core-Handler (`Auth::login()/register()`, neutrale Meldungen); neu: Feld `redirect`, Vorbelegung aus `auth_form_old`, Login per E-Mail oder Benutzername, Registrierung nur bei aktivierter Core-Registrierung. Logout als POST-Formular in Header und Mobilmenü (dort auch Kontolinks, weil die Buttons mobil ausgeblendet sind).
+- [x] **2:** `/aerzte`, `/termin`, `/fachgebiet…`, `/pricing` und Rechtsseiten nur bei Ziel; Hero-Suche fällt ohne Arztsuche auf `/search` zurück; Blog-Paginierung zeigte immer auf `/blog`; `date(strtotime())` warf unter `strict_types` bei ungültigem Datum einen `TypeError` → `mc_format_date()`.
+- [x] **3:** Login-Showcase (`renderShowcase(…, 'legacy')`), Fokus-Punkt, Vorschau.
+- [x] **4:** Google Fonts an zwei Stellen; eigene Description/`og:url`/`robots` entfernt; Font-Stacks HTML-escaped im `<style>` (Schrift griff nie); Copyright unescaped; Suche/Arztkarte ließen `data://` u. ä. durch → `mc_safe_url()`.
+- [x] **5:** Das JS setzte `aria-hidden="true"` auf die Hauptnavigation, auch auf dem Desktop (für Screenreader unsichtbar). Notfallhinweise `note` statt `alert` bei jedem Aufruf. `theme.json`-Defaults (vom Core vorrangig genutzt) waren noch Sky-Blau: Weiß auf Primär 2,77, Akzent 2,54, Warnung 2,15, Link 3,84, Muted 4,46 → Teal-Palette: Primär 7,70, Link 5,38 / 5,05, Muted 5,53 / 5,20, Warnung 5,02, Akzent `#0f9d6a` → `#047857` 3,47 → 5,48; Fokus auf dunklen Flächen Teal 1,85 → Gelb 11,7. `supports: dark-mode` entfernt.
+
+### newspaper — 1.1.0 → 2.0.0
+- [x] **1:** `error.php` las nur `$GLOBALS` und lud im Fatal-Handler `functions.php`. `registerMenuLocation()` (auf `init`/`cms_init`) entfernt. Menüs lasen nur `label` (Einträge leer); Aktiv-Erkennung markierte `/blog` auch bei `/blogger`. `main_nav` für Desktop und Mobil-Drawer.
+- [x] **2:** `page.php` filterte das Core-HTML mit `strip_tags()` (Downloads, Feeds, Formulare, `<picture>` zerlegt) → unverändert. Footer-Spalten, Demo-Kacheln, Info-Box- und Feed-Links (`/artikel/…`, `#`) nur mit Ziel; drei Social-Platzhalter auf `#` → Felder `social_*_url`; `index.php` verlinkte die nicht vorhandene Route `/archiv`. Theme-URL über den Ordner `newspaper` statt den Slug `cms-newspaper`.
+- [x] **4:** Google Fonts in `functions.php` und im öffentlich abrufbaren Prototyp `newspaper.html` (zusätzlich Bilder von picsum.photos) → Prototyp gelöscht. Eigene Description/`og:url` (immer Startseite)/`robots index,follow` entfernt. Customizer-Werte im CSS validiert; Font-Stacks HTML-escaped (`&quot;` im `<style>`). `theme_nav_menu` ließ `javascript://…` durch → `news_safe_url()`.
+- [x] **5:** Geschlossener Mobil-Drawer per Tab erreichbar → `hidden` + Fokusführung. Akzent `#e32d12` → `#c22510` 4,28 → 5,59 (Weiß auf Akzent 4,52 → 5,89); Meta-Grau `#9a9b9c` → `#6f7071` 2,64 → 4,71; Akzent auf Ink 4,36 → 6,66 (`--news-accent-on-dark`); Footer-Copy/Partner 2,16 / 2,82 → 6,08; Footer-Überschriften 4,51 → 6,26. `supports: dark-mode` entfernt.
+
+### rundschau — 1.0.0 → 2.0.0
+- [x] **1:** `error.php` las nur `$GLOBALS['error_code']` und ignorierte den Router-Titel. `main_nav` in Ressort-Leiste (`desktop`) und Mobilpanel (`mobile`). Aktive Einträge bei Installation im Unterverzeichnis nicht erkannt → `theme_v4_request_path()`. Inhaltsabfragen waren prepared mit `cms_post_publication_where()`; Kategoriezählung je Kategorie → gruppierte JOIN-Abfrage.
+- [x] **2:** Fallback-Menüs/Footer nur mit Ziel, leere Navigationen entfallen; Newsletter-Band `/kontakt` → `/newsletter`; `page.php` mit `id = 0` ohne Warnungen.
+- [x] **3:** Fokus-Punkt an Aufmacher-, Artikel- und Seitenbild; Vorschau-Hinweis.
+- [x] **4:** `renderCurrentHeadTags()` ohne Vorschaufall → `theme_v4_head_tags()`; Google Fonts bei ausgeschalteter lokaler Option entfernt (`local_font_slugs` bleibt).
+- [x] **5:** Signal-Orange `#e8590c` → `#c2410c`: Weiß auf Orange 3,58 → 5,18, Orange auf Fläche `#f2f4f5` 3,25 → 4,69, Hover `#9a3412`; Skip-Link mit doppeltem Fokusring; Text 17,8, Muted 5,87 / 5,32, Link 8,38, Ressortfarben 5,1–7,6 bestanden bereits.
+
 
 ## 5. cms-default / Meridian CMS Default (Core-Repository)
 
@@ -154,7 +174,7 @@ Nicht geändert, nur festgehalten:
 
 ## 7. Prüfungen
 
-Für jedes Theme auf seinem Branch und abschließend auf dem Sammel-Branch:
+Für jedes Theme auf seinem Branch und abschließend auf dem Sammel-Branch `cld/admiring-rubin-0ctgww` (253 PHP-Dateien):
 - `php -l` für alle PHP-Dateien: fehlerfrei (lokal PHP 8.3; keine 8.4-only-Syntax verwendet; keine implizit nullable Parameter, kein `E_STRICT`/`utf8_encode`/`strftime`).
 - `php TESTS/theme-contract/run.php <repo>` (Core): `Theme contract tests passed (13 themes)`.
 - `smoke.php`: Laufzeit-Test der Kit-Helfer gegen `CMS\Hooks` (`main_nav`-Wrapping, `is_current_path`, `link_available`, Modul-`<main>`, Fokus-Punkt, Fehlerkontext snake/camel/ungültig, Vorschau-Head) und `error.php` eigenständig (genau ein `<main>`, vollständiges Dokument) bzw. als Fragment (403).
@@ -172,6 +192,9 @@ Für jedes Theme auf seinem Branch und abschließend auf dem Sammel-Branch:
 - **PTC:** `custom_head_code`/`custom_footer_code` werden roh ausgegeben, Inline-Scripts darin blockiert die CSP. Der Admin-Customizer lädt `cms_csp_runtime_tags()` ohne `true`, weil `admin.js` ohne `defer` geladen wird.
 - **technexus:** Ohne gespeicherte Wahl wird `prefers-color-scheme` nicht ausgewertet. Vor dem `defer`-Script ist ein kurzes Aufblitzen des falschen Farbschemas möglich.
 - **personalflow:** `.pf-reveal` blendet Startseiteninhalte ohne JavaScript aus (bestehendes Design).
+- **Nur Pflichtpunkte in der Schlussphase:** rundschau, newspaper und medcarepro haben kein vollständiges Kontrast-Audit aller Einzelregeln erhalten (offen z. B. der Hochkontrastmodus von medcarepro und die Ressort-Badges auf Flächen bei rundschau); Hover-, Placeholder- und Fokus-über-Bild-Zustände sind nicht vollständig geprüft.
+- **Neue Farb-Defaults** wirken nur ohne gespeicherte Werte. Bereits gespeicherte Customizer-Farben, etwa das alte Orange (rundschau) oder Sky-Blau (medcarepro), bleiben auf bestehenden Installationen erhalten und sollten im Customizer zurückgesetzt werden.
+- **rundschau:** Je Ressort-Block auf der Startseite läuft eine Abfrage (höchstens 8 Blöcke, kein N+1 je Beitrag), so belassen. **newspaper:** Die Startseite zeigt weiterhin statische Demo-Artikel. Der Admin-Customizer bindet seine Scripts ohne `defer` ein.
 - **Demo-Inhalte:** Statische Kennzahlen, Demo-Kontaktdaten und Platzhalter-Kurse bleiben unverändert, etwa business „200+ Projekte“, kompass `+49 123 456 789` und die academy365-Kurse.
 - **cms-default:** Folge-PR im Core-Repository (Abschnitt 5).
 - **index.json:** Bereinigung `cms-showcase`/`cms-newspaper` (Abschnitt 6).
