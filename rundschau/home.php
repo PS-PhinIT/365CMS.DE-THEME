@@ -143,7 +143,9 @@ $focusItems = $focusTag !== '' ? rundschau_get_posts(['limit' => 4, 'tag' => $fo
 <?php endif; ?>
 
 <?php if (rundschau_flag('rs_home', 'show_newsletter', true)) :
-    $nlUrl = rundschau_safe_url(rundschau_text('rs_home', 'newsletter_cta_url', '/kontakt'));
+    // Newsletter-Link: Standard ist das Core-Modul /newsletter; Button nur, wenn das Ziel existiert (Route aktiv bzw. Seite veröffentlicht).
+    $nlUrl = rundschau_safe_url(rundschau_text('rs_home', 'newsletter_cta_url', '/newsletter'));
+    $nlUrl = $nlUrl !== '' && theme_v4_link_available(rundschau_url($nlUrl)) ? $nlUrl : '';
     $nlLabel = rundschau_text('rs_home', 'newsletter_cta_label', 'Kostenlos abonnieren');
     ?>
     <section class="rs-newsletter" aria-labelledby="rs-newsletter-title">

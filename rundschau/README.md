@@ -1,7 +1,7 @@
 # Rundschau – News-Theme für 365CMS
 
-**Version:** 1.0.0
-**Ziel:** 365CMS 3.4.00+ · PHP 8.4
+**Version:** 2.0.0
+**Ziel:** 365CMS 4.0.0 – 4.1.0 · PHP 8.4.1+
 **Slug:** `rundschau`
 **Kategorie:** News / Nachrichtenportal
 
@@ -27,9 +27,12 @@ kräftige Archivo-Grotesk geben dem Portal einen klaren Zeitungscharakter.
 | `blog-single.php` | Artikel mit Byline, Teilen-Leiste, Seitenleiste, „Mehr zum Thema“ |
 | `page.php` | Statische Seite |
 | `search.php` | Suche mit Ressort-Seitenleiste |
+| `contact.php` | Kontaktseite: Core-Formular (`$contactFormHtml`) plus Redaktionskontakt (Customizer „Kontakt“) |
 | `404.php` | Nicht gefunden – mit Suche und neuesten Meldungen |
-| `error.php` | Eigenständige Fehlerseite (Fatal-Handler) |
+| `error.php` | Fehlerseite nach Router-Vertrag 4.0.0; eigenständig (Wartung, Fatal-Handler) als vollständiges Dokument |
 | `index.php` | Fallback (z. B. `/autoren`, `/sitemap`) |
+| `knowledgebase/*.php`, `newsletter/*.php` | Core-Views der Module im Theme-Rahmen (kein doppeltes `<main>`) |
+| `includes/cms-v4-compat.php`, `css/cms-v4.css` | Gemeinsame 365CMS-4.x-Schicht aller Public Themes (Fehlerseiten, `main_nav`, Standardlinks, SEO/Vorschau, Memberbereich, Token-Brücke `--tv4-*`) |
 
 ## Menüpositionen
 
@@ -60,16 +63,19 @@ z. B. `.rs-c-3 { --rs-ressort: #7c3aed; }`, oder im Customizer ganz abschalten.
 | `rs_article` | Lesezeit, Aktualisierung, Teilen, „Mehr zum Thema“ |
 | `footer` | Kurzbeschreibung, Ressortliste, Copyright |
 | `advanced` | Eigenes CSS (wird gefiltert) |
+| `contact` | Angezeigte E-Mail, Telefon, Adresse, Erreichbarkeit auf der Kontaktseite |
 
-## 365CMS-3.4-Vertrag
+## 365CMS-4.x-Vertrag
 
-- Header/Footer über `ThemeManager::render()`, gegen Doppel-Einbindung geschützt.
-- `cms_csp_runtime_tags()` als erstes Script, CSP-Nonce für alle Inline-Blöcke, keine Inline-Handler, keine HTML-Sinks (Trusted Types).
-- SEO-Metadaten über `SEOService::renderCurrentHeadTags()`; `$post`/`$page` werden dafür bereitgestellt, der Titel läuft über `page_title`.
+- Header/Footer über `ThemeManager::render()`, gegen Doppel-Einbindung geschützt; `header.php` öffnet `<main id="main-content">` (`THEME_V4_HEADER_HAS_MAIN`).
+- `cms_csp_runtime_tags(true)` als erstes Script, CSP-Nonce für alle Inline-Blöcke, keine Inline-Handler, keine HTML-Sinks (Trusted Types), Theme-Script mit `defer`.
+- SEO-Metadaten über `theme_v4_head_tags()` (Core `SEOService::renderCurrentHeadTags()`, im Vorschaukontext `noindex` ohne JSON-LD); `$post`/`$page` werden dafür bereitgestellt, der Titel läuft über `page_title` und berücksichtigt `$title` der Core-Module.
+- Core-Hook `main_nav` in Ressort-Leiste (`desktop`) und Mobilmenü (`mobile`).
+- Memberbereich: nur `member_head` mit der Theme-Palette, keine Frontend-Assets.
 - `before_footer`/`body_end` im Footer, `body_start` nach `<body>`.
 - Beitragslinks über `PermalinkService`, Archivlinks über `cms_get_archive_url()`.
 - „Meistgelesen“ nutzt die Aufrufzahl (`posts.views`), die der Core beim Artikelaufruf zählt.
-- Google Fonts entfallen bei `privacy_use_local_fonts = 1`; stattdessen werden die Schriften über `local_font_slugs` aus dem Font-Manager geladen (`archivo`, `source-serif-4` …).
+- Keine Google Fonts: Schriften kommen über `local_font_slugs` aus der Core-Schriftverwaltung (`archivo`, `source-serif-4` …, aktiv bei `privacy_use_local_fonts = 1`), sonst System-Schriften.
 
 ## Barrierearmut
 

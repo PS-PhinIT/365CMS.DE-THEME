@@ -116,12 +116,12 @@ $shareLinks = [
 
             <?php if ($image !== '') : ?>
                 <figure class="rs-article__media">
-                    <img src="<?php echo rundschau_e($image); ?>" alt="<?php echo rundschau_e($title); ?>" width="1200" height="675" loading="eager" decoding="async" fetchpriority="high">
+                    <?php echo theme_v4_img($image, $title, ['width' => 1200, 'height' => 675, 'lcp' => true, 'item' => $post]); // LCP-Bild mit Fokus-Punkt ?>
                 </figure>
             <?php endif; ?>
 
             <div class="rs-prose entry-content">
-                <?php echo $content; ?>
+                <?php echo $content; // vom Core gerendertes, sanitiertes HTML – unverändert ?>
             </div>
 
             <?php if ($tags !== []) : ?>

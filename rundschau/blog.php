@@ -74,7 +74,7 @@ $authorAvatar = isset($author) && is_array($author) ? rundschau_media_url($autho
         </nav>
         <div class="rs-pagehead__row">
             <?php if ($authorAvatar !== '') : ?>
-                <img class="rs-pagehead__avatar" src="<?php echo rundschau_e($authorAvatar); ?>" alt="" width="72" height="72">
+                <img class="rs-pagehead__avatar" src="<?php echo rundschau_e($authorAvatar); ?>" alt="" width="72" height="72" loading="lazy" decoding="async">
             <?php endif; ?>
             <div>
                 <p class="rs-pagehead__kicker"><?php echo rundschau_e($kicker); ?></p>

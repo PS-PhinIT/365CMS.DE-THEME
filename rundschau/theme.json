@@ -1,9 +1,10 @@
 {
     "name": "Rundschau",
     "slug": "rundschau",
-    "version": "1.0.0",
-    "requires_cms": "3.4.00",
-    "requires_php": "8.4",
+    "version": "2.0.0",
+    "requires_cms": "4.0.0",
+    "requires_php": "8.4.1",
+    "tested_up_to": "4.1.0",
     "author": "PHINIT.DE / Andreas Hepp",
     "description": "Datengetriebenes Nachrichtenportal für Lokal-, Fach- und Vereinsnachrichten – Top-Themen, Nachrichten-Ticker, Meistgelesen, automatische Ressort-Blöcke mit Ressortfarben, Petrol-Palette mit Signal-Orange und kräftiger Archivo-Typografie.",
     "textdomain": "rundschau",
@@ -19,9 +20,24 @@
         "blog-single": "blog-single.php",
         "page": "page.php",
         "search": "search.php",
+        "contact": "contact.php",
         "404": "404.php",
         "error": "error.php",
         "index": "index.php"
+    },
+    "login_page": {
+        "colors": {
+            "background_start": "#f2f4f5",
+            "background_end": "#dde2e5",
+            "card_background": "#ffffff",
+            "text_color": "#14181c",
+            "muted_color": "#5b6670",
+            "primary_color": "#0b3c49",
+            "primary_text_color": "#ffffff",
+            "link_color": "#0b5566",
+            "input_background": "#ffffff",
+            "input_border": "#8a959e"
+        }
     },
     "menus": {
         "primary": "Ressort-Navigation (Header)",
@@ -40,7 +56,7 @@
             "settings": {
                 "brand_color": { "label": "Markenfarbe (Petrol)", "type": "color", "default": "#0b3c49", "description": "Service-Leiste, Ressort-Navigation und Footer." },
                 "brand_dark": { "label": "Markenfarbe dunkel", "type": "color", "default": "#072a33" },
-                "accent_color": { "label": "Signalfarbe (Eilmeldung/Live)", "type": "color", "default": "#e8590c" },
+                "accent_color": { "label": "Signalfarbe (Eilmeldung/Live)", "type": "color", "default": "#c2410c", "description": "Auch Textfarbe (Uhrzeiten, Ticker) und Fokusrahmen – für WCAG AA mindestens 4,5:1 auf Weiß wählen." },
                 "link_color": { "label": "Linkfarbe", "type": "color", "default": "#0b5566" },
                 "text_color": { "label": "Text", "type": "color", "default": "#14181c" },
                 "muted_color": { "label": "Gedämpfter Text (Meta)", "type": "color", "default": "#5b6670" },
@@ -146,7 +162,7 @@
                 "newsletter_heading": { "label": "Newsletter: Überschrift", "type": "text", "default": "Der Morgen-Überblick" },
                 "newsletter_text": { "label": "Newsletter: Text", "type": "textarea", "default": "Die wichtigsten Nachrichten des Tages – werktags um 6 Uhr in Ihrem Postfach." },
                 "newsletter_cta_label": { "label": "Newsletter: Button-Text", "type": "text", "default": "Kostenlos abonnieren" },
-                "newsletter_cta_url": { "label": "Newsletter: Button-Link", "type": "text", "default": "/kontakt" }
+                "newsletter_cta_url": { "label": "Newsletter: Button-Link", "type": "text", "default": "/newsletter", "description": "Standard: Newsletter-Modul des Cores. Der Button erscheint nur, wenn das Ziel existiert." }
             }
         },
         "rs_article": {
@@ -171,6 +187,16 @@
             "label": "Erweitert",
             "settings": {
                 "custom_css": { "label": "Eigenes CSS", "type": "textarea", "default": "", "description": "Wird nach dem Theme-CSS geladen. <style>-Tags, @import, expression() und javascript:-URLs werden entfernt." }
+            }
+        },
+        "contact": {
+            "label": "Kontakt",
+            "description": "Redaktionskontakt neben dem Core-Kontaktformular (/kontakt, /contact). Das Formular selbst wird unter Inhalte → Formulare gepflegt.",
+            "settings": {
+                "contact_email": { "label": "Angezeigte E-Mail-Adresse", "type": "text", "default": "", "description": "Leer = Administrator-Adresse" },
+                "contact_phone": { "label": "Telefon", "type": "text", "default": "" },
+                "contact_address": { "label": "Adresse", "type": "textarea", "default": "" },
+                "contact_hours": { "label": "Erreichbarkeit", "type": "textarea", "default": "" }
             }
         }
     }

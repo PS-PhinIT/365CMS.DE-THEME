@@ -50,18 +50,31 @@ $ressorts = rundschau_flag('footer', 'show_ressorts', true)
             </nav>
         <?php endif; ?>
 
-        <nav class="rs-footer__col" aria-label="Footer-Navigation">
-            <h2 class="rs-footer__title">Service</h2>
-            <?php rundschau_nav_menu('footer-nav', 'rs-footer__list', rundschau_default_menu('footer-nav')); ?>
-        </nav>
+        <?php
+        // Fallback-Spalten zeigen nur vorhandene Ziele (rundschau_default_menu → theme_v4_filter_links); leere Spalten entfallen.
+        ob_start();
+        $rsHasFooterNav = rundschau_nav_menu('footer-nav', 'rs-footer__list', rundschau_default_menu('footer-nav'));
+        $rsFooterNav = (string) ob_get_clean();
+        ob_start();
+        $rsHasLegalNav = rundschau_nav_menu('footer-legal', 'rs-footer__legal', rundschau_default_menu('footer-legal'));
+        $rsLegalNav = (string) ob_get_clean();
+        ?>
+        <?php if ($rsHasFooterNav) : ?>
+            <nav class="rs-footer__col" aria-label="Footer-Navigation">
+                <h2 class="rs-footer__title">Service</h2>
+                <?php echo $rsFooterNav; // rundschau_nav_menu(): escapte Menüliste ?>
+            </nav>
+        <?php endif; ?>
     </div>
 
     <div class="rs-footer__bottom">
         <div class="rs-container rs-footer__bottom-inner">
             <p><?php echo rundschau_e($copyright); ?></p>
-            <nav aria-label="Rechtliche Links">
-                <?php rundschau_nav_menu('footer-legal', 'rs-footer__legal', rundschau_default_menu('footer-legal')); ?>
-            </nav>
+            <?php if ($rsHasLegalNav) : ?>
+                <nav aria-label="Rechtliche Links">
+                    <?php echo $rsLegalNav; // rundschau_nav_menu(): escapte Menüliste ?>
+                </nav>
+            <?php endif; ?>
             <a class="rs-footer__top" href="#main-content"><?php echo rundschau_icon('up'); ?><span>Nach oben</span></a>
         </div>
     </div>
