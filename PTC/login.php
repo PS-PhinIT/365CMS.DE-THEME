@@ -26,7 +26,10 @@ $success   = theme_get_flash('success');
 $oldValues = is_array($_SESSION['auth_form_old']['login'] ?? null) ? $_SESSION['auth_form_old']['login'] : [];
 unset($_SESSION['auth_form_old']['login']);
 $savedUsername = (string) ($oldValues['username'] ?? $oldValues['email'] ?? '');
-$redirectTo    = isset($login_redirect) && is_string($login_redirect) ? $login_redirect : '';
+$redirectTo    = isset($login_redirect) && is_string($login_redirect) ? trim($login_redirect) : '';
+// Zusätzlich zur Core-Prüfung: nur interne Pfade (kein `//host`, kein `/\host`, keine Steuerzeichen).
+$redirectTo    = str_starts_with($redirectTo, '/') && !str_starts_with($redirectTo, '//') && !str_contains($redirectTo, '\\')
+    && preg_match('/[\x00-\x1F\x7F]/', $redirectTo) !== 1 ? $redirectTo : '';
 $forgotUrl     = $siteUrl . '/forgot-password';
 ?>
 

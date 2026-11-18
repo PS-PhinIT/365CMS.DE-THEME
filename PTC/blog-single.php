@@ -68,13 +68,14 @@ if ($showRelated) {
         $catId  = (int) ($post->category_id ?? 0);
         $postId = (int) ($post->id ?? 0);
         if ($catId > 0) {
-            // Ein Query mit JOIN (keine N+1-Schleife), nur veröffentlichte Beiträge (4.1.0 kennt `pending`).
+            // Ein Query mit JOIN (keine N+1-Schleife), nur öffentlich sichtbare Beiträge: Core-Filter, damit geplante
+            // Beiträge (published_at in der Zukunft) nicht vorzeitig als „verwandt“ mit Titel und Auszug erscheinen.
             $stmt = $db->execute(
                 "SELECT p.id, p.title, p.slug, p.excerpt, p.published_at, p.featured_image,
                         c.name AS category_name
                  FROM {$prefix}posts p
                  LEFT JOIN {$prefix}post_categories c ON c.id = p.category_id
-                 WHERE p.category_id = ? AND p.id != ? AND p.status = 'published'
+                 WHERE p.category_id = ? AND p.id != ? AND " . (function_exists('cms_post_publication_where') ? cms_post_publication_where('p') : "p.status = 'published'") . "
                  ORDER BY p.published_at DESC
                  LIMIT 3",
                 [$catId, $postId]

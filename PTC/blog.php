@@ -60,11 +60,14 @@ if ($showSidebar) {
     try {
         $db     = \CMS\Database::instance();
         $prefix = $db->getPrefix();
+        // Core-Filter statt nur `status = 'published'`: geplante Beiträge (published_at in der Zukunft) zählten
+        // bisher mit, ihre Schlagwörter erschienen vor der Veröffentlichung in der Seitenleiste.
+        $published = function_exists('cms_post_publication_where') ? cms_post_publication_where('p') : "p.status = 'published'";
 
         $catStmt = $db->execute(
             "SELECT c.name, c.slug, COUNT(p.id) AS post_count
              FROM {$prefix}post_categories c
-             LEFT JOIN {$prefix}posts p ON p.category_id = c.id AND p.status = 'published'
+             LEFT JOIN {$prefix}posts p ON p.category_id = c.id AND {$published}
              GROUP BY c.id
              ORDER BY c.name ASC
              LIMIT 15"
@@ -72,7 +75,7 @@ if ($showSidebar) {
         $categories = $catStmt->fetchAll(\PDO::FETCH_ASSOC) ?: [];
 
         $tagStmt = $db->execute(
-            "SELECT tags FROM {$prefix}posts WHERE status = 'published' AND tags IS NOT NULL AND tags != '' ORDER BY published_at DESC LIMIT 500"
+            "SELECT p.tags FROM {$prefix}posts p WHERE {$published} AND p.tags IS NOT NULL AND p.tags != '' ORDER BY p.published_at DESC LIMIT 500"
         );
         $tagRows = $tagStmt->fetchAll(\PDO::FETCH_COLUMN) ?: [];
         $tagCounts = [];

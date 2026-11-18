@@ -1,5 +1,22 @@
 # PTC Theme – Changelog
 
+## 4.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/PTC.md`)
+
+#### Sicherheit
+- **Geplante Beiträge vorzeitig sichtbar:** „Verwandte Beiträge“ unter einem Artikel sowie Kategorien und Schlagwörter in der Blog-Seitenleiste filterten nur `status = 'published'`. Beiträge mit Veröffentlichungsdatum in der Zukunft erschienen dadurch vorab mit Titel, Auszug und Bild. Alle drei Abfragen nutzen jetzt `cms_post_publication_where()` des Cores.
+- **Custom Head/Footer Code** wurde roh ausgegeben (Stored XSS, sobald die CSP abgeschaltet ist). Head-Code: nur noch `<meta>`- und `<link>`-Tags ohne `http-equiv` und Event-Handler. Footer-Code: Scripts, iframes, `object`/`embed`, Formulare, Event-Handler und `javascript:`/`data:`-Ziele (auch Entity-kodiert) werden entfernt. Unter der 365CMS-CSP hätten diese Inhalte ohnehin nicht funktioniert.
+- `ptc_safe_url()` lehnt `/\host` ab und verwirft Pfade mit Steuerzeichen statt sie zu bereinigen.
+- `login.php`: Das Weiterleitungsziel wird zusätzlich auf interne Pfade geprüft.
+- Customizer-Upload: Mehrfach-Uploads (`feld[]`) werden abgewiesen statt mit „Array to string conversion“ verarbeitet.
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang; der Admin-Link im Profilmenü hängt weiter an `isAdmin()`), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Standard-Footermenü: Eintrag „Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält Fokus und Sprungziele unter dem festen Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 4.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

@@ -60,6 +60,24 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 4.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 4.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S7 | **hoch** | `blog-single.php` („Verwandte Beiträge“) und `blog.php` (Kategorien, Tag-Wolke) filterten nur `status = 'published'`; Beiträge mit `published_at` in der Zukunft erschienen vorzeitig mit Titel, Auszug und Bild bzw. ihre Schlagwörter | `cms_post_publication_where()` |
+| S1/S9 | **mittel** | `custom_head_code`/`custom_footer_code` roh ausgegeben (offen seit 4.0): Stored XSS bei abgeschalteter CSP, `meta http-equiv="refresh"` möglich | Head: nur `<meta>`/`<link>` ohne `http-equiv`/Handler; Footer: aktive Elemente, Handler und `javascript:`/`data:` (auch Entity-kodiert) entfernt; Test mit Bypass-Varianten |
+| S2 | mittel | `ptc_safe_url()` ließ `/\evil.example` durch, „bereinigte“ Steuerzeichen statt zu verwerfen (Render-Test) | behoben |
+| S2 | niedrig | `login.php` übernahm `$login_redirect` ohne eigene Prüfung (Core prüft bereits) | zusätzliche Prüfung auf interne Pfade |
+| S6 | niedrig | Customizer-Upload: Endung + `finfo`-MIME (Rückfall `getimagesize`), kein SVG, 2 MB, Zufallsname korrekt; `feld[]` → „Array to string conversion“ | Array-Fall abgewiesen |
+| S4/S5 | – | Customizer: `isAdmin()` + `exit` vor jeder Ausgabe, CSRF (`ptc_customizer`) für Speichern und Zurücksetzen, Bild-URLs mit Allowlist, `$previewUrl` escaped | kein Befund |
+| S7 | – | Events (`cms-events`): Prepared Statement, `LIMIT` als geklemmte Ganzzahl, `status = ?` | kein Befund |
+| S1 | – | Alle rohen Ausgaben in `blog-single.php`, `blog.php`, `search.php`, `footer.php` vorher mit `htmlspecialchars` belegt; Social-/Netzwerk-Links nur http(s) über `ptc_safe_url()` | kein Befund |
+| S4 | – | Login/Registrierung posten an die Core-Routen mit Core-Token, Logout als POST (4.0) | kein Befund |
+| P1 | akzeptiert | Tag-Wolke parst bis zu 500 `tags`-Felder je Blog-Aufruf (nur mit Seitenleiste) | dokumentiert |
+| P3 | akzeptiert | Admin-Customizer: `admin.js` ohne `defer`, daher `cms_csp_runtime_tags()` ohne `true` (offen aus 4.0, Core-Asset) | dokumentiert |
+| Q3 | mittel | WCAG 2.2 2.4.11: fester Header verdeckte Fokus und Sprungziele | `scroll-padding-top` |
+| K2 | – | Admin-Link im Profilmenü nur bei `isAdmin()` (Rolle `moderator` sieht ihn nicht), Mitgliederlinks für jede angemeldete Rolle | kein Befund |
+| K3 | – | Standard-Footermenü „Community“ nur bei aktivem Modul | umgesetzt |
+| K5 | – | Header öffnet `<main>`: Kit wandelt `<main>` künftiger Community-Overrides in `<div>` | vorbereitet |
+| K8 | – | eigene POST-Formulare nur Login/Registrierung (Bypass-Liste des `form_guard`, Core-Token) | kein Befund |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test inkl. `login`, `register`, `blog` | grün |
