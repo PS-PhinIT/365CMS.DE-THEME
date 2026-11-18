@@ -4,10 +4,10 @@ Theme URI: https://phin.network
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phin.network
 Description: Logistik & Transport Theme – operative Klarheit, Status-System, Tracking-ID-Typografie. Für Speditionen, Kurierdienste, Lagerdienstleister und Last-Mile-Operatoren.
-Version: 2.0.0
+Version: 2.1.0
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
-Tested up to: 4.1.0
+Tested up to: 4.2.0
 License: GPL-2.0-or-later
 Text Domain: logilink
 Tags: logistik, transport, tracking, dashboard, status-system, responsive
@@ -110,6 +110,7 @@ Tags: logistik, transport, tracking, dashboard, status-system, responsive
 html {
     font-size: var(--ll-font-size-base);
     scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--ll-header-height, 64px) + 1rem); /* WCAG 2.2: 2.4.11 */
     -webkit-text-size-adjust: 100%;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1319,12 +1320,14 @@ body.has-dashboard-mode .ll-kpi-card .ll-kpi-number { font-size: 1.625rem; }
 /* ================================================================
    13. Reveal on scroll (motion-allowed)
    ================================================================ */
-.ll-reveal {
+/* Nur mit laufendem Script ausblenden (navigation.js setzt .ll-js): ohne JS blieben Startseitenbereiche
+   samt Kapazitätsformular unsichtbar. */
+html.ll-js .ll-reveal {
     opacity: 0;
     transform: translateY(8px);
     transition: opacity .35s ease, transform .35s ease;
 }
-.ll-reveal.is-visible {
+html.ll-js .ll-reveal.is-visible {
     opacity: 1;
     transform: translateY(0);
 }
