@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BUSINESS_THEME_VERSION')) {
-    define('BUSINESS_THEME_VERSION', '4.0.0');
+    define('BUSINESS_THEME_VERSION', '4.1.0');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">, footer.php schließt es.
@@ -226,6 +226,8 @@ final class IT_Business_Theme
                 ['label' => 'Über uns',    'url' => '/#ueber-uns'],
                 ['label' => 'Leistungen',  'url' => '/#leistungen'],
                 ['label' => 'Newsletter',  'url' => '/newsletter'],
+                // 365CMS 4.2.0: Basispfad der Community (nur bei aktivem Modul, sonst herausgefiltert).
+                ['label' => 'Community',   'url' => '/' . theme_v4_community_base_path()],
                 ['label' => 'Kontakt',     'url' => '/contact'],
             ],
             'footer-legal' => [
@@ -349,11 +351,12 @@ if (!function_exists('biz_safe_url')) {
         }
 
         $candidate = trim($url);
-        if ($candidate === '' || str_starts_with($candidate, '//')) {
+        // `//host` und `/\\host` (Browser werten „\\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($candidate === '' || str_starts_with($candidate, '//') || str_contains($candidate, '\\') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
             return $fallback;
         }
         if (str_starts_with($candidate, '/')) {
-            return preg_replace('/[\x00-\x1F\x7F]+/u', '', $candidate) ?? $fallback;
+            return $candidate;
         }
         if (str_starts_with($candidate, '#')) {
             return preg_match('/^#[A-Za-z][A-Za-z0-9_-]*$/', $candidate) === 1 ? $candidate : $fallback;
@@ -371,39 +374,6 @@ if (!function_exists('biz_safe_url')) {
         }
 
         return $fallback;
-    }
-}
-
-if (!function_exists('biz_sanitize_content_html')) {
-    function biz_sanitize_content_html(string $html): string
-    {
-        $allowedTags = '<p><br><strong><b><em><i><u><s>'
-            . '<h1><h2><h3><h4><h5><h6>'
-            . '<ul><ol><li><dl><dt><dd>'
-            . '<a><img>'
-            . '<blockquote><pre><code>'
-            . '<table><thead><tbody><tr><th><td>'
-            . '<div><span><section><article><aside>'
-            . '<hr><figure><figcaption>';
-
-        $clean = strip_tags($html, $allowedTags);
-        $clean = preg_replace('/\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? '';
-        $clean = preg_replace('/\s+style\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $clean) ?? '';
-        $clean = preg_replace_callback('/\s+(href|src)\s*=\s*(["\'])(.*?)\2/i', static function (array $match): string {
-            $attr = strtolower((string) $match[1]);
-            $value = html_entity_decode((string) $match[3], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $fallback = $attr === 'href' ? '#' : '';
-            $safe = biz_safe_url($value, $fallback);
-
-            if ($safe === '') {
-                return '';
-            }
-
-            return ' ' . $attr . '="' . htmlspecialchars($safe, ENT_QUOTES, 'UTF-8') . '"';
-        }, $clean) ?? '';
-
-        // Kein '</'-Escaping: Das Ergebnis ist HTML-Body-Inhalt, kein <script>/<style>-Kontext.
-        return $clean;
     }
 }
 

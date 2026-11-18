@@ -49,6 +49,24 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 4.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 4.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `biz_safe_url()` ließ `/\evil.example` als lokalen Pfad durch (Menüs, Logo, Hero-CTAs über `biz_href()`); Pfade mit Steuerzeichen wurden „bereinigt“ statt verworfen | behoben |
+| S2 | niedrig | `blog.php` spiegelte `REQUEST_URI` als Link-Basis der Paginierung | behoben |
+| S1 | – | `$bodyCls` (`biz_body_class()` escaped), `$bizSiteTitle`/`$siteTitle` (`biz_site_title()` escaped), `$copyText` (escaped), Menü-HTML, `$pageContent`/`$postContent` (Core-HTML), Blog-Zahlen int | kein Befund |
+| S1 | – | `biz_safe_headline()`: erst escapen, dann nur `<span class="highlight">` zurückwandeln | kein Befund |
+| S2 | – | Hero-/CTA-Ziele über `biz_href()`, Kontakt-E-Mail per `FILTER_VALIDATE_EMAIL`, Telefon auf `[0-9+]` reduziert | kein Befund |
+| S3 | – | `biz_css_color/_number`, eigenes CSS bereinigt | kein Befund |
+| S8 | – | `blog.php`: `array_filter($_GET, 'is_scalar')`, Fuzz ohne Warnungen | kein Befund |
+| Q2 | niedrig | `biz_sanitize_content_html()` seit 4.0.0 ungenutzt (toter, irreführender Filter) | entfernt |
+| P2 | – | `getConfig()` liest `theme.json` einmal je Request (statischer Cache) | kein Befund |
+| B3 | – | `error.php` als Fragment im Header-`<main>` und eigenständig mit eigenem `<main>`; `page.php` ohne Titel | kein Befund |
+| Q3 | mittel | WCAG 2.2 2.4.11: Sticky-Header verdeckte Fokus und Sprungziele `#leistungen`/`#kontakt` | behoben (`scroll-padding-top`) |
+| Q3 | – | Drawer `inert`, Escape nur bei offenem Menü, Fokus zurück | kein Befund |
+| K2 | – | Kontolinks für alle angemeldeten Rollen, kein Admin-Link | kein Befund |
+| K3 | – | Standard-Footermenü „Community“ (Basispfad aus den Community-Einstellungen, nur bei aktivem Modul) | umgesetzt |
+| K5 | – | Header öffnet `<main id="main-content">` (`THEME_V4_HEADER_HAS_MAIN`): Kit wandelt `<main>` künftiger `community/`-Overrides in `<div>` | vorbereitet |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |
+| Demo | akzeptiert | Kennzahlen „98 %“, „50+“ sind statische Designbeispiele | dokumentiert |
