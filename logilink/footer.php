@@ -5,6 +5,8 @@
  * @package LogiLink_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -52,6 +54,8 @@ $llFooterColumns = [
         ['label' => 'Anmelden', 'url' => theme_route_url('login')],
         ['label' => 'Dashboard', 'url' => theme_route_url('member')],
         ['label' => 'Newsletter', 'url' => $llSiteUrl . '/newsletter'],
+        // 365CMS 4.2.0: Community nur bei aktivem Modul (sonst leer und herausgefiltert).
+        theme_v4_community_link() ?? ['label' => 'Community', 'url' => ''],
         ['label' => 'Kontakt', 'url' => $llSiteUrl . '/contact'],
     ],
 ];

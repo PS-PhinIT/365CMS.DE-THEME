@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('MEDCAREPRO_THEME_VERSION')) {
-    define('MEDCAREPRO_THEME_VERSION', '2.0.0');
+    define('MEDCAREPRO_THEME_VERSION', '2.1.0');
 }
 
 if (!defined('MEDCAREPRO_THEME_SLUG')) {
@@ -456,7 +456,8 @@ if (!function_exists('mc_safe_url')) {
     function mc_safe_url(string $url, string $fallback = '#'): string
     {
         $url = trim($url);
-        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_starts_with($url, '//')) {
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_starts_with($url, '//') || str_contains($url, '\\')) {
             return $fallback;
         }
         if (str_starts_with($url, '/') || str_starts_with($url, '#') || str_starts_with($url, '?')) {

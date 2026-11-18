@@ -1,6 +1,6 @@
 <?php
 /**
- * 365CMS 4.0.0 / 4.1.0 – gemeinsame Kompatibilitätsschicht der öffentlichen Themes.
+ * 365CMS 4.0.0 / 4.1.0 / 4.2.0 – gemeinsame Kompatibilitätsschicht der öffentlichen Themes.
  *
  * Die Datei ist in allen Public Themes identisch (Stand: THEME_V4_COMPAT_VERSION). Alle Funktionen sind
  * über function_exists() geschützt und greifen ausschließlich auf öffentliche Core-APIs zu:
@@ -14,6 +14,9 @@
  *  - Module:         theme_v4_render_module_view() für Overrides unter knowledgebase/ und newsletter/
  *  - Medien:         theme_v4_focal_position(), theme_v4_focal_style_attr() (Fokus-Punkt, 4.1.0)
  *  - Memberbereich:  theme_v4_is_member_area(), theme_v4_member_tokens_style()
+ *  - 4.2.0:          theme_v4_module_enabled(), theme_v4_community_available()/_url()/_link() (Modul `community`,
+ *                    fail-closed), theme_v4_user_can() (Capabilities, Rolle `moderator`), theme_v4_slug()
+ *                    (CMS\Slug::fromText() mit Rückfall); `community` in theme_v4_render_module_view()
  *
  * Kein Datenbankzugriff in den Fehlerseiten-Helfern: eigenständige Fehlerseiten (Wartungsmodus,
  * Fatal-Handler) laufen ohne Datenbank.
@@ -26,7 +29,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('THEME_V4_COMPAT_VERSION')) {
-    define('THEME_V4_COMPAT_VERSION', '1.0.1');
+    define('THEME_V4_COMPAT_VERSION', '1.1.0');
 }
 
 // ── Basis ────────────────────────────────────────────────────────────────────
@@ -141,7 +144,8 @@ if (!function_exists('theme_v4_local_asset_url')) {
     function theme_v4_local_asset_url(string $url): string
     {
         $url = trim($url);
-        if ($url === '' || str_starts_with($url, '//') || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) {
+        // Backslashes werten Browser wie „/“: `/\evil.example` wäre eine protokollrelative, fremde Adresse.
+        if ($url === '' || str_starts_with($url, '//') || str_contains($url, '\\') || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) {
             return '';
         }
         if (str_starts_with($url, '/')) {
@@ -265,7 +269,7 @@ if (!function_exists('theme_v4_is_current_path')) {
             return false;
         }
         $sitePath = rtrim((string) (parse_url(theme_v4_site_url(), PHP_URL_PATH) ?? ''), '/');
-        if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
+        if ($sitePath !== '' && ($path === $sitePath || str_starts_with($path, $sitePath . '/'))) {
             $path = substr($path, strlen($sitePath));
         }
         $path = '/' . trim($path, '/');
@@ -329,6 +333,13 @@ if (!function_exists('theme_v4_link_available')) {
             'glossar' => class_exists('\\CMS\\Services\\Knowledgebase\\Http\\PublicController'),
         ];
         $first = explode('/', $slug)[0];
+
+        // 4.2.0: Community-Modul (Basispfad einstellbar, Standard `forum`), wenn Modul und Vorlagen da sind.
+        // Sonst weiter wie bisher (z. B. eine Seite oder ein Plugin-Forum unter demselben Pfad).
+        if ($first === theme_v4_community_base_path() && theme_v4_community_available()) {
+            return $cache[$key] = true;
+        }
+
         if (array_key_exists($slug, $coreRoutes)) {
             return $cache[$key] = (bool) $coreRoutes[$slug];
         }
@@ -493,7 +504,8 @@ if (!function_exists('theme_v4_safe_back_url')) {
     {
         $back = (string) ($_SERVER['HTTP_REFERER'] ?? '');
         $siteHost = (string) parse_url(theme_v4_site_url(), PHP_URL_HOST);
-        if ($back === '' || $siteHost === '' || strcasecmp((string) parse_url($back, PHP_URL_HOST), $siteHost) !== 0
+        if ($back === '' || $siteHost === '' || str_contains($back, '\\') || preg_match('/[\x00-\x1F\x7F]/', $back) === 1
+            || strcasecmp((string) parse_url($back, PHP_URL_HOST), $siteHost) !== 0
             || !in_array(strtolower((string) parse_url($back, PHP_URL_SCHEME)), ['http', 'https'], true)) {
             return '';
         }
@@ -621,7 +633,7 @@ if (!function_exists('theme_v4_render_module_view')) {
     /**
      * Rendert eine Core-View und passt den `<main>`-Landmark an das Theme an.
      *
-     * Die Views `knowledgebase/*` und `newsletter/*` bringen ein eigenes `<main>` mit. Öffnet das Theme
+     * Die Views `knowledgebase/*` und `newsletter/*` (ab 4.2.0 auch `community/*`) bringen ein eigenes `<main>` mit. Öffnet das Theme
      * `<main>` bereits in header.php (THEME_V4_HEADER_HAS_MAIN), wird es zu `<div>`, sonst erhält es die ID
      * des Skip-Links (THEME_V4_MAIN_ID).
      */
@@ -773,6 +785,190 @@ if (!function_exists('theme_v4_img')) {
             . ($lcp ? ' fetchpriority="high" decoding="async"' : ' loading="lazy" decoding="async"')
             . ($focal !== '' ? ' style="object-position:' . theme_v4_e($focal) . '"' : '')
             . '>';
+    }
+}
+
+// ── 365CMS 4.2.0: Module, Community, Rechte, Slugs ───────────────────────────
+
+if (!function_exists('theme_v4_module_enabled')) {
+    /**
+     * Zustand eines Core-Moduls (Admin → Module) mit Request-Cache.
+     *
+     * Achtung: `CoreModuleService::isModuleEnabled()` meldet unbekannte Module als aktiv. Kennt der Core das Modul
+     * nicht (z. B. `community` vor 4.2.0) oder fehlt der Dienst, gilt `$default`.
+     */
+    function theme_v4_module_enabled(string $slug, bool $default = false): bool
+    {
+        static $cache = [];
+        $slug = strtolower(trim($slug));
+        if ($slug === '') {
+            return $default;
+        }
+        if (array_key_exists($slug, $cache)) {
+            return $cache[$slug];
+        }
+        try {
+            if (class_exists('\\CMS\\Services\\CoreModuleService')) {
+                $service = \CMS\Services\CoreModuleService::getInstance();
+                if (method_exists($service, 'getModuleDefinition') && $service->getModuleDefinition($slug) === null) {
+                    return $cache[$slug] = $default;
+                }
+
+                return $cache[$slug] = (bool) $service->isModuleEnabled($slug);
+            }
+        } catch (\Throwable) {
+        }
+
+        return $cache[$slug] = $default;
+    }
+}
+
+if (!function_exists('theme_v4_community_base_path')) {
+    /** Basispfad der Community ohne Schrägstriche (Einstellung `base_path`, Standard `forum`). */
+    function theme_v4_community_base_path(): string
+    {
+        static $base = null;
+        if ($base !== null) {
+            return $base;
+        }
+        $base = 'forum';
+        try {
+            if (class_exists('\\CMS\\Services\\Community\\Support\\Settings')) {
+                $value = trim((string) \CMS\Services\Community\Support\Settings::getInstance()->string('base_path'), '/');
+                if (preg_match('#^[a-z0-9][a-z0-9-]{0,63}$#', $value) === 1) {
+                    $base = $value;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return $base;
+    }
+}
+
+if (!function_exists('theme_v4_community_available')) {
+    /**
+     * true, wenn die Community öffentlich erreichbar ist: Modul `community` aktiv (fail-closed wie der Core)
+     * und die Core-Vorlagen vorhanden (CMS/views/community/index.php). Vor 4.2.0 und während der Entwicklung
+     * ohne Oberfläche immer false – Themes verlinken dann kein Forum.
+     */
+    function theme_v4_community_available(): bool
+    {
+        static $available = null;
+        if ($available !== null) {
+            return $available;
+        }
+        $available = false;
+        try {
+            $enabled = class_exists('\\CMS\\Services\\Community\\Support\\CommunityModule')
+                ? \CMS\Services\Community\Support\CommunityModule::isEnabled()
+                : theme_v4_module_enabled('community');
+            $available = $enabled && is_file(rtrim((string) ABSPATH, '/\\') . '/views/community/index.php');
+            if (class_exists('\\CMS\\Hooks')) {
+                // Nur verschärfen (wie cms_community_can): ein Filter kann den Link ausblenden, nicht erzwingen.
+                $available = $available && (bool) \CMS\Hooks::applyFilters('theme_v4_community_available', true);
+            }
+        } catch (\Throwable) {
+            $available = false;
+        }
+
+        return $available;
+    }
+}
+
+if (!function_exists('theme_v4_community_url')) {
+    /** URL der Community-Startseite (mit Sprachpräfix) oder leer, wenn die Community nicht erreichbar ist. */
+    function theme_v4_community_url(mixed $contentLocale = null): string
+    {
+        if (!theme_v4_community_available()) {
+            return '';
+        }
+        $locale = theme_v4_locale($contentLocale);
+        try {
+            if (class_exists('\\CMS\\Services\\Community\\Support\\Urls')) {
+                $path = (string) \CMS\Services\Community\Support\Urls::index($locale);
+                if (str_starts_with($path, '/') && !str_starts_with($path, '//')) {
+                    return theme_v4_site_url($path);
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return theme_v4_site_url(($locale === 'en' ? 'en/' : '') . theme_v4_community_base_path());
+    }
+}
+
+if (!function_exists('theme_v4_community_link')) {
+    /**
+     * Navigationseintrag „Community“ für Footer/Fallback-Menüs oder null.
+     *
+     * @return array{label:string,url:string}|null
+     */
+    function theme_v4_community_link(mixed $contentLocale = null, string $labelDe = 'Community', string $labelEn = 'Community'): ?array
+    {
+        $url = theme_v4_community_url($contentLocale);
+
+        return $url !== '' ? ['label' => theme_v4_t($labelDe, $labelEn, $contentLocale), 'url' => $url] : null;
+    }
+}
+
+if (!function_exists('theme_v4_user_can')) {
+    /**
+     * Capability des angemeldeten Kontos (z. B. `community.moderate`). Admins dürfen alles; ohne Capability-API
+     * (vor 4.0) nur Admins. Für Admin-Links stattdessen `Auth::isAdmin()`: Die Rolle `moderator` (4.2.0) hat
+     * Community-Rechte, aber keinen Zugang zu /admin.
+     */
+    function theme_v4_user_can(string $capability): bool
+    {
+        $capability = strtolower(trim($capability));
+        if ($capability === '') {
+            return false;
+        }
+        try {
+            if (!class_exists('\\CMS\\Auth') || !\CMS\Auth::isLoggedIn()) {
+                return false;
+            }
+            $auth = \CMS\Auth::instance();
+            if (method_exists($auth, 'hasCapability')) {
+                return (bool) $auth->hasCapability($capability);
+            }
+
+            return \CMS\Auth::isAdmin();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+}
+
+if (!function_exists('theme_v4_slug')) {
+    /**
+     * Slug wie der Core 4.2.0 (`CMS\Slug::fromText()`: ä → ae, ö → oe, ü → ue, ß → ss, Akzente entfernt),
+     * mit gleichwertigem Rückfall für 4.0/4.1. Für Anker-IDs, CSS-Klassen aus Namen und Filter-Parameter.
+     */
+    function theme_v4_slug(string $text, int $maxLength = 100): string
+    {
+        try {
+            if (class_exists('\\CMS\\Slug') && method_exists('\\CMS\\Slug', 'fromText')) {
+                return (string) \CMS\Slug::fromText($text, max(0, $maxLength));
+            }
+        } catch (\Throwable) {
+        }
+        $text = trim($text);
+        $text = strtr($text, ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss', 'Ä' => 'ae', 'Ö' => 'oe', 'Ü' => 'ue', 'ẞ' => 'ss']);
+        $text = function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text);
+        if (class_exists('\\Normalizer')) {
+            $normalized = \Normalizer::normalize($text, \Normalizer::FORM_KD);
+            if (is_string($normalized)) {
+                $text = (string) (preg_replace('/\p{Mn}+/u', '', $normalized) ?? $normalized);
+            }
+        }
+        $slug = (string) (preg_replace('/[^a-z0-9\-]+/', '-', $text) ?? '');
+        $slug = trim((string) (preg_replace('/-+/', '-', $slug) ?? ''), '-');
+        if ($maxLength > 0 && strlen($slug) > $maxLength) {
+            $slug = trim(substr($slug, 0, $maxLength), '-');
+        }
+
+        return $slug;
     }
 }
 

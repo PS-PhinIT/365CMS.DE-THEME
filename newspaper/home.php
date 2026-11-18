@@ -8,6 +8,8 @@
  * @package CmsNewspaper_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -167,6 +169,48 @@ $archive = [
     ],
 ];
 
+// Echte Beiträge statt der Demo-Artikel, sobald welche veröffentlicht sind (offen seit dem 4.0-Audit):
+// eine Abfrage, nur veröffentlichte Beiträge, ohne den vollen Inhalt (Lesezeit aus der Länge geschätzt).
+$newsPosts = [];
+try {
+    $newsDb     = \CMS\Database::instance();
+    $newsPrefix = $newsDb->getPrefix();
+    $newsPosts  = $newsDb->get_results(
+        "SELECT p.id, p.title, p.slug, p.slug_en, p.excerpt, p.meta_description, p.featured_image, p.published_at,
+                p.created_at, CHAR_LENGTH(p.content) AS content_length, c.name AS category_name
+         FROM {$newsPrefix}posts p
+         LEFT JOIN {$newsPrefix}post_categories c ON c.id = p.category_id
+         WHERE " . cms_post_publication_where('p') . "
+         ORDER BY COALESCE(p.published_at, p.created_at) DESC
+         LIMIT 12",
+        []
+    ) ?: [];
+} catch (\Throwable) {
+    $newsPosts = [];
+}
+if (is_array($newsPosts) && $newsPosts !== []) {
+    $newsMonths = [1 => 'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    $newsMap = static function (object $post) use ($newsMonths, $newsPlaceholderImg): array {
+        $ts      = strtotime((string) ($post->published_at ?? $post->created_at ?? '')) ?: 0;
+        $minutes = max(1, (int) round(((int) ($post->content_length ?? 0)) / 6.5 / 200));
+        $image   = trim((string) ($post->featured_image ?? ''));
+
+        return [
+            'badge' => trim((string) ($post->category_name ?? '')),
+            'title' => trim((string) ($post->title ?? '')),
+            'lead'  => trim(strip_tags((string) (($post->excerpt ?? '') !== '' ? $post->excerpt : ($post->meta_description ?? '')))),
+            'date'  => $ts > 0 ? date('d', $ts) . '. ' . $newsMonths[(int) date('n', $ts)] . ' ' . date('Y', $ts) : '',
+            'read'  => $minutes . ' Min Lesezeit',
+            'kind'  => 'Artikel',
+            'href'  => theme_post_url($post),
+            'img'   => $image !== '' ? $image : $newsPlaceholderImg,
+        ];
+    };
+    $newsItems = array_map($newsMap, array_values(array_filter($newsPosts, 'is_object')));
+    $breaking  = array_slice($newsItems, 0, 3);
+    $archive   = array_slice($newsItems, 3);
+}
+
 $feedLeft = [
     ['title' => 'Windows Notepad: CVE-2026-20841 patched',         'date' => '23.02.', 'href' => '#'],
     ['title' => 'Microsoft Edge: Passwort-Änderungen im Sommer',   'date' => '22.02.', 'href' => '#'],
@@ -233,9 +277,9 @@ $feedRight = [
                     <h3 class="news-list-title"><?php echo $safe($title); ?></h3>
                     <p><?php echo $safe($lead); ?></p>
                     <div class="news-meta">
-                        <span class="news-meta-date"><?php echo $safe(strtoupper($date)); ?></span>
+                        <span class="news-meta-date"><?php echo $safe(mb_strtoupper($date, 'UTF-8')); ?></span>
                         <span class="news-meta-sep" aria-hidden="true"></span>
-                        <span><?php echo $safe(strtoupper($read)); ?></span>
+                        <span><?php echo $safe(mb_strtoupper($read, 'UTF-8')); ?></span>
                     </div>
                 </div>
             </<?php echo $tag; ?>>
@@ -275,6 +319,7 @@ $feedRight = [
     </div>
 
     <!-- ██ ARCHIVE GRID (Broadsheet 3-col) ███████████████████████████████ -->
+    <?php if ($archive !== []) : ?>
     <h2 class="news-section-hdr"><?php echo $safe($archiveHeading); ?></h2>
 
     <div class="news-grid">
@@ -300,14 +345,17 @@ $feedRight = [
                     <h3 class="news-tile-title"><?php echo $safe($tTitle); ?></h3>
                     <div class="news-tile-meta">
                         <span><?php echo $safe($tDate); ?></span>
-                        <span><?php echo $safe(strtoupper($tKind)); ?></span>
+                        <span><?php echo $safe(mb_strtoupper($tKind, 'UTF-8')); ?></span>
                     </div>
                 </div>
             </<?php echo $tTag; ?>>
         <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 
     <!-- ██ FEED-GRID (Externe RSS-Highlights) ████████████████████████████ -->
+    <?php // Statische Demo-Schlagzeilen fremder Medien nur ohne eigene Beiträge (Demo-Modus) zeigen. ?>
+    <?php if ($newsPosts === []) : ?>
     <div class="news-feed-grid">
 
         <div>
@@ -341,5 +389,6 @@ $feedRight = [
         </div>
 
     </div>
+    <?php endif; ?>
 
 </div>

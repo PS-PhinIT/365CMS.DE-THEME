@@ -5,6 +5,8 @@
  * @package CmsNewspaper_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -41,16 +43,18 @@ $copyText = strtr($copyTpl, [
     '{site_title}' => $siteTitle,
 ]);
 
-// Footer partner strip is purely cosmetic; defaults mirror prototype.
-$partners = [
-    ['label' => 'Andreas Hepp',     'url' => 'https://andreas-hepp.de'],
-    ['label' => '365network.de',    'url' => 'https://365network.de'],
-    ['label' => 'phscripts.de',     'url' => 'https://phscripts.de'],
-    ['label' => 'ms365insights.de', 'url' => 'https://ms365insights.de'],
-    ['label' => 'setupdates.com',   'url' => 'https://setupdates.com'],
-    ['label' => 'servertrend.com',  'url' => 'https://servertrend.com'],
-    ['label' => 'phun.network',     'url' => 'https://phun.network'],
-];
+// Partner-Leiste: nur gepflegte Links (Customizer „Footer → Partner-Links“, „Bezeichnung | URL“ je Zeile).
+// Bis 2.0.0 waren sieben fremde Domains fest eingetragen und erschienen in jeder Installation.
+$partners = [];
+foreach (preg_split('/\R/', (string) news_get_setting('footer', 'partner_links', '')) ?: [] as $partnerLine) {
+    $partnerParts = array_map('trim', explode('|', $partnerLine, 2));
+    if (count($partnerParts) === 2 && $partnerParts[0] !== '' && preg_match('#^https?://#i', $partnerParts[1]) === 1) {
+        $partners[] = ['label' => mb_substr($partnerParts[0], 0, 60), 'url' => $partnerParts[1]];
+    }
+    if (count($partners) >= 12) {
+        break;
+    }
+}
 
 // Standardspalten: nur Ziele, die als Route oder veröffentlichte Seite existieren (365CMS 4.0.0); leere Spalten entfallen.
 $newsFooterColumns = [
@@ -64,6 +68,8 @@ $newsFooterColumns = [
     'Portal' => [
         ['label' => 'Über uns (Autoren)', 'url' => news_href('/autoren')],
         ['label' => 'Newsletter',         'url' => news_href('/newsletter')],
+        // 365CMS 4.2.0: Leser-Community nur bei aktivem Modul (sonst leer und herausgefiltert).
+        theme_v4_community_link(null, 'Leser-Community', 'Reader community') ?? ['label' => 'Community', 'url' => ''],
         ['label' => 'Kontakt',            'url' => news_href('/kontakt')],
         ['label' => 'Impressum',          'url' => news_href('/impressum')],
         ['label' => 'Datenschutz',        'url' => news_href('/datenschutz')],
@@ -121,7 +127,7 @@ $newsLegalMenu = (string) ob_get_clean();
 
         </div>
 
-        <?php if ($showPartner) : ?>
+        <?php if ($showPartner && $partners !== []) : ?>
             <nav class="news-partner-strip" aria-label="Partnerseiten">
                 <?php foreach ($partners as $p) :
                     $pUrl   = news_safe_url((string) ($p['url'] ?? ''), '');

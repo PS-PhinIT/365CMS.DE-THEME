@@ -4,10 +4,10 @@ Theme URI: https://phin.network
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phin.network
 Description: Editoriales News-/Magazin-Theme – Broadsheet-Typografie, Ink-Schwarz mit sparsam eingesetztem Signal-Rot, Rule-Lines statt Card-Shadows. Für IT-News, Magazine und redaktionelle Portale.
-Version: 2.0.0
+Version: 2.1.0
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
-Tested up to: 4.1.0
+Tested up to: 4.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: cms-newspaper
@@ -68,6 +68,7 @@ Tags: news, newspaper, magazine, editorial, broadsheet, portal, blog
 html {
     font-size: var(--news-font-size-base);
     scroll-behavior: smooth;
+    scroll-padding-top: 8rem; /* WCAG 2.2 (2.4.11): Fokus nicht unter dem Sticky-Masthead */
     -webkit-text-size-adjust: 100%;
 }
 
@@ -1112,13 +1113,14 @@ p { color: var(--news-ink-mid); }
 /* ================================================================
    14. Reveal animations (motion-allowed only)
    ================================================================ */
+/* Nur mit laufendem Script (navigation.js setzt .news-js): ohne JS blieben die Startseiten-Karten unsichtbar. */
 @media (prefers-reduced-motion: no-preference) {
-    .news-reveal {
+    html.news-js .news-reveal {
         opacity: 0;
         transform: translateY(8px);
         transition: opacity 0.4s ease, transform 0.4s ease;
     }
-    .news-reveal.is-visible {
+    html.news-js .news-reveal.is-visible {
         opacity: 1;
         transform: translateY(0);
     }

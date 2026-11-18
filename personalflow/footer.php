@@ -5,6 +5,8 @@
  * @package PersonalFlow_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -52,6 +54,8 @@ $pfFooterColumns['Wissen & Kontakt'] = [
     ['label' => 'Downloads', 'url' => pf_site_url() . '/downloads'],
     ['label' => 'Wissensdatenbank', 'url' => pf_site_url() . '/kb'],
     ['label' => 'Newsletter', 'url' => pf_site_url() . '/newsletter'],
+    // 365CMS 4.2.0: Community nur bei aktivem Modul (sonst leer und herausgefiltert).
+    theme_v4_community_link() ?? ['label' => 'Community', 'url' => ''],
     ['label' => 'Kontakt', 'url' => pf_site_url() . '/contact'],
 ];
 ob_start();

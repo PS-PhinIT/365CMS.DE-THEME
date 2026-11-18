@@ -1,5 +1,26 @@
 # MedCare Pro – Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/medcarepro.md`)
+
+#### Sicherheit
+- `mc_safe_url()` (Menüs, Suche, Arztkarte) lehnt `/\host` ab: Ein Menüeintrag `/\evil.example` wurde als lokaler Pfad ausgegeben, Browser lesen ihn als `//evil.example` (fremde Adresse).
+- `login.php`: Das Weiterleitungsziel nach dem Login verwirft auch Backslash- und Steuerzeichen-Adressen (der Core prüft zusätzlich).
+- Suche: `?q[]=…` und `?page[]=…` (Arrays) führten zu „Array to string conversion“ und dem Suchbegriff „Array“; der Suchbegriff des Cores hat Vorrang.
+- Arztkarte: Die Fachgebietsklasse entsteht über `theme_v4_slug()` (vorher konnten Leerzeichen weitere Klassen einschleusen).
+
+#### Fehler
+- Registrierung: `minlength="8"` und der Hinweis „Mindestens 8 Zeichen“ widersprachen der Passwort-Richtlinie des Cores (Standard 12 Zeichen, Einstellungen → Sicherheit); gültig wirkende Passwörter wurden serverseitig abgelehnt. Mindestlänge und Hinweis kommen jetzt aus `PasswordPolicyService`.
+- Arztkarte: „Termin buchen“ erscheint nur, wenn `/termin` existiert.
+- `declare(strict_types=1)` in allen Vorlagen (8 Dateien ergänzt).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Fußzeile „Für Patienten“: Eintrag „Patienten-Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält fokussierte Elemente unter dem festen Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

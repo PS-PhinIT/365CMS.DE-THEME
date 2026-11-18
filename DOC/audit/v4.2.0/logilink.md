@@ -49,6 +49,19 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `theme_nav_menu()`: `FILTER_VALIDATE_URL` + Schema-Allowlist mit leerem Schema ließ `//evil.example` und `/\evil.example` als Link durch; `mailto:`/`tel:` wurden zu `#` | `ll_menu_url()` |
+| S1/S2 | – | Vorab escapte URL-Variablen (`$llHomeUrl` … aus `theme_route_url()` + `htmlspecialchars`), `$llTitleEsc`, `$llBodyClass`, `$llCopyright` (escaped), Flash mit Typ-Allowlist | kein Befund |
+| S3 | – | `ll_css_color()/ll_css_number()` (4.0-Fix), eigenes CSS bereinigt | kein Befund |
+| S8 | – | Tracking/Suche/Kapazität als GET ohne personenbezogene Daten (Ort, Menge, Datum); kein `form_guard` nötig | kein Befund |
+| B6 | **mittel** | `.ll-reveal { opacity: 0 }` ohne JS-Bedingung: ohne JavaScript fehlten Startseitenbereiche samt Kapazitätsformular | nur noch mit `html.ll-js` |
+| Q1 | niedrig | `strict_types` fehlte in 6 Vorlagen | ergänzt; Render-/Fuzz-Test ohne Typfehler |
+| Q3 | mittel | WCAG 2.2 2.4.11: fester Header | `scroll-padding-top` |
+| Q3 | – | Drawer `visibility: hidden` + Fokusführung, Escape | kein Befund |
+| UX | akzeptiert | Kapazitätsformular sendet an `/register`, die Felder werden dort nicht ausgewertet (Designskizze) | dokumentiert |
+| K2 | – | „Dashboard“ für jede angemeldete Rolle | kein Befund |
+| K3 | – | Fußzeile „Konto“ → „Community“ nur bei aktivem Modul | umgesetzt |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |

@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('LOGILINK_THEME_VERSION')) {
-    define('LOGILINK_THEME_VERSION', '2.0.0');
+    define('LOGILINK_THEME_VERSION', '2.1.0');
 }
 
 if (!defined('LOGILINK_THEME_SLUG')) {
@@ -390,6 +390,26 @@ if (!function_exists('theme_route_url')) {
     }
 }
 
+if (!function_exists('ll_menu_url')) {
+    /** Menü-URL: http(s), lokaler Pfad (kein `//`/`\`), Anker, mailto:/tel: – sonst `#`. */
+    function ll_menu_url(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_contains($url, '\\') || str_starts_with($url, '//')) {
+            return '#';
+        }
+        if (str_starts_with($url, '/') || str_starts_with($url, '#')) {
+            return $url;
+        }
+        if (preg_match('/^(?:mailto:[^\s@<>"]+@[^\s@<>"]+|tel:\+?[0-9][0-9\s().\/-]{2,31})$/i', $url) === 1) {
+            return $url;
+        }
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false ? $url : '#';
+    }
+}
+
 if (!function_exists('theme_nav_menu')) {
     /**
      * Menü einer Position als <ul>. Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den
@@ -420,15 +440,10 @@ if (!function_exists('theme_nav_menu')) {
             // Der Core liefert die Beschriftung in `title`; `label` bleibt als Fallback älterer Menüs.
             $label  = (string) ($item['label'] ?? $item['title'] ?? '');
 
-            $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
-                ? $rawUrl
-                : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
-                    ? $rawUrl
-                    : '#');
-            if (!in_array(strtolower((string) parse_url($sanitizedUrl, PHP_URL_SCHEME)), ['', 'http', 'https'], true)) {
-                $sanitizedUrl = '#';
-            }
-            $isActive = !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
+            // `//host` und `/\host` galten als lokale Pfade (fremde Adresse), mailto:/tel: wurden zu `#`.
+            $sanitizedUrl = ll_menu_url($rawUrl);
+            $isActive = !str_starts_with($sanitizedUrl, '#') && preg_match('/^(?:mailto|tel):/i', $sanitizedUrl) !== 1
+                && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'

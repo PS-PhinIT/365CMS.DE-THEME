@@ -49,6 +49,20 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `theme_nav_menu()`: `//evil.example` und `/\evil.example` als Link durchgelassen; `mailto:`/`tel:` → `#` | `pf_menu_url()` |
+| S4 | mittel | GET-Aktionslinks `?action=save` („Merken“) und `?action=contact` („Kontakt aufnehmen“) ohne Handler – täuschten eine Funktion vor; eine echte Merkfunktion per GET wäre CSRF-anfällig; zudem an URLs mit vorhandenem Query falsch angehängt | entfernt |
+| S1 | – | Kandidatenkarte und Stellen: alle Ausgaben escaped, Avatare nur lokale Uploads mit Maßen (4.0), Links nur bei vorhandenem Ziel | kein Befund |
+| S1 | – | Flash mit Typ-Allowlist, `$pfBodyCls`/`$pfCopyright`/`$pfTitleEsc` escaped | kein Befund |
+| S3 | – | `pf_css_color/_number`, eigenes CSS bereinigt | kein Befund |
+| S11 | akzeptiert | Demo-Kandidat:innen und -Stellen mit erfundenen Namen, ohne Fotos | dokumentiert |
+| B6 | **mittel** | `.pf-reveal` ohne JS unsichtbar (offen seit 2.0.0) | nur mit `html.pf-js` |
+| Q1 | niedrig | `strict_types` fehlte in 7 Dateien | ergänzt |
+| Q3 | mittel | WCAG 2.2 2.4.11: fester Header | `scroll-padding-top` |
+| Q3 | – | Pipeline-Stufen mit Text (nicht nur Farbe), Fokusring (4.0) | kein Befund |
+| K2 | – | „Mein Bereich“ für jede angemeldete Rolle | kein Befund |
+| K3 | – | Fußzeile „Wissen & Kontakt“ → „Community“ nur bei aktivem Modul | umgesetzt |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |

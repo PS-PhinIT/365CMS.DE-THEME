@@ -56,6 +56,24 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `mc_safe_url()` ließ `/\evil.example` als lokalen Pfad durch (Menüs, Suche, Arztkarte; Render-Test) | behoben |
+| S2 | niedrig | `login.php`: Weiterleitungsziel `/\evil.example` wurde ins versteckte Feld übernommen (der Core prüft beim Login zusätzlich) | Backslash/Steuerzeichen verworfen |
+| S4 | – | Login/Registrierung posten an die Core-Handler mit Core-Token (`login`/`register`), Honeypot, keine eigene Passwortprüfung, neutrale Meldungen escaped, `auth_form_old` ohne Passwörter, `header('Location')` + `exit` bei angemeldeten Konten | kein Befund |
+| S8 | **mittel** | Suche: `?q[]=x` → „Array to string conversion“ und Suchbegriff „Array“; `?page[]=` | behoben (Core-`$query` zuerst, Typprüfung) |
+| S1 | niedrig | Arztkarte: Fachgebietsklasse aus Rohtext (Leerzeichen → zusätzliche Klassen) | `theme_v4_slug()` |
+| S1 | – | Übrige vorab escapte Variablen in `blog-single.php`, `search.php`, `home.php`, Flash mit Typ-Allowlist | kein Befund |
+| S11 | – | keine Drittanbieter, keine externen Schriften (4.0) | kein Befund |
+| B | **mittel** | Registrierung: `minlength="8"`/„Mindestens 8 Zeichen“ gegen Core-Standard 12 → serverseitige Ablehnung scheinbar gültiger Passwörter | aus `PasswordPolicyService` (Render-Test: `minlength="12"`) |
+| B/K3 | niedrig | Arztkarte verlinkte `/termin` ohne Prüfung | nur bei vorhandenem Ziel |
+| Q1 | niedrig | `strict_types` fehlte in 8 Dateien | ergänzt |
+| Q2 | akzeptiert | `partials/doctor-card.php` wird von keiner Vorlage eingebunden (Baustein für eigene Seiten) | dokumentiert |
+| Q3 | mittel | WCAG 2.2 2.4.11: fester Header | `scroll-padding-top` |
+| Q3 | offen | Großschrift/Hochkontrast werden erst nach dem `defer`-Script gesetzt (Aufblitzen, obwohl der Kommentar „pre-paint“ sagt); die Regeln hängen an `body`-Klassen | dokumentiert (Folgearbeit: `html`-Klassen + Inline-Bootstrap) |
+| UX | akzeptiert | „Als Arzt registrieren“ ändert nur Texte, die Rolle vergibt der Core | dokumentiert (Kommentar im Code) |
+| K2 | – | Kontolinks/Logout-POST für jede angemeldete Rolle; keine Rollenwahl in der Registrierung | kein Befund |
+| K3 | – | Fußzeile „Für Patienten“ → „Patienten-Community“ nur bei aktivem Modul | umgesetzt |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test inkl. `login`, `register` | grün |

@@ -70,8 +70,22 @@ function newspaper_customizer_normalize_url(mixed $value, bool $allowRelative = 
         return '';
     }
 
-    if ($allowRelative && str_starts_with($candidate, '/')) {
+    // Steuerzeichen, `//host` und `/\host` (fremde Adressen) verwerfen.
+    if (preg_match('/[\x00-\x1F\x7F<>"]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
+        return '';
+    }
+
+    if ($allowRelative && (str_starts_with($candidate, '/') || str_starts_with($candidate, '#'))) {
         return $candidate;
+    }
+
+    // FILTER_SANITIZE_URL prüft kein Schema (`javascript:` blieb erhalten): nur http(s), mailto:, tel:.
+    if (preg_match('/^(?:mailto:[^\s@]+@[^\s@]+|tel:\+?[0-9][0-9\s().\/-]{2,31})$/i', $candidate) === 1) {
+        return $candidate;
+    }
+    $scheme = strtolower((string) parse_url($candidate, PHP_URL_SCHEME));
+    if (!in_array($scheme, ['http', 'https'], true) || filter_var($candidate, FILTER_VALIDATE_URL) === false) {
+        return '';
     }
 
     if (function_exists('esc_url_raw')) {
@@ -364,7 +378,7 @@ if (class_exists('\CMS\ThemeManager')) {
     try {
         $customizer->setTheme(\CMS\ThemeManager::instance()->getActiveThemeSlug());
     } catch (\Throwable) {
-        $customizer->setTheme('cms-newspaper');
+        $customizer->setTheme(basename(dirname(__DIR__))); // Ordner `newspaper`, nicht der Marketplace-Slug
     }
 }
 
@@ -407,7 +421,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
     if (!newspaper_customizer_verify_csrf((string) ($_POST['csrf_token'] ?? ''))) {
         $error = 'Sicherheitscheck fehlgeschlagen. Bitte erneut versuchen.';
     } else {
-        if (!empty($_FILES['logo_upload_file']['tmp_name'])) {
+        // Nur Einzeldateien: `logo_upload_file[]` liefert Arrays (sonst „Array to string conversion“).
+        $logoFile = $_FILES['logo_upload_file'] ?? null;
+        if (is_array($logoFile) && (!is_string($logoFile['tmp_name'] ?? null) || !is_string($logoFile['name'] ?? null))) {
+            $error = 'Ungültiger Upload erkannt.';
+        } elseif (!empty($_FILES['logo_upload_file']['tmp_name'])) {
             $allowedExts  = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
             $allowedMimes = [
                 'jpg'  => ['image/jpeg'],
@@ -439,12 +457,13 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
 
             if (!$error && defined('UPLOAD_PATH') && defined('UPLOAD_URL')) {
                 $uploadDir = rtrim((string) UPLOAD_PATH, '/\\') . '/theme-logos';
-                if (!is_dir($uploadDir)) {
-                    mkdir($uploadDir, 0755, true);
+                if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true) && !is_dir($uploadDir)) {
+                    $error = 'Das Upload-Verzeichnis konnte nicht angelegt werden.';
                 }
-                $newFileName = 'logo-' . time() . '.' . $fileExt;
+                // Zufallsname statt `logo-<Zeitstempel>` (vorhersagbar, gleichzeitige Uploads überschrieben sich).
+                $newFileName = 'logo-' . bin2hex(random_bytes(6)) . '.' . ($fileExt === 'jpeg' ? 'jpg' : $fileExt);
                 $destPath    = $uploadDir . '/' . $newFileName;
-                if (move_uploaded_file((string) $_FILES['logo_upload_file']['tmp_name'], $destPath)) {
+                if (!$error && move_uploaded_file((string) $_FILES['logo_upload_file']['tmp_name'], $destPath)) {
                     $customizer->set('header', 'logo_url', rtrim((string) UPLOAD_URL, '/') . '/theme-logos/' . $newFileName);
                 } else {
                     $error = 'Logo-Upload fehlgeschlagen (Schreibrechte prüfen).';
@@ -463,7 +482,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && ($_POST['action'] ?? '') ==
                 $type      = (string) ($fieldConfig['type'] ?? 'text');
 
                 if ($saveTab === 'header' && $fieldKey === 'logo_url') {
-                    $postVal = (string) ($_POST[$inputName] ?? '');
+                    $postVal = is_scalar($_POST[$inputName] ?? null) ? (string) $_POST[$inputName] : '';
                     if ($postVal !== '') {
                         if (!$customizer->set(
                             $saveTab,
@@ -510,8 +529,8 @@ $coreAdminJsUrl = function_exists('cms_asset_url')
     : SITE_URL . '/assets/js/admin.js';
 
 $themeUrl = class_exists('\CMS\ThemeManager')
-    ? rtrim((string) \CMS\ThemeManager::instance()->getThemeUrl('cms-newspaper'), '/')
-    : rtrim(SITE_URL, '/') . '/themes/cms-newspaper';
+    ? rtrim((string) \CMS\ThemeManager::instance()->getThemeUrl(), '/')
+    : rtrim(SITE_URL, '/') . '/themes/' . rawurlencode(basename(dirname(__DIR__)));
 
 $customizerCssFile = dirname(__DIR__) . '/css/customizer-admin.css';
 $customizerJsFile  = dirname(__DIR__) . '/js/customizer-admin.js';

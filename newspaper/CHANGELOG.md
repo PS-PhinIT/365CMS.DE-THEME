@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/newspaper.md`)
+
+#### Sicherheit
+- Customizer: `newspaper_customizer_normalize_url()` prüfte absolute Adressen nur mit `FILTER_SANITIZE_URL`, das kein Schema prüft; `javascript:…` wäre gespeichert worden. Erlaubt sind jetzt Pfade, Anker, http(s), `mailto:` und `tel:`; `//host` und `/\host` werden verworfen.
+- `news_safe_url()` (Menüs, Partner-Leiste) lehnt `/\host` ab.
+- Logo-Upload: Zufallsname statt `logo-<Zeitstempel>` (vorhersagbar, gleichzeitige Uploads überschrieben sich), Mehrfach-Uploads und Array-Eingaben werden abgewiesen, ein fehlgeschlagenes Anlegen des Upload-Ordners wird gemeldet.
+- `blog.php`: Paginierungslinks bauen auf dem normalisierten Anfragepfad statt auf `REQUEST_URI` auf.
+
+#### Inhalte und Fehler
+- **Startseite mit echten Beiträgen:** Sind Beiträge veröffentlicht, zeigen „Breaking“ und das Archiv die neuesten Beiträge (eine Abfrage, ohne den vollen Inhalt). Die statischen Demo-Artikel und die erfundenen Schlagzeilen fremder Medien („Heise IT-News“, „Borns IT-Blog“) erscheinen nur noch ohne eigene Beiträge.
+- **Partner-Leiste:** Bisher verlinkte jede Installation sieben fest eingetragene fremde Domains (Standard „an“). Die Links werden jetzt im Customizer gepflegt (*Footer → Partner-Links*, „Bezeichnung | URL“ je Zeile, Standard leer); ohne Einträge entfällt die Leiste.
+- Startseite ohne JavaScript: `.news-reveal` war per CSS unsichtbar; ausgeblendet wird nur noch mit laufendem Script (`html.news-js`).
+- Großschreibung der Datumsangaben mit `mb_strtoupper()` („MÄR“ statt „MäR“).
+- Customizer verwendete beim Rückfall den Marketplace-Slug `cms-newspaper` als Ordnernamen.
+- `declare(strict_types=1)` in allen Vorlagen (7 Dateien ergänzt).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Fußzeile: Eintrag „Leser-Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` für den Sticky-Masthead.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

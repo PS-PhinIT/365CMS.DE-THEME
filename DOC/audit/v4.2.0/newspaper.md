@@ -58,6 +58,27 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | Customizer: absolute URLs nur per `FILTER_SANITIZE_URL` (keine Schemaprüfung) → `javascript:` speicherbar; `//host`/`/\host` als „relativ“ akzeptiert. Ausgabe lief zwar über `news_href()`/`news_safe_url()`, die Speicherung war aber ungeprüft | Allowlist (Pfad, Anker, http(s), mailto, tel) |
+| S2 | mittel | `news_safe_url()` ließ `/\evil.example` durch (Render-Test) | behoben |
+| S5 | – | `isAdmin()` + Redirect + `exit` vor jeder Aktion, CSRF für Speichern/Zurücksetzen | kein Befund |
+| S6 | mittel | Logo-Upload: Name `logo-<time()>` (vorhersagbar, Kollision bei gleichzeitigen Uploads), `logo_upload_file[]` → Warnungen, `mkdir` ungeprüft; Endung + `finfo`-MIME und 2 MB waren korrekt | Zufallsname, Array-Prüfung, Fehlermeldung |
+| S8 | niedrig | `(string) $_POST['header_logo_url']` mit Array | `is_scalar` |
+| S1 | – | `echo $success` (Titel mit `htmlspecialchars`), `$bodyCls`/`$homeHref`/`$searchUrl`/Flash-Klasse escaped, dynamische Tags `$tag`/`$tTag`/`$fTag` nur `a`/`div` aus Code | kein Befund |
+| S11 | **mittel** | Partner-Leiste: sieben fest eingetragene fremde Domains in jeder Installation (Standard an), nicht änderbar | pflegbares Feld `partner_links`, Standard leer |
+| B/S11 | mittel | Startseite: statische Demo-Artikel (seit 4.0 offen) und erfundene Schlagzeilen fremder Marken („Heise IT-News“) | echte Beiträge, sobald vorhanden; Demo nur ohne Beiträge |
+| B6 | **mittel** | `.news-reveal` ohne JS unsichtbar | nur mit `html.news-js` |
+| B4 | niedrig | `strtoupper()` auf Monatsnamen (`MäR`) | `mb_strtoupper()` |
+| B | niedrig | Customizer-Rückfall auf Ordner `cms-newspaper` (Ordner heißt `newspaper`) | behoben |
+| S2 | niedrig | `blog.php` spiegelte `REQUEST_URI` als Link-Basis | behoben |
+| P1 | – | neue Startseiten-Abfrage: eine Abfrage, `LIMIT 12`, `CHAR_LENGTH(content)` statt Inhalt, Publikationsfilter | geprüft |
+| P2 | – | `getConfig()` liest `theme.json` einmal je Request | kein Befund |
+| P3 | akzeptiert | Admin-Customizer lädt `admin.js` am Ende von `<body>` ohne `defer` (blockiert nicht, offen aus 4.0) | dokumentiert |
+| Q1 | niedrig | `strict_types` fehlte in 7 Dateien | ergänzt |
+| Q3 | mittel | WCAG 2.2 2.4.11: Sticky-Masthead | `scroll-padding-top: 8rem` |
+| K3 | – | Fußzeile → „Leser-Community“ nur bei aktivem Modul | umgesetzt |
+| K5 | – | Header öffnet `<main>`: Kit wandelt `<main>` künftiger Community-Overrides in `<div>` | vorbereitet |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test (auch Startseite mit Beiträgen) | grün |

@@ -43,7 +43,8 @@ try {
 $postedLogin   = mb_substr(trim((string) ($oldInput['username'] ?? $oldInput['email'] ?? '')), 0, 254);
 $loginRedirect = isset($login_redirect) && is_string($login_redirect) ? trim($login_redirect) : '';
 // Nur interne Ziele (der Core prüft das Ziel beim Login zusätzlich).
-$loginRedirect = str_starts_with($loginRedirect, '/') && !str_starts_with($loginRedirect, '//') ? $loginRedirect : '';
+$loginRedirect = str_starts_with($loginRedirect, '/') && !str_starts_with($loginRedirect, '//') && !str_contains($loginRedirect, '\\')
+    && preg_match('/[\x00-\x1F\x7F]/', $loginRedirect) !== 1 ? $loginRedirect : '';
 $loginAction   = $safe(theme_route_url('login'));
 $forgotUrl     = $safe(mc_href('/forgot-password'));
 $registerUrl   = mc_registration_enabled() ? $safe(theme_route_url('register')) : '';

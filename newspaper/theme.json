@@ -1,10 +1,10 @@
 {
   "name": "CMS Newspaper",
   "slug": "cms-newspaper",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "requires_cms": "4.0.0",
   "requires_php": "8.4.1",
-  "tested_up_to": "4.1.0",
+  "tested_up_to": "4.2.0",
   "author": "PHINIT.DE / Andreas Hepp",
   "description": "Editoriales News-Portal-Theme – Broadsheet-Typografie (Playfair Display + Source Sans 3 + IBM Plex Mono), Ink-Schwarz mit Signal-Rot, Rule-Lines statt Card-Shadows. Für Tech-/IT-News, Magazine und redaktionelle Portale.",
   "textdomain": "cms-newspaper",
@@ -290,7 +290,13 @@
           "label": "Partner-Strip anzeigen",
           "type": "checkbox",
           "default": true,
-          "description": "Schmaler schwarzer Streifen unter dem Footer mit Partner-Links."
+          "description": "Schmaler schwarzer Streifen unter dem Footer mit Partner-Links (erscheint nur, wenn unten Links gepflegt sind)."
+        },
+        "partner_links": {
+          "label": "Partner-Links",
+          "type": "textarea",
+          "default": "",
+          "description": "Ein Link je Zeile: Bezeichnung | https://adresse.example – höchstens 12 Einträge, nur http(s)."
         }
       }
     },

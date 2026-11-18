@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/logilink.md`)
+
+#### Sicherheit
+- Menü-URLs: `//host` und `/\host` galten als lokale Pfade und wurden als Link auf eine fremde Adresse ausgegeben. Neuer Prüfer `ll_menu_url()` (http(s), lokale Pfade, Anker, `mailto:`, `tel:`).
+
+#### Fehler
+- Startseite ohne JavaScript: `.ll-reveal` war per CSS unsichtbar und wurde nur vom Script eingeblendet; ohne JS (oder bei blockiertem Script) fehlten Bereiche samt Kapazitätsformular. Ausgeblendet wird jetzt nur mit laufendem Script (`html.ll-js`).
+- `mailto:`- und `tel:`-Menüeinträge wurden zu `#`.
+- `declare(strict_types=1)` in `home.php`, `index.php`, `header.php`, `footer.php`, `page.php`, `404.php` (wie in allen übrigen Dateien).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Fußzeile „Konto“: Eintrag „Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält fokussierte Elemente unter dem festen Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 - 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

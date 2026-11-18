@@ -124,11 +124,11 @@ Geplante Erweiterungen in `includes/cms-v4-compat.php` und `css/cms-v4.css` (all
 | business | 1 | [x] | [x] | [x] |
 | feder | 1 | [x] | [x] | [x] |
 | kompass | 1 | [x] | [x] | [x] |
-| kontor | 2 | [x] | [ ] | [ ] |
-| logilink | 2 | [x] | [ ] | [ ] |
-| medcarepro | 2 | [x] | [ ] | [ ] |
-| newspaper | 2 | [x] | [ ] | [ ] |
-| personalflow | 2 | [x] | [ ] | [ ] |
+| kontor | 2 | [x] | [x] | [x] |
+| logilink | 2 | [x] | [x] | [x] |
+| medcarepro | 2 | [x] | [x] | [x] |
+| newspaper | 2 | [x] | [x] | [x] |
+| personalflow | 2 | [x] | [x] | [x] |
 | PTC | 3 | [x] | [ ] | [ ] |
 | rundschau | 3 | [x] | [ ] | [ ] |
 | technexus | 3 | [x] | [ ] | [ ] |

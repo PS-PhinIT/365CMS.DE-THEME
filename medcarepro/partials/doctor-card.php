@@ -13,6 +13,8 @@
  * @package MedCarePro_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -28,14 +30,16 @@ $id         = (int) ($d['id']               ?? 0);
 $name       = $safe((string) ($d['name']             ?? $d['display_name'] ?? ''));
 $titleAbbr  = $safe((string) ($d['title']            ?? $d['academic_title'] ?? ''));
 $specialty  = $safe((string) ($d['specialty']        ?? $d['specialty_name'] ?? ''));
-$specSlug   = $safe((string) ($d['specialty_slug']   ?? strtolower(str_replace([' ', '/'], '-', (string) ($d['specialty'] ?? 'general')))));
+// Teil eines Klassennamens: nur [a-z0-9-] (vorher konnten Leerzeichen weitere Klassen einschleusen, Umlaute blieben stehen).
+$specSlug   = theme_v4_slug((string) ($d['specialty_slug'] ?? $d['specialty'] ?? 'general')) ?: 'general';
 $avatarUrl  = $safe(mc_media_url($d['avatar_url'] ?? ''));
 $location   = $safe((string) ($d['location']         ?? $d['city'] ?? ''));
 $rating     = (float) ($d['rating']         ?? 0);
 $reviews    = (int) ($d['review_count']   ?? 0);
 $nextAppt   = $safe((string) ($d['next_appointment'] ?? ''));
 $profileUrl = $safe(mc_safe_url((string) ($d['url'] ?? mc_href('/arzt/' . $id)), mc_href('/arzt/' . $id))); // nur sichere Ziele (Pfad, http/s)
-$bookingUrl = $safe(mc_href('/termin?doctor=' . $id));
+// Terminbuchung nur, wenn /termin als Route oder Seite existiert (sonst 404-Link).
+$bookingUrl = theme_v4_link_available(mc_href('/termin')) ? $safe(mc_href('/termin?doctor=' . $id)) : '';
 $hasGkv     = !empty($d['insurance']['gkv']) || !empty($d['gkv']);
 $hasPkv     = !empty($d['insurance']['pkv']) || !empty($d['pkv']);
 $verified   = !empty($d['verified']);
@@ -119,10 +123,12 @@ $ratingRnd  = (int) round($rating);
            aria-label="Profil von <?php echo $name; ?> anzeigen">
             Profil
         </a>
+        <?php if ($bookingUrl !== '') : ?>
         <a href="<?php echo $bookingUrl; ?>"
            class="mc-btn mc-btn-primary mc-btn-sm mc-doctor-card__book-btn"
            aria-label="Termin bei <?php echo $name; ?> buchen">
             Termin buchen
         </a>
+        <?php endif; ?>
     </div>
 </article>

@@ -1,5 +1,5 @@
 /*
- * 365CMS 4.0.0 / 4.1.0 – gemeinsame Integrationsstile der öffentlichen Themes (Version 1.0.1)
+ * 365CMS 4.0.0 / 4.1.0 / 4.2.0 – gemeinsame Integrationsstile der öffentlichen Themes (Version 1.1.0)
  *
  * Die Datei ist in allen Public Themes identisch. Sie setzt keine eigenen Farben, sondern liest die
  * Token-Brücke des Themes (`--tv4-*`, definiert in style.css, Abschnitt „365CMS 4.x Token-Brücke“)
@@ -12,6 +12,9 @@
  *                                                                Themes dürfen das Präfix fd- selbst nutzen)
  *   Formulare/Kontakt (forms-public.css) --cms-form-*             auf .cms-form
  *   Hub-Sites (hub-sites.css)            --cms-hub-*
+ *   Community (4.2.0, CMS/views/community) --community-* und die Rückfallnamen --accent, --ink, --surface …
+ *                                        nur innerhalb .cms-community/.theme-v4-module--community (nicht global:
+ *                                        Themes dürfen gleichnamige Variablen selbst nutzen)
  *
  * Dazu: Medien-Credits, Editor.js-Blöcke (Bild, Medien-Text, Zitat, Button), Inhaltsverzeichnis,
  * wiederverwendbare Blöcke, Kontaktseite, Login-Showcase (Legacy-Modus), Fokus-Punkt, Vorschau-Hinweis
@@ -99,6 +102,43 @@ body .cms-form {
     --cms-form-border: var(--tv4-border-strong, var(--tv4-border, #c9ccd1));
     --cms-form-radius: var(--tv4-radius, 8px);
     font-family: var(--tv4-font-body, inherit);
+}
+
+/* Community (365CMS 4.2.0): Die Core-Vorlagen lesen --community-* mit Rückfall auf --accent, --ink, --surface usw.
+   (Muster forms-public.css). Beide Namensreihen werden nur am Wurzelelement des Community-Bereichs gesetzt
+   (`body` davor wie bei .cms-form, damit die Brücke die Core-Standards unabhängig von der Ladereihenfolge ersetzt). */
+body .cms-community,
+body .theme-v4-module--community {
+    --community-accent: var(--tv4-primary, #1d4ed8);
+    --community-accent-hover: var(--tv4-primary-hover, var(--tv4-primary, #1e40af));
+    --community-on-accent: var(--tv4-on-primary, #fff);
+    --community-link: var(--tv4-link, var(--tv4-primary, #1d4ed8));
+    --community-ink: var(--tv4-text, #1f2328);
+    --community-muted: var(--tv4-muted, #5f6368);
+    --community-bg: var(--tv4-bg, #fff);
+    --community-surface: var(--tv4-surface, #fff);
+    --community-surface-alt: var(--tv4-surface-alt, #f6f8fa);
+    --community-border: var(--tv4-border, #d8dee6);
+    --community-border-strong: var(--tv4-border-strong, var(--tv4-border, #c9ccd1));
+    --community-focus: var(--tv4-focus, var(--tv4-primary, #1d4ed8));
+    --community-radius: var(--tv4-radius, 8px);
+    --community-font: var(--tv4-font-body, inherit);
+    --community-font-heading: var(--tv4-font-heading, inherit);
+    --accent: var(--community-accent);
+    --accent-text: var(--community-link);
+    --ink: var(--community-ink);
+    --ink-muted: var(--community-muted);
+    --surface: var(--community-surface);
+    --rule: var(--community-border);
+    --rule-heavy: var(--community-border-strong);
+    --r: var(--community-radius);
+    color: var(--community-ink);
+    font-family: var(--community-font);
+}
+
+.cms-community :is(h1, h2, h3),
+.theme-v4-module--community :is(h1, h2, h3) {
+    font-family: var(--community-font-heading);
 }
 
 /* Download-Block „button“ (views/partials/download/button.php) */
