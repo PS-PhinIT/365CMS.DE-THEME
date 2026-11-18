@@ -5,6 +5,8 @@
  * @package TechNexus_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -38,7 +40,7 @@ $tnIsLoggedIn     = theme_is_logged_in();
 $tnPrefersDark = filter_var(tn_get_setting('advanced', 'prefers_dark_mode', false), FILTER_VALIDATE_BOOLEAN);
 $tnHtmlTheme   = $tnPrefersDark ? 'dark' : 'light';
 ?><!DOCTYPE html>
-<html lang="<?php echo tn_html_attr($tnLocale); ?>" data-theme="<?php echo tn_html_attr($tnHtmlTheme); ?>">
+<html lang="<?php echo tn_html_attr($tnLocale); ?>" data-theme="<?php echo tn_html_attr($tnHtmlTheme); ?>" data-theme-default="<?php echo $tnPrefersDark ? 'dark' : 'system'; ?>">
 <head>
     <meta charset="UTF-8">
     <?= function_exists('cms_csp_runtime_tags') ? cms_csp_runtime_tags(true) : '' ?>

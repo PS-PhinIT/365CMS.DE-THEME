@@ -129,6 +129,36 @@ Geplante Erweiterungen in `includes/cms-v4-compat.php` und `css/cms-v4.css` (all
 | medcarepro | 2 | [x] | [x] | [x] |
 | newspaper | 2 | [x] | [x] | [x] |
 | personalflow | 2 | [x] | [x] | [x] |
-| PTC | 3 | [x] | [ ] | [ ] |
-| rundschau | 3 | [x] | [ ] | [ ] |
-| technexus | 3 | [x] | [ ] | [ ] |
+| PTC | 3 | [x] | [x] | [x] |
+| rundschau | 3 | [x] | [x] | [x] |
+| technexus | 3 | [x] | [x] | [x] |
+
+## 7. Gesamtergebnis (2026-11-18)
+
+Alle 13 Themes sind geprüft und umgesetzt; je Theme stehen die Befunde im Abschnitt „Befunde“ des Plans. Versionen: academy365, buildbase, business, PTC 4.1.0; feder, kompass, kontor, logilink, medcarepro, newspaper, personalflow, rundschau, technexus 2.1.0. Alle mit Kit 1.1.0, `tested_up_to` 4.2.0, `requires_cms` 4.0.0.
+
+### Theme-übergreifende Befunde
+
+| Befund | Themes | Schwere |
+|---|---|---|
+| `/\host` (und teils `//host`) galt in URL-Prüfern als lokaler Pfad → Link auf fremde Adresse (Menüs, Customizer-Links, Logo/Favicon im Kit) | alle 13 + Kit | mittel |
+| `javascript://…%0a…` passierte `FILTER_VALIDATE_URL` in der Menüausgabe | academy365 | hoch |
+| Geplante Beiträge (`published_at` in der Zukunft) vorzeitig sichtbar, weil nur `status = 'published'` gefiltert wurde | PTC | hoch |
+| Roh ausgegebener Admin-Code (Head/Footer) bzw. Customizer-URLs ohne Schemaprüfung | PTC, newspaper | mittel |
+| Inhalte ohne JavaScript unsichtbar (`*-reveal { opacity: 0 }`) | logilink, newspaper, personalflow | mittel |
+| Fest eingetragene Fremd-/Demo-Daten öffentlich (Partner-Links, Kontaktdaten, fremde Schlagzeilen) | newspaper, kompass | mittel |
+| Aktiver Menüeintrag bei Unterverzeichnis-Installation, `mailto:`/`tel:` als extern oder `#` | feder, kompass, kontor, rundschau, logilink, personalflow, technexus | mittel/niedrig |
+| Slugs/Anker ohne Akzente (`Café` → `caf`), abweichend von `CMS\Slug` 4.2.0 | academy365, feder, kompass, kontor, rundschau, medcarepro | mittel |
+| Customizer-Uploads mit Array-Struktur (`feld[]`) → Warnungen; vorhersagbarer Logo-Name | feder, kompass, kontor, rundschau, PTC, newspaper | niedrig/mittel |
+| WCAG 2.2 2.4.11 (Fokus unter festem/Sticky-Header) | academy365, buildbase, business, logilink, medcarepro, newspaper, personalflow, PTC, technexus | mittel |
+| `strict_types` fehlte in Vorlagen | logilink, medcarepro, newspaper, personalflow, technexus | niedrig |
+
+### Offene Punkte
+
+- **Laufzeitprüfung:** Browser-, axe- und Lighthouse-Läufe gegen eine echte 4.2.0-Installation stehen aus (es gibt noch kein 4.2.0-Paket). Geprüft wurde statisch, mit Render-/Fuzz-Harness gegen Core-Stubs und mit `TESTS/theme-contract` des Cores.
+- **Community-Vorlagen:** Der Core liefert `CMS/views/community/` noch nicht. Die Themes verlinken die Community deshalb noch nicht (fail-closed); Override-Dateien unter `community/` entstehen erst, wenn die Core-Vorlagen und ihre Variablen feststehen. Die Token-Brücke `--community-*` nimmt das Namensschema aus `THEME-UI.md` an und setzt zusätzlich die Rückfallnamen (`--accent`, `--ink`, `--surface` …) im Community-Bereich.
+- **medcarepro:** Großschrift/Hochkontrast werden erst nach dem `defer`-Script gesetzt (Aufblitzen), weil die Regeln an `body`-Klassen hängen.
+- **rundschau:** Ressort-Badges auf Flächen ohne vollständiges Kontrast-Audit; eine Abfrage je Ressort-Block.
+- **PTC/newspaper:** Admin-Customizer laden das Core-Asset `admin.js` ohne `defer`.
+- **Bestehende Installationen:** kompass (Demo-Kontaktdaten entfallen) und newspaper (Partner-Leiste nur noch mit gepflegten Links) brauchen nach dem Update ggf. Pflege im Customizer; steht im jeweiligen CHANGELOG.
+- **cms-default** (Core-Repository) und **`index.json`** (veraltete Einträge `cms-showcase`, `cms-newspaper`) wie im 4.0/4.1-Protokoll offen.

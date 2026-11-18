@@ -49,6 +49,19 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `theme_nav_menu()`: `//evil.example` und `/\evil.example` als Link durchgelassen; `mailto:`/`tel:` → `#` | `tn_menu_url()` |
+| S4/S11 | mittel | `theme_logout_url()` hängte ein frisches CSRF-Token an `/logout?csrf_token=…` (Leck über Logs, Verlauf, Referer); seit 2.0.0 nirgends aufgerufen, aber als globaler Helfer für Overrides/Plugins erreichbar | nur noch Adresse, Logout per `theme_v4_logout_form()` |
+| S1 | – | Index-Karten (`$pTitle`, `$pExcerpt`, `$pUrl` escaped, `$pDate` aus `gmdate`), Header-/Footer-Variablen über `tn_html_attr()`, Flash mit Typ-Allowlist | kein Befund |
+| S10 | – | `navigation.js`: Storage nur `dark`/`light`, keine HTML-Senken; neuer Bootstrap mit Nonce und Allowlist | kein Befund |
+| B6 | **mittel** | Dark Mode nach Systemeinstellung griff nie (`data-theme` immer serverseitig gesetzt, JS-Bedingung nie wahr); gespeicherte Wahl erst im Footer-Script (Aufblitzen) – offen aus 4.0 | Head-Bootstrap + `data-theme-default` |
+| Q1 | niedrig | `strict_types` fehlte in 6 Vorlagen | ergänzt |
+| Q3 | mittel | WCAG 2.2 2.4.11: Sticky-Header | `scroll-padding-top` |
+| Q3 | – | Dark-Mode-Kontraste (4.0), `aria-pressed` am Umschalter, Mobilmenü mit Fokusführung | kein Befund |
+| K2 | – | Kontolinks für jede angemeldete Rolle, Logout als POST | kein Befund |
+| K3 | – | Fußzeile „Netzwerk“ → „Community-Forum“ nur bei aktivem Modul | umgesetzt |
+| K4 | – | `--tv4-*` auch unter `:root[data-theme="dark"]` → `--community-*` folgt dem Dark Mode | geprüft |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |

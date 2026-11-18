@@ -1,7 +1,7 @@
 # TechNexus Theme
 
-**Version:** 2.0.0  
-**Ziel:** 365CMS 4.0.0 – 4.1.0 · PHP 8.4.1+  
+**Version:** 2.1.0  
+**Ziel:** 365CMS 4.0.0 – 4.2.0 · PHP 8.4.1+  
 **Slug:** `technexus`  
 **Text-Domain:** `technexus`
 

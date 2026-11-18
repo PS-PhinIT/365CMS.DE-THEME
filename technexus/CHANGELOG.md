@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/technexus.md`)
+
+#### Sicherheit
+- Menü-URLs: `//host` und `/\host` galten als lokale Pfade und wurden als Link auf eine fremde Adresse ausgegeben. Neuer Prüfer `tn_menu_url()` (http(s), lokale Pfade, Anker, `mailto:`, `tel:`).
+- `theme_logout_url()` (seit 2.0.0 ungenutzt, Logout läuft per POST-Formular) hängte das CSRF-Token an die URL (Leck über Server-Logs, Verlauf und Referer). Die Funktion liefert nur noch die Adresse.
+
+#### Fehler
+- **Dark Mode nach Systemeinstellung griff nie:** `header.php` setzt immer `data-theme`, die Prüfung auf `prefers-color-scheme` in `navigation.js` lief deshalb nicht. Zudem wurde eine gespeicherte Wahl erst vom Footer-Script angewendet (Aufblitzen des falschen Farbschemas). Neu: Nonce-Bootstrap im `<head>` (gespeicherte Wahl, sonst Systemeinstellung, wenn „Standardmäßig dunkel“ aus ist).
+- `mailto:`- und `tel:`-Menüeinträge wurden zu `#`.
+- `declare(strict_types=1)` in allen Vorlagen (6 Dateien ergänzt).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*` (folgt dem Dark Mode über `--tv4-*`); Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Fußzeile „Netzwerk“: Eintrag „Community-Forum“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` für den Sticky-Header.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

@@ -37,7 +37,7 @@
     const savedTheme = readScheme();
     if (savedTheme === 'dark' || savedTheme === 'light') {
         applyTheme(savedTheme);
-    } else if (html.getAttribute('data-theme') !== 'dark' && html.getAttribute('data-theme') !== 'light') {
+    } else if (html.getAttribute('data-theme-default') === 'system') {
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             applyTheme('dark');
         }
