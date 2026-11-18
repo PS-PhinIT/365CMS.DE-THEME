@@ -23,7 +23,7 @@ if (theme_is_logged_in()) {
     exit;
 }
 
-$isDoctor       = ($_GET['type'] ?? '') === 'doctor';
+$isDoctor       = ($_GET['type'] ?? '') === 'doctor'; // nur Darstellung; die Rolle vergibt der Core
 $safe           = static fn(mixed $v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 $registrationOn = mc_registration_enabled();
 
@@ -39,6 +39,24 @@ unset($_SESSION['auth_form_old']['register']);
 $postedEmail    = mb_substr(trim((string) ($oldInput['email'] ?? '')), 0, 254);
 $postedUsername = mb_substr(trim((string) ($oldInput['username'] ?? '')), 0, 80);
 $postedTerms    = ($oldInput['terms'] ?? '0') === '1';
+
+// Passwort-Richtlinie des Cores (4.1.0, Einstellungen → Sicherheit; Standard 12 Zeichen) statt fest 8 Zeichen:
+// Mit `minlength="8"` und dem Hinweis „Mindestens 8 Zeichen“ lehnte der Core gültig wirkende Eingaben ab.
+$mcMinLength   = 12;
+$mcPolicyParts = [];
+try {
+    if (class_exists('\\CMS\\Services\\Security\\PasswordPolicyService')) {
+        $mcPolicy    = \CMS\Services\Security\PasswordPolicyService::getInstance()->definition();
+        $mcMinLength = max(1, (int) ($mcPolicy['min_length'] ?? 12));
+        foreach (['require_uppercase' => 'Großbuchstabe', 'require_lowercase' => 'Kleinbuchstabe', 'require_digit' => 'Ziffer', 'require_special' => 'Sonderzeichen'] as $mcFlag => $mcLabel) {
+            if (!empty($mcPolicy[$mcFlag])) {
+                $mcPolicyParts[] = $mcLabel;
+            }
+        }
+    }
+} catch (\Throwable) {
+}
+$mcPasswordHint = 'Mindestens ' . $mcMinLength . ' Zeichen' . ($mcPolicyParts !== [] ? ', mit ' . implode(', ', $mcPolicyParts) : '') . '.';
 
 try {
     $csrfToken = \CMS\Security::instance()->generateToken('register');
@@ -167,10 +185,9 @@ $privacyUrl = theme_v4_link_available(theme_route_url('privacy')) ? $safe(theme_
                            autocomplete="new-password"
                            required
                            aria-required="true"
-                           placeholder="Mindestens 8 Zeichen"
                            aria-describedby="reg-password-hint"
-                           minlength="8">
-                    <p class="mc-form-hint" id="reg-password-hint">Mindestens 8 Zeichen; es gilt die Passwort-Richtlinie dieser Website.</p>
+                           minlength="<?php echo (int) $mcMinLength; ?>">
+                    <p class="mc-form-hint" id="reg-password-hint"><?php echo $safe($mcPasswordHint); ?></p>
                 </div>
 
                 <div class="mc-form-group">

@@ -16,11 +16,12 @@ if (!defined('ABSPATH')) {
 
 $safe    = static fn(mixed $v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
 
-$rawQuery = trim((string) ($_GET['q'] ?? $query ?? ''));
+// Suchbegriff des Cores zuerst; `?q[]=…` (Array) ergab „Array to string conversion“ und den Begriff „Array“.
+$rawQuery = trim(is_string($query ?? null) ? $query : (is_string($_GET['q'] ?? null) ? $_GET['q'] : ''));
 $query    = strip_tags($rawQuery);
 $query    = function_exists('mb_substr') ? mb_substr($query, 0, 120) : substr($query, 0, 120);
 $queryEsc = $safe($query);
-$page     = max(1, (int) ($_GET['page'] ?? $currentPage ?? 1));
+$page     = max(1, (int) (is_scalar($_GET['page'] ?? null) ? $_GET['page'] : ($currentPage ?? 1)));
 
 $searchUrl  = $safe(theme_route_url('search'));
 $doctorsUrl = theme_v4_link_available(theme_route_url('doctors')) ? $safe(theme_route_url('doctors')) : ''; // nur, wenn /aerzte existiert

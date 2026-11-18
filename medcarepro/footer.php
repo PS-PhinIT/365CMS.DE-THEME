@@ -5,6 +5,8 @@
  * @package MedCarePro_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -41,6 +43,8 @@ $mcFooterColumns = [
         ['label' => 'Fachgebiete',         'url' => theme_route_url('fields')],
         ['label' => 'Gesundheitsratgeber', 'url' => theme_route_url('blog')],
         ['label' => 'Newsletter',          'url' => mc_href('/newsletter')],
+        // 365CMS 4.2.0: Community nur bei aktivem Modul (sonst leer und herausgefiltert).
+        theme_v4_community_link(null, 'Patienten-Community', 'Patient community') ?? ['label' => 'Community', 'url' => ''],
         ['label' => 'Kontakt',             'url' => mc_href('/kontakt')],
     ],
     'Für Ärzte' => array_merge(
