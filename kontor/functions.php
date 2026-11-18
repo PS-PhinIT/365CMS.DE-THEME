@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('KONTOR_THEME_VERSION')) {
-    define('KONTOR_THEME_VERSION', '2.0.0');
+    define('KONTOR_THEME_VERSION', '2.1.0');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
@@ -384,7 +384,8 @@ if (!function_exists('kontor_safe_url')) {
     function kontor_safe_url(string $url, string $fallback = ''): string
     {
         $candidate = trim($url);
-        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//')) {
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
             return $fallback;
         }
         if (str_starts_with($candidate, '/') || str_starts_with($candidate, '?')) {
@@ -491,7 +492,7 @@ if (!function_exists('kontor_request_locale')) {
     function kontor_request_locale(): string
     {
         try {
-            $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+            $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
             $context = \CMS\Services\ContentLocalizationService::getInstance()->resolveRequestContext($path);
             $locale = strtolower((string) ($context['locale'] ?? 'de'));
 
@@ -785,7 +786,7 @@ if (!function_exists('kontor_post_tags')) {
             }
             $slug = trim((string) (is_array($item) ? ($item['slug'] ?? '') : ''));
             if ($slug === '') {
-                $slug = trim((string) (preg_replace('/[^a-z0-9]+/', '-', strtr(mb_strtolower($name, 'UTF-8'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss'])) ?? ''), '-');
+                $slug = theme_v4_slug($name); // wie CMS\Slug::fromText() (4.2.0), auch für Akzente
             }
             $tags[] = ['name' => $name, 'url' => $slug !== '' ? kontor_archive_url('tag', $slug) : kontor_search_url($name)];
         }
@@ -827,8 +828,6 @@ if (!function_exists('kontor_nav_menu')) {
             return;
         }
 
-        $current = rtrim((string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/'), '/');
-        $sitePath = rtrim((string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?? ''), '/');
         $siteHost = parse_url((string) SITE_URL, PHP_URL_HOST);
 
         echo '<ul' . ($class !== '' ? ' class="' . kontor_e($class) . '"' : '') . '>';
@@ -842,13 +841,11 @@ if (!function_exists('kontor_nav_menu')) {
             }
             $rawUrl = (string) ($item['url'] ?? '#');
             $href = kontor_url($rawUrl);
-            $path = rtrim((string) (parse_url($href, PHP_URL_PATH) ?? ''), '/');
-            if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
-                $path = rtrim(substr($path, strlen($sitePath)), '/');
-            }
-            $isExternal = parse_url($href, PHP_URL_HOST) !== $siteHost;
-            $isActive = !$isExternal && !str_contains($rawUrl, '#')
-                && ($path === '' ? $current === '' : ($current === $path || str_starts_with($current . '/', $path . '/')));
+            // Nur http(s) zu einem anderen Host ist extern (mailto:/tel: öffneten bisher in einem neuen Tab).
+            $isMailOrTel = preg_match('/^(?:mailto|tel):/i', $href) === 1;
+            $isExternal = !$isMailOrTel && parse_url($href, PHP_URL_HOST) !== $siteHost;
+            // Kit-Helfer: Unterverzeichnis-Installation berücksichtigt (vorher nie aktiv).
+            $isActive = !$isExternal && !$isMailOrTel && !str_contains($rawUrl, '#') && theme_v4_is_current_path($href);
 
             $attrs = $isActive ? ' aria-current="page"' : '';
             if (($item['target'] ?? '') === '_blank' || $isExternal) {
@@ -879,6 +876,8 @@ if (!function_exists('kontor_default_menu')) {
                 ['label' => 'Aktuelles', 'url' => '/blog'],
                 ['label' => 'Kontakt', 'url' => '/kontakt'],
                 ['label' => 'Newsletter', 'url' => '/newsletter'],
+                // 365CMS 4.2.0: nur bei aktivem Community-Modul (sonst herausgefiltert).
+                ['label' => 'Community', 'url' => '/' . theme_v4_community_base_path()],
                 ['label' => 'Suche', 'url' => '/search'],
             ],
             'footer-legal' => [
@@ -985,7 +984,7 @@ if (!function_exists('kontor_pagination')) {
             return;
         }
 
-        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+        $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
         $build = static function (int $number) use ($path, $param): string {
             $query = array_filter($_GET, static fn(mixed $v): bool => is_scalar($v));
             unset($query['p'], $query['page']);
