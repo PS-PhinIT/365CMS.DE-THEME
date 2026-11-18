@@ -3,10 +3,10 @@ Theme Name: PTC – Personalvermittlung & Schulungen
 Theme URI: https://365cms.de/themes/ptc
 Author: 365CMS
 Description: Branchentheme für Personalvermittlung und berufliche Weiterbildung. Vertrauen, Kompetenz, Entwicklung – zentral per Design-Tokens anpassbar.
-Version: 4.0.0
+Version: 4.1.0
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
-Tested up to: 4.1.0
+Tested up to: 4.2.0
 License: GNU General Public License v2 or later
 */
 
@@ -78,6 +78,8 @@ License: GNU General Public License v2 or later
 html {
     font-size: 16px;
     scroll-behavior: smooth;
+    /* WCAG 2.2 (2.4.11): Fokus und Sprungziele (#dienstleistungen, #faq …) nicht unter dem festen Header */
+    scroll-padding-top: calc(var(--header-height, 72px) + 1rem);
 }
 
 body {

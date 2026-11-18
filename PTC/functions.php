@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('PTC_THEME_VERSION')) {
-    define('PTC_THEME_VERSION', '4.0.0');
+    define('PTC_THEME_VERSION', '4.1.0');
 }
 
 if (!defined('PTC_THEME_SLUG')) {
@@ -242,7 +242,7 @@ final class PTC_Theme
 
         echo '</style>' . "\n";
 
-        $headCode = trim((string) $this->customizerGet('advanced', 'custom_head_code', ''));
+        $headCode = ptc_custom_head_code((string) $this->customizerGet('advanced', 'custom_head_code', ''));
         if ($headCode !== '') {
             echo $headCode . "\n";
         }
@@ -250,7 +250,7 @@ final class PTC_Theme
 
     public function outputCustomFooterCode(): void
     {
-        $footerCode = trim((string) $this->customizerGet('advanced', 'custom_footer_code', ''));
+        $footerCode = ptc_custom_footer_code((string) $this->customizerGet('advanced', 'custom_footer_code', ''));
         if ($footerCode !== '') {
             echo $footerCode . "\n";
         }
@@ -289,6 +289,8 @@ final class PTC_Theme
                 ['label' => 'Leistungen', 'url' => '/#dienstleistungen'],
                 ['label' => 'FAQ',        'url' => '/#faq'],
                 ['label' => 'Newsletter', 'url' => '/newsletter'],
+                // 365CMS 4.2.0: nur bei aktivem Community-Modul (sonst herausgefiltert).
+                ['label' => 'Community',  'url' => '/' . theme_v4_community_base_path()],
                 ['label' => 'Kontakt',    'url' => '/contact'],
             ],
             'footer-services' => [
@@ -411,15 +413,72 @@ if (!function_exists('ptc_css_number')) {
     }
 }
 
+if (!function_exists('ptc_strip_active_html')) {
+    /** Entfernt Script-/Einbettungs-Elemente, Event-Handler und `javascript:`/`data:`-Ziele aus Admin-HTML. */
+    function ptc_strip_active_html(string $html): string
+    {
+        $html = (string) preg_replace('#<(script|style|iframe|object|embed|template|base|form)\b[^>]*>.*?</\1\s*>#is', '', $html);
+        $html = (string) preg_replace('#<\/?(script|style|iframe|object|embed|template|base|form|meta\s+http-equiv)\b[^>]*>#i', '', $html);
+        $html = (string) preg_replace('#\s+on[a-z]+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)#i', '', $html);
+        // URL-Attribute dekodiert prüfen (`&#106;avascript:` wäre sonst durchgerutscht).
+        $html = (string) preg_replace_callback(
+            '#\s+(href|src|action|formaction|xlink:href|srcset)\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)#i',
+            static function (array $m): string {
+                $value = html_entity_decode(trim($m[2], '"\''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $value = strtolower((string) preg_replace('/[\x00-\x20\x7F]+/', '', $value));
+
+                return preg_match('#^(?:javascript|vbscript|data):#', $value) === 1 ? '' : $m[0];
+            },
+            $html
+        );
+
+        return trim($html);
+    }
+}
+
+if (!function_exists('ptc_custom_head_code')) {
+    /**
+     * „Custom Head Code“: nur `<meta>` und `<link>` (ohne Event-Handler). Scripts blockiert die 365CMS-CSP ohnehin;
+     * bis 4.0.0 wurde der Inhalt roh ausgegeben (Stored XSS bei abgeschalteter CSP).
+     */
+    function ptc_custom_head_code(string $code): string
+    {
+        if (trim($code) === '' || preg_match_all('#<(?:meta|link)\b[^>]*>#i', $code, $tags) < 1) {
+            return '';
+        }
+        $out = [];
+        foreach ($tags[0] as $tag) {
+            if (preg_match('#\bhttp-equiv\s*=#i', $tag) === 1) {
+                continue; // z. B. refresh/Set-Cookie/CSP-Überschreibung
+            }
+            $tag = ptc_strip_active_html($tag);
+            if ($tag !== '') {
+                $out[] = $tag;
+            }
+        }
+
+        return implode("\n", $out);
+    }
+}
+
+if (!function_exists('ptc_custom_footer_code')) {
+    /** „Custom Footer Code“: statisches HTML ohne Scripts, Einbettungen und Event-Handler (CSP-konform). */
+    function ptc_custom_footer_code(string $code): string
+    {
+        return trim($code) === '' ? '' : ptc_strip_active_html($code);
+    }
+}
+
 if (!function_exists('ptc_safe_url')) {
     function ptc_safe_url(string $url, string $fallback = ''): string
     {
         $candidate = trim($url);
-        if ($candidate === '' || str_starts_with($candidate, '//')) {
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($candidate === '' || str_starts_with($candidate, '//') || str_contains($candidate, '\\') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
             return $fallback;
         }
         if (str_starts_with($candidate, '/')) {
-            return preg_replace('/[\x00-\x1F\x7F]+/u', '', $candidate) ?? $fallback;
+            return $candidate;
         }
         if (str_starts_with($candidate, '#')) {
             return preg_match('/^#[A-Za-z][A-Za-z0-9_-]*$/', $candidate) === 1 ? $candidate : $fallback;

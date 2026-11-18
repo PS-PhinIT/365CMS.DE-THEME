@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('TECHNEXUS_THEME_VERSION')) {
-    define('TECHNEXUS_THEME_VERSION', '2.0.0');
+    define('TECHNEXUS_THEME_VERSION', '2.1.0');
 }
 
 if (!defined('TECHNEXUS_THEME_SLUG')) {
@@ -82,6 +82,7 @@ final class TechNexus_Theme
             return;
         }
 
+        \CMS\Hooks::addAction('head', [$this, 'outputColorSchemeBootstrap'], 0);
         \CMS\Hooks::addAction('head', [$this, 'enqueueStyles'],      1);
         \CMS\Hooks::addAction('head', [$this, 'outputMetaTags'],     10);
         \CMS\Hooks::addAction('head', [$this, 'outputCustomStyles'], 15);
@@ -123,6 +124,22 @@ final class TechNexus_Theme
             'radius'     => $radius,
             'font'       => $font,
         ]);
+    }
+
+    /**
+     * Farbschema vor dem ersten Rendern (Nonce-Inline-Script im <head>): gespeicherte Wahl (`tn-color-scheme`),
+     * sonst – wenn „Standardmäßig dunkel“ aus ist – die Systemeinstellung. Bisher setzte erst navigation.js im
+     * Footer die Wahl (Aufblitzen), und `prefers-color-scheme` griff nie, weil header.php immer data-theme setzt.
+     */
+    public function outputColorSchemeBootstrap(): void
+    {
+        $toggle = filter_var(tn_get_setting('advanced', 'enable_dark_mode_toggle', true), FILTER_VALIDATE_BOOLEAN);
+        $js = '(function(){var d=document.documentElement,s=null;'
+            . ($toggle ? 'try{s=localStorage.getItem("tn-color-scheme");}catch(e){}' : '')
+            . 'if(s!=="dark"&&s!=="light"&&d.getAttribute("data-theme-default")==="system"&&window.matchMedia'
+            . '&&window.matchMedia("(prefers-color-scheme: dark)").matches){s="dark";}'
+            . 'if(s==="dark"||s==="light"){d.setAttribute("data-theme",s);}})();';
+        echo '<script' . theme_csp_nonce_attr() . '>' . $js . '</script>' . "\n";
     }
 
     public function enqueueStyles(): void
@@ -416,6 +433,26 @@ if (!function_exists('theme_route_url')) {
     }
 }
 
+if (!function_exists('tn_menu_url')) {
+    /** Menü-URL: http(s), lokaler Pfad (kein `//`/`\`), Anker, mailto:/tel: – sonst `#`. */
+    function tn_menu_url(string $url): string
+    {
+        $url = trim($url);
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_contains($url, '\\') || str_starts_with($url, '//')) {
+            return '#';
+        }
+        if (str_starts_with($url, '/') || str_starts_with($url, '#')) {
+            return $url;
+        }
+        if (preg_match('/^(?:mailto:[^\s@<>"]+@[^\s@<>"]+|tel:\+?[0-9][0-9\s().\/-]{2,31})$/i', $url) === 1) {
+            return $url;
+        }
+        $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
+
+        return in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) !== false ? $url : '#';
+    }
+}
+
 if (!function_exists('theme_nav_menu')) {
     /**
      * Menü einer Position als <ul>. Mit `$mainNavContext` (`desktop`/`mobile`) folgen direkt nach den
@@ -446,15 +483,10 @@ if (!function_exists('theme_nav_menu')) {
             // Der Core liefert die Beschriftung in `title`; `label` bleibt als Fallback älterer Menüs.
             $label  = (string) ($item['label'] ?? $item['title'] ?? '');
 
-            $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
-                ? $rawUrl
-                : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
-                    ? $rawUrl
-                    : '#');
-            if (!in_array(strtolower((string) parse_url($sanitizedUrl, PHP_URL_SCHEME)), ['', 'http', 'https'], true)) {
-                $sanitizedUrl = '#';
-            }
-            $isActive = !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
+            // `//host` und `/\host` galten als lokale Pfade (fremde Adresse), mailto:/tel: wurden zu `#`.
+            $sanitizedUrl = tn_menu_url($rawUrl);
+            $isActive = !str_starts_with($sanitizedUrl, '#') && preg_match('/^(?:mailto|tel):/i', $sanitizedUrl) !== 1
+                && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')
                 ? ' target="_blank" rel="noopener noreferrer"'
@@ -714,15 +746,9 @@ if (!function_exists('theme_logout_url')) {
         if ($url !== null) {
             return $url;
         }
+        // Veraltet (seit 2.0.0 ungenutzt): Logout nur noch als POST über theme_v4_logout_form(). Bis 2.1.0 hängte
+        // die Funktion das CSRF-Token an die URL (Leck über Logs, Verlauf und Referer); jetzt reine Adresse.
         $url = rtrim((string) SITE_URL, '/') . '/logout';
-        try {
-            $token = (string) \CMS\Security::instance()->generateToken('logout');
-        } catch (\Throwable) {
-            $token = '';
-        }
-        if ($token !== '') {
-            $url .= '?csrf_token=' . rawurlencode($token);
-        }
 
         return $url;
     }

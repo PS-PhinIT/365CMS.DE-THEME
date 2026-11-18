@@ -53,7 +53,14 @@ if (!function_exists('ptc_customizer_store_upload')) {
     function ptc_customizer_store_upload(string $field, string $subDir, string $prefix): array
     {
         $file = $_FILES[$field] ?? null;
-        if (!is_array($file) || (string) ($file['tmp_name'] ?? '') === '') {
+        if (!is_array($file)) {
+            return ['url' => '', 'error' => ''];
+        }
+        // Nur Einzeldateien: `feld[]` liefert Arrays (sonst „Array to string conversion“).
+        if (!is_string($file['tmp_name'] ?? '') || !is_string($file['name'] ?? '') || is_array($file['error'] ?? null)) {
+            return ['url' => '', 'error' => 'Ungültiger Upload erkannt.'];
+        }
+        if ((string) ($file['tmp_name'] ?? '') === '') {
             return ['url' => '', 'error' => ''];
         }
 
@@ -2092,13 +2099,13 @@ $config = [
             ],
             'custom_head_code' => [
                 'label'       => 'Custom Head Code (Tracking, Meta)',
-                'description' => 'Wird im &lt;head&gt; ausgegeben. Nur vertrauenswürdigen Code einfügen! Hinweis: Die 365CMS-CSP blockiert Inline-Scripts und Fremd-Scripts; Tracking bitte unter SEO → Analytics einrichten (consent-gesteuert).',
+                'description' => 'Nur &lt;meta&gt;- und &lt;link&gt;-Tags (z. B. Verifizierung); alles andere wird nicht ausgegeben. Scripts blockiert die 365CMS-CSP; Tracking bitte unter SEO → Analytics einrichten (consent-gesteuert).',
                 'type'        => 'textarea',
                 'default'     => '',
             ],
             'custom_footer_code' => [
                 'label'       => 'Custom Footer Code (Analytics, Widgets)',
-                'description' => 'Wird vor &lt;/body&gt; ausgegeben. Hinweis: Die 365CMS-CSP blockiert Inline-Scripts und Fremd-Scripts; Tracking bitte unter SEO → Analytics einrichten (consent-gesteuert).',
+                'description' => 'Statisches HTML vor &lt;/body&gt;; Scripts, iframes und Event-Handler werden entfernt (die 365CMS-CSP würde sie ohnehin blockieren). Tracking bitte unter SEO → Analytics einrichten (consent-gesteuert).',
                 'type'        => 'textarea',
                 'default'     => '',
             ],

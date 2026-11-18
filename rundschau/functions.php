@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('RUNDSCHAU_THEME_VERSION')) {
-    define('RUNDSCHAU_THEME_VERSION', '2.0.0');
+    define('RUNDSCHAU_THEME_VERSION', '2.1.0');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">; Module und Fehlerseiten setzen kein zweites <main>.
@@ -359,7 +359,8 @@ if (!function_exists('rundschau_safe_url')) {
     function rundschau_safe_url(string $url, string $fallback = ''): string
     {
         $candidate = trim($url);
-        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//')) {
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
             return $fallback;
         }
         if (str_starts_with($candidate, '/') || str_starts_with($candidate, '?')) {
@@ -459,7 +460,7 @@ if (!function_exists('rundschau_request_locale')) {
     function rundschau_request_locale(): string
     {
         try {
-            $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+            $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
             $context = \CMS\Services\ContentLocalizationService::getInstance()->resolveRequestContext($path);
             $locale = strtolower((string) ($context['locale'] ?? 'de'));
 
@@ -842,7 +843,8 @@ if (!function_exists('rundschau_get_posts')) {
                 $tagName = $tagRow !== null ? trim((string) ($tagRow->name ?? '')) : str_replace('-', ' ', $tag);
                 $where[] = "(EXISTS (SELECT 1 FROM {$prefix}post_tag_rel ptr WHERE ptr.post_id = p.id AND ptr.tag_id = ?) OR CONCAT(',', LOWER(REPLACE(COALESCE(p.tags, ''), ', ', ',')), ',') LIKE ?)";
                 $params[] = $tagRow !== null ? (int) ($tagRow->id ?? 0) : 0;
-                $params[] = '%,' . mb_strtolower($tagName, 'UTF-8') . ',%';
+                // LIKE-Platzhalter im Namen maskieren (`/tag/a%25b` passte sonst auf beliebige Schlagwörter).
+                $params[] = '%,' . addcslashes(mb_strtolower($tagName, 'UTF-8'), '%_\\') . ',%';
             }
 
             $days = (int) ($args['days'] ?? 0);
@@ -920,7 +922,7 @@ if (!function_exists('rundschau_post_tags')) {
             }
             $slug = trim((string) (is_array($item) ? ($item['slug'] ?? '') : ''));
             if ($slug === '') {
-                $slug = trim((string) (preg_replace('/[^a-z0-9]+/', '-', strtr(mb_strtolower($name, 'UTF-8'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss'])) ?? ''), '-');
+                $slug = theme_v4_slug($name); // wie CMS\Slug::fromText() (4.2.0), auch für Akzente
             }
             $tags[] = ['name' => $name, 'url' => $slug !== '' ? rundschau_archive_url('tag', $slug) : rundschau_search_url($name)];
         }
@@ -977,9 +979,6 @@ if (!function_exists('rundschau_nav_menu')) {
             return false;
         }
 
-        // Aktueller Pfad ohne Unterverzeichnis von SITE_URL (sonst blieb aria-current bei Installationen in /cms/ aus).
-        $current = rtrim(theme_v4_request_path(), '/');
-        $sitePath = rtrim((string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?? ''), '/');
         $siteHost = parse_url((string) SITE_URL, PHP_URL_HOST);
 
         echo '<ul' . ($class !== '' ? ' class="' . rundschau_e($class) . '"' : '') . '>';
@@ -993,13 +992,11 @@ if (!function_exists('rundschau_nav_menu')) {
             }
             $rawUrl = (string) ($item['url'] ?? '#');
             $href = rundschau_url($rawUrl);
-            $path = rtrim((string) (parse_url($href, PHP_URL_PATH) ?? ''), '/');
-            if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
-                $path = rtrim(substr($path, strlen($sitePath)), '/');
-            }
-            $isExternal = parse_url($href, PHP_URL_HOST) !== $siteHost;
-            $isActive = !$isExternal && !str_contains($rawUrl, '#')
-                && ($path === '' ? $current === '' : ($current === $path || str_starts_with($current . '/', $path . '/')));
+            // Nur http(s) zu einem anderen Host ist extern (mailto:/tel: öffneten bisher in einem neuen Tab).
+            $isMailOrTel = preg_match('/^(?:mailto|tel):/i', $href) === 1;
+            $isExternal = !$isMailOrTel && parse_url($href, PHP_URL_HOST) !== $siteHost;
+            // Kit-Helfer: Pfadgrenze beim Unterverzeichnis (`/cms` schnitt bisher auch `/cmsx` ab).
+            $isActive = !$isExternal && !$isMailOrTel && !str_contains($rawUrl, '#') && theme_v4_is_current_path($href);
 
             $attrs = $isActive ? ' aria-current="page"' : '';
             if (($item['target'] ?? '') === '_blank' || $isExternal) {
@@ -1042,6 +1039,8 @@ if (!function_exists('rundschau_default_menu')) {
                 ['label' => 'Ressorts', 'url' => rundschau_archive_url('category')],
                 ['label' => 'Themen A–Z', 'url' => rundschau_archive_url('tag')],
                 ['label' => 'Suche', 'url' => '/search'],
+                // 365CMS 4.2.0: Leserforum nur bei aktivem Community-Modul (sonst herausgefiltert).
+                ['label' => 'Leserforum', 'url' => '/' . theme_v4_community_base_path()],
                 ['label' => 'RSS-Feed', 'url' => '/feed'],
             ],
             'footer-legal' => [
@@ -1090,7 +1089,7 @@ if (!function_exists('rundschau_pagination')) {
             return;
         }
 
-        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+        $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
         $build = static function (int $number) use ($path, $param): string {
             $query = array_filter($_GET, static fn(mixed $v): bool => is_scalar($v));
             unset($query['p'], $query['page']);

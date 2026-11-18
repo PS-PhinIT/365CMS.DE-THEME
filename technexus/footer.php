@@ -5,6 +5,8 @@
  * @package TechNexus_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -48,6 +50,8 @@ $tnNetworkLinks = theme_v4_filter_links([
     ['label' => 'Tech-Unternehmen', 'url' => theme_route_url('companies')],
     ['label' => 'Tech Events', 'url' => theme_route_url('events')],
     ['label' => 'IT Jobs', 'url' => theme_route_url('jobs')],
+    // 365CMS 4.2.0: Community-Forum nur bei aktivem Modul (sonst leer und herausgefiltert).
+    theme_v4_community_link(null, 'Community-Forum', 'Community forum') ?? ['label' => 'Community', 'url' => ''],
     ['label' => 'Downloads', 'url' => theme_route_url('downloads')],
     ['label' => 'Wissensdatenbank', 'url' => theme_route_url('kb')],
     ['label' => 'Newsletter', 'url' => theme_route_url('newsletter')],

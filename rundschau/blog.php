@@ -58,7 +58,7 @@ if (isset($author) && is_array($author)) {
 
 $popular = $showSidebar && !$isOverview ? rundschau_popular_posts(5, rundschau_int('rs_home', 'popular_days', 30, 0, 365)) : [];
 $ressorts = $showSidebar && !$isOverview ? array_values(array_filter(rundschau_categories(), static fn(array $c): bool => $c['parent_id'] === 0 && $c['total'] > 0)) : [];
-$formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+$formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
 $authorAvatar = isset($author) && is_array($author) ? rundschau_media_url($author['avatar_url'] ?? '') : '';
 ?>
 
