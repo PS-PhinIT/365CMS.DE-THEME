@@ -16,6 +16,8 @@
  * @package PersonalFlow_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -113,9 +115,7 @@ $profileHref = ($pfCandProfileUrl !== '#' && theme_v4_link_available($profileRaw
         <a href="<?php echo $profileHref; ?>" class="pf-btn pf-btn-secondary pf-btn-sm pf-focus-shadow">
             Profil ansehen<span class="pf-visually-hidden">: <?php echo $safe($pfCandName); ?></span>
         </a>
-        <a href="<?php echo $profileHref; ?>?action=contact" class="pf-btn pf-btn-ghost pf-btn-sm pf-focus-shadow">
-            Kontakt aufnehmen<span class="pf-visually-hidden">: <?php echo $safe($pfCandName); ?></span>
-        </a>
+        <?php // „Kontakt aufnehmen“ (GET `?action=contact`) entfernt: kein Handler, der Link lud nur das Profil neu. ?>
     </div>
     <?php endif; ?>
 </article>

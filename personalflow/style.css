@@ -4,10 +4,10 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: HR- & Personalvermittlungs-Theme – warmes Amber-Anker-System, redaktionelle Klarheit, semantische Pipeline-Status-Tokens (Beworben → Screening → Interview → Angebot → Eingestellt). Für Personalagenturen, Recruiting-Plattformen und Karriere-Portale.
-Version: 2.0.0
+Version: 2.1.0
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
-Tested up to: 4.1.0
+Tested up to: 4.2.0
 License: GPL-2.0-or-later
 Text Domain: personalflow
 Tags: hr, recruitment, jobs, careers, applicant-tracking, pipeline, warm, editorial, cms
@@ -126,7 +126,7 @@ Tags: hr, recruitment, jobs, careers, applicant-tracking, pipeline, warm, editor
    2. Reset & Base
    ================================================================ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: var(--pf-font-size-base); scroll-behavior: smooth; }
+html { font-size: var(--pf-font-size-base); scroll-behavior: smooth; scroll-padding-top: calc(var(--pf-header-height, 72px) + 1rem); } /* WCAG 2.2: 2.4.11 */
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
 body.pf-body {
@@ -918,8 +918,9 @@ body.no-header-shadow .pf-site-header.scrolled { box-shadow: none; }
 /* ================================================================
    17. Reveal on Scroll
    ================================================================ */
-.pf-reveal { opacity: 0; transform: translateY(12px); transition: opacity .5s ease, transform .5s ease; }
-.pf-reveal.is-visible { opacity: 1; transform: translateY(0); }
+/* Nur mit laufendem Script ausblenden (navigation.js setzt .pf-js): ohne JS fehlten Startseiteninhalte. */
+html.pf-js .pf-reveal { opacity: 0; transform: translateY(12px); transition: opacity .5s ease, transform .5s ease; }
+html.pf-js .pf-reveal.is-visible { opacity: 1; transform: translateY(0); }
 @media (prefers-reduced-motion: reduce) {
     .pf-reveal { opacity: 1; transform: none; transition: none; }
 }

@@ -1,7 +1,7 @@
 # PersonalFlow Theme
 
-Version: 2.0.0
-Target: 365CMS 4.0.0 – 4.1.0, PHP 8.4.1+
+Version: 2.1.0
+Target: 365CMS 4.0.0 – 4.2.0, PHP 8.4.1+
 Constant: `PERSONALFLOW_THEME_VERSION`
 
 PersonalFlow ist ein HR- und Personalvermittlungs-Theme für 365CMS. Es ist
@@ -212,8 +212,8 @@ Stage-Badge ohne Karten-Wrapper:
 ## Versionsabgleich
 
 - `theme.json` → `"version": "2.0.0"`, `requires_cms` 4.0.0, `requires_php` 8.4.1,
-  `tested_up_to` 4.1.0
+  `tested_up_to` 4.2.0
 - `style.css` → `Version: 2.0.0`, `Requires PHP: 8.4.1`, `Requires CMS: 4.0.0`,
-  `Tested up to: 4.1.0`, `License: GPL-2.0-or-later`, `Text Domain: personalflow`
+  `Tested up to: 4.2.0`, `License: GPL-2.0-or-later`, `Text Domain: personalflow`
 - `update.json` → `"version": "2.0.0"`, `"min_cms_version": "4.0.0"`
 - `functions.php` → `define('PERSONALFLOW_THEME_VERSION', '2.0.0')`

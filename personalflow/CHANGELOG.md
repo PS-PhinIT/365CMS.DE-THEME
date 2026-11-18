@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/personalflow.md`)
+
+#### Sicherheit
+- Menü-URLs: `//host` und `/\host` galten als lokale Pfade und wurden als Link auf eine fremde Adresse ausgegeben. Neuer Prüfer `pf_menu_url()` (http(s), lokale Pfade, Anker, `mailto:`, `tel:`).
+- Entfernt: „Merken“ (`?action=save`) an Stellenkarten und „Kontakt aufnehmen“ (`?action=contact`) an Kandidatenkarten. Beide waren GET-Links ohne Handler, die nur die Zielseite neu luden; eine Merkfunktion per GET wäre zudem CSRF-anfällig.
+
+#### Fehler
+- Startseite ohne JavaScript: `.pf-reveal` war per CSS unsichtbar (offen seit 2.0.0); ausgeblendet wird jetzt nur mit laufendem Script (`html.pf-js`).
+- `mailto:`- und `tel:`-Menüeinträge wurden zu `#`.
+- `declare(strict_types=1)` in allen Vorlagen (7 Dateien ergänzt).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Fußzeile „Wissen & Kontakt“: Eintrag „Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält fokussierte Elemente unter dem festen Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 - 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

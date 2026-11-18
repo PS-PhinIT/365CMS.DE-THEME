@@ -5,6 +5,8 @@
  * @package PersonalFlow_Theme
  */
 
+declare(strict_types=1);
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -277,7 +279,7 @@ $jobs = [
                         <?php if ($jHref !== '') : ?>
                         <div class="pf-job-cta-row">
                             <a href="<?php echo $jHref; ?>" class="pf-btn pf-btn-primary pf-btn-sm pf-focus-shadow">Details &amp; Bewerben</a>
-                            <a href="<?php echo $jHref; ?>?action=save" class="pf-btn pf-btn-ghost pf-btn-sm pf-focus-shadow">Merken</a>
+                            <?php // „Merken“ (GET `?action=save`) entfernt: kein Handler im Theme/Core, eine Merkfunktion per GET wäre zudem CSRF-anfällig. ?>
                         </div>
                         <?php endif; ?>
                     </article>
