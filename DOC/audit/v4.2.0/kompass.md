@@ -53,6 +53,25 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `kompass_safe_url()` und `kompass_customizer_normalize_url()` ließen `/\evil.example` als lokalen Pfad durch (Render-Test) | behoben |
+| S4/S5/S6/S8 | niedrig | Customizer (gleiche Basis wie feder): `isAdmin()`, CSRF, Feldvalidierung und Upload (Endung + MIME, Zufallsname) in Ordnung; `u_x[]` führte zu „Array to string conversion“ | Array-Fall abgewiesen |
+| S7 | – | `kompass_get_posts()` mit Platzhaltern und geklemmtem `LIMIT/OFFSET`; `kompass_categories()`: Publikationsfilter in **beiden** `UNION`-Zweigen, `COUNT(DISTINCT)` verhindert Doppelzählung, ein Request-Cache | kein Befund |
+| S1 | – | `$readingTime` (int), `$content` (Core-HTML, nur Anker ergänzt), `$count` (int), `$serviceNav` (escaped), `$headingTag` (nur `h2`/`h3` aus Code) | kein Befund |
+| S1/S2 | – | Feedback-Box: `mailto:` mit validierter Service-Adresse, Betreff/Text `rawurlencode`, Seitenadresse über `kompass_url()` (verwirft `//host`) | kein Befund |
+| S2 | niedrig | Paginierung und Archiv-Formular spiegelten `REQUEST_URI` | behoben |
+| S10 | – | Schriftgröße/Kontrast: Pre-Paint-Script mit Nonce und Allowlist, `theme.js` ohne HTML-Senken | kein Befund |
+| B | mittel | Aktiver Menüeintrag fehlte bei Installation im Unterverzeichnis | behoben (`theme_v4_is_current_path()`) |
+| B | mittel | Inhaltsverzeichnis: `\bid=` traf auch `data-id=` → Überschrift ohne `id`, TOC-Link ins Leere | behoben (`(?<![\w-])id=`) |
+| K6 | mittel | `kompass_slugify()` verlor Akzente („Café“ → `caf`), wich vom Core ab | über `theme_v4_slug()` (Render-Test: `groesse-cafe`) |
+| P1/P2 | – | Kategorien einmal je Request, TOC einmal je Inhalt | kein Befund |
+| Q3 | – | Hochkontrast (19,6–21:1, 4.0-Audit), Schriftgröße A++, `scroll-padding-top`, Header nicht fixiert (nur die Seitenleiste `sticky`) | kein Befund |
+| K3 | – | Standard-Footermenü „Community“ nur bei aktivem Modul | umgesetzt |
+| K4 | – | `--tv4-*` auf `--kp-*`, im Hochkontrastmodus eigene Werte → `--community-*` folgt | geprüft |
+| K5 | – | Header öffnet `<main>`: Kit wandelt `<main>` künftiger Community-Overrides in `<div>` | vorbereitet |
+| K8 | – | Feedback per `mailto:`, kein POST | kein Befund |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test inkl. TOC | grün |
+| S11 | **mittel** | Demo-Kontaktdaten als `theme.json`-Standard (`Marktplatz 1, 12345 Musterstadt`, `+49 123 456 789`, `service@example.org`, Sprechzeiten): Der Core gibt ungepflegte Werte mit diesem Standard aus, frische Installationen zeigten also erfundene Kontaktdaten öffentlich an, und „War diese Seite hilfreich?“ schickte Mails an `example.org` | Standards geleert; Angaben und Feedback-Box erscheinen nur mit gepflegten Daten, die Faktenliste entfällt ganz, wenn nichts gepflegt ist |

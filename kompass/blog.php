@@ -71,7 +71,7 @@ if ($isAuthor) {
 }
 
 $filterable = ($isCategory || $isTag) && !$isOverview;
-$formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+$formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
 $showSidebar = !$isOverview;
 
 $topics = [];

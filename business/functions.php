@@ -351,7 +351,7 @@ if (!function_exists('biz_safe_url')) {
         }
 
         $candidate = trim($url);
-        // `//host` und `/\\host` (Browser werten „\\“ wie „/“) sind fremde, protokollrelative Adressen.
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
         if ($candidate === '' || str_starts_with($candidate, '//') || str_contains($candidate, '\\') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
             return $fallback;
         }

@@ -287,7 +287,7 @@ function buildbase_safe_url(string $url, string $fallback = ''): string
     if ($candidate === '') {
         return $fallback;
     }
-    // `//host` und `/\\host` (Browser werten „\\“ wie „/“) sind fremde, protokollrelative Adressen.
+    // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
     if (str_starts_with($candidate, '//') || str_contains($candidate, '\\') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
         return $fallback;
     }

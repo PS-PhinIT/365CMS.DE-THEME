@@ -119,11 +119,11 @@ Geplante Erweiterungen in `includes/cms-v4-compat.php` und `css/cms-v4.css` (all
 
 | Theme | PR | Plan | Audit | Umsetzung |
 |---|---|---|---|---|
-| academy365 | 1 | [x] | [ ] | [ ] |
-| buildbase | 1 | [x] | [ ] | [ ] |
-| business | 1 | [x] | [ ] | [ ] |
-| feder | 1 | [x] | [ ] | [ ] |
-| kompass | 1 | [x] | [ ] | [ ] |
+| academy365 | 1 | [x] | [x] | [x] |
+| buildbase | 1 | [x] | [x] | [x] |
+| business | 1 | [x] | [x] | [x] |
+| feder | 1 | [x] | [x] | [x] |
+| kompass | 1 | [x] | [x] | [x] |
 | kontor | 2 | [x] | [ ] | [ ] |
 | logilink | 2 | [x] | [ ] | [ ] |
 | medcarepro | 2 | [x] | [ ] | [ ] |

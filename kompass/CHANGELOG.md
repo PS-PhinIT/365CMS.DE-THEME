@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/kompass.md`)
+
+#### Sicherheit
+- `kompass_safe_url()` und die URL-Felder des Customizers lehnen `/\host` ab: Ein Menüeintrag oder Customizer-Link `/\evil.example` wurde als lokaler Pfad ausgegeben, Browser lesen ihn als `//evil.example` (fremde Adresse).
+- Customizer-Upload: Mehrfach-Uploads (`u_…[]`) werden abgewiesen statt mit „Array to string conversion“ verarbeitet.
+- Paginierung und Archiv-Suchformular bauen auf dem normalisierten Anfragepfad statt auf `REQUEST_URI` auf.
+
+#### Fehler
+- Demo-Kontaktdaten (`Marktplatz 1, 12345 Musterstadt`, `+49 123 456 789`, `service@example.org`, Sprechzeiten) waren Standardwerte in `theme.json`. Der Core gibt ungepflegte Felder mit dem Standard aus: Frische Installationen zeigten erfundene Kontaktdaten öffentlich an, und die Feedback-Box schickte Mails an `example.org`. Die Standards sind leer; Angaben und Feedback-Box erscheinen nur mit gepflegten Daten. **Bitte nach dem Update unter Service & Kontakt die echten Daten eintragen.**
+- Navigation: Bei einer Installation im Unterverzeichnis war nie ein Menüeintrag aktiv. Jetzt über `theme_v4_is_current_path()`.
+- Inhaltsverzeichnis: Überschriften mit `data-id="…"` galten als bereits verankert, der Eintrag zeigte auf ein fehlendes Ziel. Anker aus Überschriften mit Akzenten verloren Buchstaben („Café“ → `caf`).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*` (folgt dem Hochkontrastmodus über `--tv4-*`); Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Anker im Inhaltsverzeichnis über `theme_v4_slug()` (wie `CMS\Slug::fromText()`).
+- Standard-Footermenü: Eintrag „Community“, sobald das Modul aktiv ist.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

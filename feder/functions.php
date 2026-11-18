@@ -441,7 +441,7 @@ if (!function_exists('feder_safe_url')) {
     function feder_safe_url(string $url, string $fallback = ''): string
     {
         $candidate = trim($url);
-        // `//host` und `/\\host` (Browser werten „\\“ wie „/“) sind fremde, protokollrelative Adressen.
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
         if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
             return $fallback;
         }
