@@ -51,6 +51,22 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `rundschau_safe_url()` und die Customizer-URL-Normalisierung ließen `/\evil.example` als lokalen Pfad durch (Render-Test) | behoben |
+| S7 | niedrig | Schlagwort-Archiv: Rückfall-Suche per `LIKE` maskierte `%`/`_` nicht (kein SQL-Injection-Risiko, Platzhalter waren gebunden, aber beliebige Treffer) | `addcslashes()` |
+| S7 | – | `IN ({$ph})` mit gleicher Platzhalterzahl und doppelt übergebenen IDs, Tag-Slug gebunden, `LIMIT/OFFSET` geklemmt, Publikationsfilter in allen Abfragen, „Meistgelesen“ über `rundschau_get_posts()` (veröffentlicht, Zeitraum) | kein Befund |
+| S4/S5/S6/S8 | niedrig | Customizer (gleiche Basis wie feder) in Ordnung; `u_x[]` → „Array to string conversion“ | Array-Fall abgewiesen |
+| S2 | niedrig | Paginierung und Archiv-Formular spiegelten `REQUEST_URI` | behoben |
+| S1 | – | `$content` Core-HTML, `$count` int, Menü-HTML escaped, `$headingTag` aus Code, Teilen-URLs (`wa.me`, LinkedIn) mit `rawurlencode` | kein Befund |
+| B | niedrig | `mailto:`/`tel:` im Menü galten als extern (`target="_blank"`); Unterverzeichnis-Erkennung ohne Pfadgrenze | behoben (`theme_v4_is_current_path()`) |
+| B/K6 | mittel | Tag-Slugs ohne Akzente (`Café` → `caf`, 404) | `theme_v4_slug()` |
+| K6 | – | Ressortklassen per `crc32` aus dem Slug (keine Slug-Erzeugung) | kein Befund |
+| P1 | akzeptiert | eine Abfrage je Ressort-Block (höchstens 8, offen aus 4.0) | dokumentiert |
+| Q3 | – | Ticker mit Pause-Schalter (`aria-pressed`, 2.2.2) und `prefers-reduced-motion`; `scroll-padding-top` vorhanden | kein Befund |
+| Q3 | offen | Ressort-Badges auf Flächen ohne vollständiges Kontrast-Audit (aus 4.0) | dokumentiert |
+| K3 | – | Standard-Footermenü „Leserforum“ nur bei aktivem Modul | umgesetzt |
+| K5 | – | Header öffnet `<main>`: Kit wandelt `<main>` künftiger Community-Overrides in `<div>` | vorbereitet |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test inkl. Archive | grün |

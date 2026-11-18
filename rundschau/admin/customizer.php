@@ -27,7 +27,8 @@ if (!function_exists('rundschau_customizer_normalize_url')) {
     function rundschau_customizer_normalize_url(mixed $value): string
     {
         $candidate = trim(is_scalar($value) ? (string) $value : '');
-        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F<>"]/', $candidate) === 1 || str_starts_with($candidate, '//')) {
+        // `/\host` werten Browser wie `//host` (fremde Adresse).
+        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F<>"]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
             return '';
         }
         if (str_starts_with($candidate, '/') || str_starts_with($candidate, '#')) {
@@ -188,6 +189,10 @@ if (!function_exists('rundschau_customizer_store_upload')) {
      */
     function rundschau_customizer_store_upload(array $file): array
     {
+        // Nur Einzeldateien: `u_x[]` liefert Arrays (sonst „Array to string conversion“).
+        if (!is_string($file['tmp_name'] ?? null) || !is_string($file['name'] ?? '') || is_array($file['error'] ?? null)) {
+            return ['url' => '', 'error' => 'Der Upload ist fehlgeschlagen.'];
+        }
         $tmp = (string) ($file['tmp_name'] ?? '');
         if ($tmp === '' || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
             return ['url' => '', 'error' => ''];

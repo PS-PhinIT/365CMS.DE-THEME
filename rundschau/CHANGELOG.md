@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/rundschau.md`)
+
+#### Sicherheit
+- `rundschau_safe_url()` und die URL-Felder des Customizers lehnen `/\host` ab: Ein Menüeintrag oder Customizer-Link `/\evil.example` wurde als lokaler Pfad ausgegeben, Browser lesen ihn als `//evil.example` (fremde Adresse).
+- Schlagwort-Archiv: `%` und `_` im Schlagwort wurden in der `LIKE`-Suche nicht maskiert (`/tag/a%25b` passte auf beliebige Schlagwörter).
+- Customizer-Upload: Mehrfach-Uploads (`u_…[]`) werden abgewiesen statt mit „Array to string conversion“ verarbeitet.
+- Paginierung und Archiv-Suchformular bauen auf dem normalisierten Anfragepfad statt auf `REQUEST_URI` auf.
+
+#### Fehler
+- `mailto:`- und `tel:`-Menüeinträge galten als extern und öffneten einen neuen Tab; die Aktiv-Erkennung nutzt den Kit-Helfer (Pfadgrenze beim Unterverzeichnis).
+- Schlagwort-Links aus Namen mit Akzenten (`Café` → `/tag/caf`) zeigten ins Leere; Slugs jetzt wie der Core.
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Standard-Footermenü: Eintrag „Leserforum“, sobald das Community-Modul aktiv ist.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

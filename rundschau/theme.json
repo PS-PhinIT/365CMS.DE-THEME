@@ -1,10 +1,10 @@
 {
     "name": "Rundschau",
     "slug": "rundschau",
-    "version": "2.0.0",
+    "version": "2.1.0",
     "requires_cms": "4.0.0",
     "requires_php": "8.4.1",
-    "tested_up_to": "4.1.0",
+    "tested_up_to": "4.2.0",
     "author": "PHINIT.DE / Andreas Hepp",
     "description": "Datengetriebenes Nachrichtenportal für Lokal-, Fach- und Vereinsnachrichten – Top-Themen, Nachrichten-Ticker, Meistgelesen, automatische Ressort-Blöcke mit Ressortfarben, Petrol-Palette mit Signal-Orange und kräftiger Archivo-Typografie.",
     "textdomain": "rundschau",
