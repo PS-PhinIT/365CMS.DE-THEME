@@ -58,6 +58,8 @@ $copyrightLine = str_replace(
                 ['label' => 'Über uns', 'url' => $siteUrl . '/about'],
                 ['label' => 'Blog', 'url' => $siteUrl . '/blog'],
                 ['label' => 'Newsletter', 'url' => $siteUrl . '/newsletter'],
+                // 365CMS 4.2.0: Community nur bei aktivem Modul (sonst leer und herausgefiltert).
+                theme_v4_community_link() ?? ['label' => 'Community', 'url' => ''],
                 ['label' => 'Kontakt', 'url' => $siteUrl . '/contact'],
                 ['label' => 'Barrierefreiheit', 'url' => $siteUrl . '/barrierefreiheit'],
             ],

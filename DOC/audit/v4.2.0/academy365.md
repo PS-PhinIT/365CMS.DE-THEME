@@ -68,6 +68,40 @@
 
 Alle Zeilen in Abschnitt 3 und 4 mit Ergebnis, Kit 1.1.0 in academy365, Metadaten 4.1.0 (`theme.json`, `update.json`, `style.css`, Konstante, CHANGELOG, README), Vertragstest und `php -l` grün.
 
-## 7. Befunde
+## 7. Befunde (Audit 2026-11-18, umgesetzt in 4.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **hoch** | `theme_nav_menu()` prüfte Menü-URLs mit `FILTER_VALIDATE_URL`; das akzeptiert `javascript://x%0aalert(1)` → Script-Link im Menü (im Render-Test am Originalstand nachgewiesen). Ebenso `/\evil.example` als „lokaler“ Pfad | behoben: `academy365_menu_url()` (http(s), Pfad, Anker, mailto/tel) |
+| S2 | mittel | `academy365_safe_url()` ließ `/\host` durch; `theme_route_url()` fiel bei ungültiger URL auf die URL selbst zurück | behoben |
+| S2 | niedrig | Archiv-Paginierung spiegelte `REQUEST_URI` als Link-Basis | behoben (`theme_v4_request_path()`) |
+| S1/S3 | – | Rohe Ausgaben (`$postContent`, `$pageContent` = Core-HTML; `$currentPage/$totalPages` int; `$year` aus `date()`; `$contactFormHtml` Core; `$custom` bereinigt; `$coreItems` Core) | kein Befund |
+| S3 | – | `academy365_sanitize_custom_css()` (`</` → `<\/`, `@import`, `expression`, `behavior`), Farben/Zahlen/Choices validiert | kein Befund |
+| S8 | – | `?p[]=1`, `?q[]=a`: Arrays werden verworfen (`is_scalar`), keine Warnungen | kein Befund |
+| S9/S10/S12 | – | Nonces, keine Inline-Handler, keine HTML-Senken im JS, `ABSPATH` überall, `get_header()` nur feste Dateinamen | kein Befund |
+| B | **mittel** | Font-Stacks HTML-escaped im `<style>` → `font-family` ungültig, Schriftwahl wirkungslos | behoben |
+| B | mittel | Standard-Headline zeigte `<br>` als Text | behoben |
+| B/K3 | mittel | Startseite verlinkte `/courses`, `/courses/<slug>`, `/tutors`, `/tutor-register`, `/pro` ohne Prüfung (404) | behoben (`theme_v4_link_available()`) |
+| B6 | mittel | Kennzahlen-Animation: „185.000“ → „185.0“, „2.400+ Kurse“ → „2.4 + Kurse“ | behoben |
+| Q3 | mittel | Escape fokussierte mobil immer den Menüknopf; Fortschrittsbalken ohne Namen | behoben |
+| Q3 | mittel | WCAG 2.2 2.4.11: fester Header konnte fokussierte Elemente verdecken | behoben (`scroll-padding-top`) |
+| B | niedrig | `number_format()` mit englischem Tausendertrenner | behoben |
+| P1–P4 | – | keine DB-Abfragen im Theme, Optionen über OptionStore, `defer`, `?v=`, LCP-Bild mit `fetchpriority` | kein Befund |
+| K2 | – | „Meine Kurse“ für jede angemeldete Rolle (auch `moderator`), kein Admin-Link | kein Befund |
+| K3 | – | Fußzeile „Plattform“ → „Community“ nur bei aktivem Modul | umgesetzt |
+| K4/K5 | – | Theme nutzt `--accent-color` (keine Kollision mit `--accent`); Header ohne `<main>`: Core-Vorlagen dürfen `<main>` setzen | geprüft |
+| K6 | – | Kurs-Slugs über `theme_v4_slug()` | umgesetzt |
+| K7/K8 | – | keine Benachrichtigungszähler, keine eigenen POST-Formulare | kein Befund |
+| K9 | – | `php -l`, `TESTS/theme-contract` (13 Themes), Render-/Fuzz-Test (13 Fälle) | grün |
+| Demo | akzeptiert | statische Demo-Kurse, „Tutor 1–4“ und Kennzahlen bleiben Designbeispiel (Customizer) | dokumentiert |
+
+### Kit-Prüfung (Kit 1.1.0, gilt für alle Themes)
+
+| Punkt | Befund | Ergebnis |
+|---|---|---|
+| `theme_v4_local_asset_url()` | `/\evil.example/x.png` galt als lokal (Logo-/Favicon-Quelle) | behoben |
+| `theme_v4_safe_back_url()` | Referer mit `\` wurde nicht verworfen | behoben |
+| `theme_v4_is_current_path()` | Unterverzeichnis `/cms` schnitt auch `/cmsblog` ab | behoben |
+| `CoreModuleService::isModuleEnabled()` | meldet **unbekannte** Module als aktiv – ein naiver Community-Check wäre auf 4.0/4.1 immer „an“ | `theme_v4_module_enabled()` prüft zuerst `getModuleDefinition()` |
+| `theme_v4_image_dimensions()`, `theme_v4_member_tokens_style()`, `theme_v4_head_tags()`, `theme_v4_error_context()` | nur lokale Uploads ohne `..`, Farben validiert, Vorschau ohne JSON-LD, Status 400–599 | kein Befund |
+| 4.2.0 | Modulprüfung, Community-Helfer (fail-closed bis die Core-Vorlagen `CMS/views/community/` existieren), `theme_v4_user_can()`, `theme_v4_slug()` (identisch zu `CMS\Slug::fromText()` für Umlaute/Akzente, geprüft), `--community-*`-Brücke | umgesetzt |
