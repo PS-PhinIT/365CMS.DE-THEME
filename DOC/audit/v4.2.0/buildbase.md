@@ -48,6 +48,22 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 4.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 4.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `buildbase_safe_url()` (Menüs, Footer, Customizer-URLs) ließ `/\evil.example` als lokalen Pfad durch; Browser navigieren zu `evil.example` (Render-Test: Menüeintrag erschien als `href="/\evil.example"`) | behoben |
+| S2 | niedrig | `theme_route_url()` fiel bei ungültiger URL auf die URL selbst zurück | behoben |
+| S2 | – | `javascript:`/`data:` in Menüs: bereits durch `buildbase_safe_url()` + mailto/tel-Allowlist abgewiesen | kein Befund |
+| S1 | – | Rohe Ausgaben (`$postContent` Core-HTML, `$bbPage/$bbPages` int, Menü-HTML escaped, `$contactFormHtml`, `$safeCustom` bereinigt, `$coreItems`) | kein Befund |
+| S3 | – | Farben/Zahlen/Choices validiert, Font-Stacks fest (seit 4.0 nicht mehr escaped), eigenes CSS bereinigt | kein Befund |
+| S8/B5 | – | Keine Superglobals im Theme; Fuzz `?p[]=`, `?q[]=` ohne Warnungen | kein Befund |
+| S10/B6 | – | `navigation.js`: nur DOM-APIs, Escape schließt nur offene Elemente, `.bb-card` ohne JS sichtbar (`.bb-js`) | kein Befund |
+| B3 | – | `error.php` (Fragment/eigenständig), 404, `page.php` mit `id = 0`, Entwurf mit Vorschau-Hinweis | kein Befund |
+| P1–P5 | – | keine DB-Abfragen, OptionStore, `defer`, `?v=`, Logo-Maße, keine externen Schriften | kein Befund |
+| Q3 | mittel | WCAG 2.2 2.4.11: fester Header (`position: fixed`) konnte fokussierte Elemente verdecken | behoben (`scroll-padding-top`) |
+| K2 | – | „Dashboard“ für jede angemeldete Rolle, kein Admin-Link | kein Befund |
+| K3 | – | Fußzeile „Service“ → „Community“ nur bei aktivem Modul | umgesetzt |
+| K4/K5 | – | Theme-Variablen `--accent-color` (keine Kollision), Header ohne `<main>` | geprüft |
+| K6–K8 | – | keine Slug-Erzeugung, keine Benachrichtigungen, keine eigenen POST-Formulare | kein Befund |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |
