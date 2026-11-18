@@ -3,17 +3,18 @@
   "name": "Kompass",
   "type": "theme",
   "license": "free",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "min_cms_version": "4.0.0",
   "min_php": "8.4.1",
   "requires_php": "8.4.1",
-  "released": "2026-11-15",
+  "released": "2026-11-18",
   "download_url": "",
   "checksum_sha256": "",
   "changelog": {
+    "2.1.0": "Audit 365CMS 4.2.0: Demo-Kontaktdaten (Musterstadt, +49 123 456 789, service@example.org) sind keine Standardwerte mehr – nach dem Update echte Daten unter Service & Kontakt eintragen. Backslash-Adressen (/\\host) in Menüs und Customizer-Links abgelehnt, Mehrfach-Uploads im Customizer abgewiesen, Paginierung ohne REQUEST_URI. Aktiver Menüeintrag bei Installation im Unterverzeichnis, Inhaltsverzeichnis mit data-id-Überschriften und Akzenten. Kit 1.1.0 mit 4.2.0-Helfern (Community-Modul fail-closed, Capabilities/Rolle moderator, Slugs wie CMS\\Slug, Token-Brücke --community-*), TOC-Anker wie der Core, Community im Footermenü. tested_up_to 4.2.0.",
     "2.0.0": "Kompatibilität mit 365CMS 4.0.0 und 4.1.0 (setzt 4.0.0 und PHP 8.4.1 voraus). Fehlerseiten werten error_code (Fallback errorCode), error_standalone und error_retry_after aus; 403/429/503 behalten ihren Status, die Wartungsseite ist ein vollständiges Dokument mit Theme-Stylesheet. Die Hauptnavigation löst den Core-Hook main_nav aus (Downloads, Knowledgebase, Newsletter). Neue Vorlagen contact.php (Core-Formular mit den Angaben aus „Service & Kontakt“), knowledgebase/ und newsletter/ (Core-Views im Theme-Rahmen ohne doppeltes main), gemeinsame Integrationsstile css/cms-v4.css mit Token-Brücke inklusive Kontrastmodus. Memberbereich und Newsletter-Widget übernehmen die Kompass-Palette (member_head), ohne Frontend-Assets in der Member-Shell; Farbvorschlag für die Core-Loginseite (login_page.colors). Core-SEO über theme_v4_head_tags(), Vorschau-Links und Entwürfe mit noindex, ohne JSON-LD und mit Hinweisleiste; Dokumenttitel berücksichtigt $title der Core-Module. Keine Google-Fonts-Requests mehr (Schriften über die Core-Schriftverwaltung, System-Fallbacks), OptionStore statt SQL für privacy_use_local_fonts, Themenbaum mit Beitragszahlen in einer Abfrage statt einer Unterabfrage je Kategorie. Fallback-Menüs, Schnellzugriffe, FAQ-Link, Service-Button und Barrierefreiheits-Erklärung verlinken nur vorhandene Ziele; leere Kontaktspalte im Footer ausgeblendet; Logo/Favicon-Fallback auf site_logo/site_favicon. Beitrags- und Seitenbild als LCP mit fetchpriority, Meldungsbilder lazy, alle mit width/height und Fokus-Punkt; PDF-Link nur für echte Seiten. CSP: cms_csp_runtime_tags(true) als erstes Script.",
     "1.0.0": "Erstveröffentlichung: barrierearmes Informations- und Service-Portal für Kommunen, Vereine, Verbände und Hilfe-Center. Barrierefreiheits-Leiste mit Schriftgröße (A/A+/A++), hohem Kontrast sowie Links zu Leichter Sprache und Gebärdensprache, Hinweisbanner (Info/Wichtig/Erledigt), Startseite mit Such-Hero und „Häufig gesucht“, sechs Schnellzugriffen, Themenkacheln aus Kategorien (mit Unterthemen), aktuellen Informationen, FAQ und Service-Kontakt. Informationsseiten mit automatischem Inhaltsverzeichnis „Auf dieser Seite“, Stand-Datum, Drucken, Link kopieren, PDF-Download und „War diese Seite hilfreich?“. Archive mit Themen-Seitenleiste, Themenbereiche-Übersicht, Themen A–Z, Suche mit Suchtipps, 404, Seitenübersicht und eigenständige Fehlerseite. GOV.UK-Fokusstil, Atkinson-Hyperlegible-Typografie, SEO über das Core-SEO-Modul, CSP-Nonce, lokale Schriften (local_font_slugs) und vollständiger Customizer."
   },
   "requires_cms": "4.0.0",
-  "tested_up_to": "4.1.0"
+  "tested_up_to": "4.2.0"
 }

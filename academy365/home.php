@@ -10,14 +10,18 @@ if (!defined('ABSPATH')) {
 <?php
 $safe = fn(string $v) => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 $safeHeadline = static function (string $value): string {
-    return preg_replace('/\r\n|\r|\n/', '<br>', htmlspecialchars(trim($value), ENT_QUOTES, 'UTF-8')) ?? '';
+    // Zeilenumbrüche aus dem Customizer und der Standardwert mit `<br>` werden zu <br>; alles andere bleibt Text.
+    $value = preg_replace('#<br\s*/?>#i', "\n", trim($value)) ?? '';
+
+    return preg_replace('/\r\n|\r|\n/', '<br>', htmlspecialchars($value, ENT_QUOTES, 'UTF-8')) ?? '';
 };
 $slugify = static function (string $value): string {
-    $slug = strtolower(trim($value));
-    $slug = preg_replace('/[^a-z0-9]+/i', '-', $slug) ?? '';
-    $slug = trim($slug, '-');
+    $slug = theme_v4_slug($value);
+
     return $slug !== '' ? $slug : 'kurs';
 };
+// Kurs-/Dozenten-Routen bringt Academy365 nicht mit: nur verlinken, was als Route oder Seite existiert.
+$linkIf = static fn (string $url): string => theme_v4_link_available($url) ? $url : '';
 $buildUrl = static function (string $path) : string {
     $url = rtrim((string) SITE_URL, '/') . '/' . ltrim($path, '/');
 
@@ -29,9 +33,9 @@ $routeUrl = static function (string $route, string $fallbackPath) use ($buildUrl
     }
     return academy365_safe_url($buildUrl($fallbackPath), $buildUrl($fallbackPath));
 };
-$coursesUrl  = $routeUrl('courses',  'courses');
+$coursesUrl  = $linkIf($routeUrl('courses',  'courses'));
 $registerUrl = $routeUrl('register', 'register');
-$tutorsUrl   = $routeUrl('tutors',   'tutors');
+$tutorsUrl   = $linkIf($routeUrl('tutors',   'tutors'));
 try {
     $c = \CMS\Services\ThemeCustomizer::instance();
     // --- learning_hero ---
@@ -66,14 +70,14 @@ try {
 } catch (\Throwable $e) {
     $heroBadge = 'Die #1 Lernplattform'; $heroHeadline = 'Lerne neue Skills.<br>Starte deine Karriere.';
     $heroSubline = 'Tausende Kurse von echten Experten.'; $heroCta = 'Kurse entdecken';
-    $heroCtaUrl = $coursesUrl; $heroSecCta = 'Als Tutor anmelden'; $heroSecCtaUrl = $routeUrl('tutor-register', 'tutor-register');
+    $heroCtaUrl = $coursesUrl; $heroSecCta = 'Als Tutor anmelden'; $heroSecCtaUrl = $linkIf($routeUrl('tutor-register', 'tutor-register'));
     $coursesLabel = '2.400+ Kurse'; $studentsLabel = '185.000 Lernende'; $tutorsLabel = '620 Tutoren';
     $coursesSectionTitle = 'Beliebte Kurse'; $labelFree = 'Kostenlos'; $labelCert = 'Zertifikat';
     $labelNew = 'Neu'; $labelBest = 'Bestseller';
     $showRating = true; $showParticipants = true; $showDuration = true; $showProgress = false; $enableGami = true;
     $tutorTitle = 'Lerne von den Besten'; $tutorSubline = 'Unsere Tutoren sind erfahrene Praktiker.';
     $subscriptionCta = 'Unbegrenztes Lernen mit Academy365 Pro'; $subscriptionSub = 'Alle Kurse – ein Preis.';
-    $subscriptionBtn = 'Jetzt Pro werden'; $subscriptionUrl = $routeUrl('pro', 'pro');
+    $subscriptionBtn = 'Jetzt Pro werden'; $subscriptionUrl = $linkIf($routeUrl('pro', 'pro'));
 }
 ?>
 
@@ -88,8 +92,10 @@ try {
             <p class="ac-hero-subline"><?php echo $safe($heroSubline); ?></p>
         <?php endif; ?>
         <div class="ac-hero-ctas">
+            <?php if ($heroCtaUrl !== '') : ?>
             <a href="<?php echo $safe($heroCtaUrl); ?>" class="ac-btn ac-btn-primary ac-btn-lg"><?php echo $safe($heroCta); ?></a>
-            <?php if ($heroSecCta && trim($heroSecCta) !== '') : ?>
+            <?php endif; ?>
+            <?php if ($heroSecCta && trim($heroSecCta) !== '' && $heroSecCtaUrl !== '') : ?>
                 <a href="<?php echo $safe($heroSecCtaUrl); ?>" class="ac-btn ac-btn-outline-light"><?php echo $safe($heroSecCta); ?></a>
             <?php endif; ?>
         </div>
@@ -108,7 +114,9 @@ try {
     <div class="ac-container">
         <div class="ac-section-head">
             <h2 id="courses-heading"><?php echo $safe($coursesSectionTitle); ?></h2>
+            <?php if ($coursesUrl !== '') : ?>
             <a href="<?php echo $safe($coursesUrl); ?>" class="ac-link-arrow">Alle Kurse →</a>
+            <?php endif; ?>
         </div>
         <?php if ($enableGami) : ?>
             <div class="ac-gami-hint">
@@ -156,16 +164,19 @@ try {
                             </span>
                         <?php endif; ?>
                         <?php if ($showParticipants) : ?>
-                            <span>👥 <?php echo number_format($course['participants']); ?></span>
+                            <span>👥 <?php echo number_format((int) $course['participants'], 0, ',', '.'); ?></span>
                         <?php endif; ?>
                     </div>
                     <?php if ($showProgress && $course['progress'] > 0) : ?>
-                        <div class="ac-progress" role="progressbar" aria-valuenow="<?php echo (int) $course['progress']; ?>" aria-valuemin="0" aria-valuemax="100">
+                        <div class="ac-progress" role="progressbar" aria-label="Kursfortschritt" aria-valuenow="<?php echo (int) $course['progress']; ?>" aria-valuemin="0" aria-valuemax="100">
                             <div class="ac-progress-bar" data-progress="<?php echo (int) $course['progress']; ?>"></div>
                         </div>
                         <small><?php echo (int) $course['progress']; ?>% abgeschlossen</small>
                     <?php endif; ?>
-                    <a href="<?php echo $safe($buildUrl('courses/' . $slugify((string) $course['title']))); ?>" class="ac-btn ac-btn-secondary ac-btn-sm ac-mt-1">Zum Kurs</a>
+                    <?php $courseUrl = $linkIf($buildUrl('courses/' . $slugify((string) $course['title']))); ?>
+                    <?php if ($courseUrl !== '') : ?>
+                    <a href="<?php echo $safe($courseUrl); ?>" class="ac-btn ac-btn-secondary ac-btn-sm ac-mt-1">Zum Kurs</a>
+                    <?php endif; ?>
                 </div>
             </article>
             <?php endforeach; ?>
@@ -200,9 +211,11 @@ try {
             </div>
             <?php endfor; ?>
         </div>
+        <?php if ($tutorsUrl !== '') : ?>
         <div class="ac-section-cta-row">
             <a href="<?php echo $safe($tutorsUrl); ?>" class="ac-btn ac-btn-secondary">Alle Tutoren →</a>
         </div>
+        <?php endif; ?>
     </div>
 </section>
 
@@ -216,7 +229,9 @@ try {
         <?php if ($subscriptionSub && trim($subscriptionSub) !== '') : ?>
             <p class="ac-hero-subline ac-hero-subline--on-dark"><?php echo $safe($subscriptionSub); ?></p>
         <?php endif; ?>
+        <?php if ($subscriptionUrl !== '') : ?>
         <a href="<?php echo $safe($subscriptionUrl); ?>" class="ac-btn ac-btn-accent ac-btn-lg"><?php echo $safe($subscriptionBtn); ?></a>
+        <?php endif; ?>
     </div>
 </section>
 

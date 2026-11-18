@@ -59,6 +59,8 @@ $bbFooterColumns['Service'] = [
     ['label' => 'Kontakt',           'url' => $baseUrl . '/contact'],
     ['label' => 'Newsletter',        'url' => $baseUrl . '/newsletter'],
     ['label' => 'Wissensdatenbank',  'url' => $baseUrl . '/kb'],
+    // 365CMS 4.2.0: Community nur bei aktivem Modul (sonst leer und herausgefiltert).
+    theme_v4_community_link() ?? ['label' => 'Community', 'url' => ''],
 ];
 
 // Im Admin gepflegte Footer-Menüs (bisher registriert, aber nie ausgegeben).

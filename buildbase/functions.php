@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BUILDBASE_THEME_VERSION')) {
-    define('BUILDBASE_THEME_VERSION', '4.0.0');
+    define('BUILDBASE_THEME_VERSION', '4.1.0');
 }
 if (!defined('BUILDBASE_THEME_SLUG')) {
     define('BUILDBASE_THEME_SLUG', 'buildbase');
@@ -287,12 +287,13 @@ function buildbase_safe_url(string $url, string $fallback = ''): string
     if ($candidate === '') {
         return $fallback;
     }
-    if (str_starts_with($candidate, '//')) {
+    // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+    if (str_starts_with($candidate, '//') || str_contains($candidate, '\\') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
         return $fallback;
     }
 
     if (str_starts_with($candidate, '/')) {
-        return preg_replace('/[\x00-\x1F\x7F]+/u', '', $candidate) ?? $fallback;
+        return $candidate;
     }
 
     $scheme = parse_url($candidate, PHP_URL_SCHEME);
@@ -337,7 +338,8 @@ if (!function_exists('theme_route_url')) {
             $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($allQuery, '', '&', PHP_QUERY_RFC3986);
         }
 
-        return buildbase_safe_url($url, $fallback !== '' ? $fallback : $url);
+        // Rückfall nie die ungeprüfte URL selbst.
+        return buildbase_safe_url($url, $fallback !== '' ? $fallback : $base . '/');
     }
 }
 

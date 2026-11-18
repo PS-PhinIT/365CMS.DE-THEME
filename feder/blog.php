@@ -48,7 +48,7 @@ if (isset($author) && is_array($author)) {
 }
 
 $authorAvatar = isset($author) && is_array($author) ? feder_media_url($author['avatar_url'] ?? '') : '';
-$formAction = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+$formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
 ?>
 
 <header class="fdr-archive-head fdr-measure">

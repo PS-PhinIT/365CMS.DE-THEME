@@ -20,7 +20,8 @@ if (isset($category) && is_array($category) && trim((string) ($category['name'] 
     $archiveTitle = '#' . (string) $tag['name'];
 }
 
-$requestPath = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+// Normalisierter Pfad statt REQUEST_URI: `/\host` o. Ä. darf nicht als Link-Basis zurückgespiegelt werden.
+$requestPath = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/');
 $pageUrl = static function (int $number) use ($requestPath): string {
     $query = $_GET;
     unset($query['p']);

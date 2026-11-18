@@ -49,7 +49,7 @@ $isModule    = (int) ($page['id'] ?? 0) === 0;
             <div class="biz-prose<?php echo $isModule ? ' biz-prose--module' : ''; ?>">
                 <?php
                 // Vom Core gerendertes und bereinigtes HTML (Editor.js, Downloads, Feeds, Formulare) unverändert
-                // ausgeben; biz_sanitize_content_html() entfernte u. a. <picture>, <form>, <button>, <svg> und style.
+                // ausgeben; der frühere Theme-Filter entfernte u. a. <picture>, <form>, <button>, <svg> und style.
                 echo $pageContent;
                 ?>
             </div>

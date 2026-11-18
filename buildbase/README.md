@@ -1,7 +1,7 @@
 # BuildBase Theme
 
-**Version:** 4.0.0
-**Target:** 365CMS 4.0.0 – 4.1.0, PHP 8.4.1+
+**Version:** 4.1.0
+**Target:** 365CMS 4.0.0 – 4.2.0, PHP 8.4.1+
 **Identität:** Bau & Handwerk, Projektabwicklung, Handwerksbetriebe.
 
 ## Fokus

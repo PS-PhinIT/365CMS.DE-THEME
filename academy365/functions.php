@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('ACADEMY365_THEME_VERSION')) {
-    define('ACADEMY365_THEME_VERSION', '4.0.1');
+    define('ACADEMY365_THEME_VERSION', '4.1.0');
 }
 if (!defined('ACADEMY365_THEME_SLUG')) {
     define('ACADEMY365_THEME_SLUG', 'academy365');
@@ -106,7 +106,6 @@ final class Academy365_Theme {
     public function outputCustomStyles(): void {
         try { $c = \CMS\Services\ThemeCustomizer::instance(); } catch (\Throwable $e) { return; }
 
-        $safe = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
         $color  = static function (string $section, string $key, string $default) use ($c): string {
             return academy365_css_color((string) $c->get($section, $key, $default), $default);
         };
@@ -124,9 +123,11 @@ final class Academy365_Theme {
         $bodyFontChoice    = (string) $c->get('typography', 'font_family_base',    'open-sans');
         $headingFontChoice = (string) $c->get('typography', 'font_family_heading', 'raleway');
         $displayFontChoice = (string) $c->get('typography', 'font_family_display', 'plus-jakarta-sans');
-        $bodyFont    = $safe($this->mapFontChoice($bodyFontChoice,    '"Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'));
-        $headingFont = $safe($this->mapFontChoice($headingFontChoice, 'Raleway, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'));
-        $displayFont = $safe($this->mapFontChoice($displayFontChoice, '"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'));
+        // Font-Stacks stammen ausschließlich aus mapFontChoice() (feste Werte) und dürfen nicht HTML-escaped werden:
+        // `&quot;` im <style> machte die ganze font-family-Deklaration ungültig.
+        $bodyFont    = $this->mapFontChoice($bodyFontChoice,    '"Open Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif');
+        $headingFont = $this->mapFontChoice($headingFontChoice, 'Raleway, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif');
+        $displayFont = $this->mapFontChoice($displayFontChoice, '"Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif');
 
         // Layout switches
         $stickyHeader  = $bool('layout', 'enable_sticky_header',  true);
@@ -251,12 +252,13 @@ function academy365_safe_url(string $url, string $fallback = ''): string
         return $fallback;
     }
 
-    if (str_starts_with($candidate, '//')) {
+    // `//host` und `/\host` (Browser werten „\“ wie „/“) wären fremde, protokollrelative Adressen.
+    if (str_starts_with($candidate, '//') || str_contains($candidate, '\\') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
         return $fallback;
     }
 
     if (str_starts_with($candidate, '/')) {
-        return preg_replace('/[\x00-\x1F\x7F]+/u', '', $candidate) ?? $fallback;
+        return $candidate;
     }
 
     $scheme = parse_url($candidate, PHP_URL_SCHEME);
@@ -277,6 +279,23 @@ function academy365_sanitize_custom_css(string $css): string
     $clean = preg_replace('/\b(?:behavior|binding)\s*:[^;]+;?/i', '', $clean) ?? '';
 
     return str_replace('</', '<\/', $clean);
+}
+
+/** Menü-URL: http(s), lokaler Pfad, Anker, mailto:/tel: – sonst `#`. */
+function academy365_menu_url(string $url): string
+{
+    $url = trim($url);
+    if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) {
+        return '#';
+    }
+    if (str_starts_with($url, '#')) {
+        return $url;
+    }
+    if (preg_match('/^(?:mailto|tel):[^\s<>"\']+$/i', $url) === 1) {
+        return $url;
+    }
+
+    return academy365_safe_url($url, '#');
 }
 
 // ── Theme template helpers ───────────────────────────────────────────────────
@@ -319,7 +338,8 @@ if (!function_exists('theme_route_url')) {
             $url .= (str_contains($url, '?') ? '&' : '?') . http_build_query($allQuery, '', '&', PHP_QUERY_RFC3986);
         }
 
-        return academy365_safe_url($url, $fallback !== '' ? $fallback : $url);
+        // Rückfall nie die ungeprüfte URL selbst.
+        return academy365_safe_url($url, $fallback !== '' ? $fallback : $base . '/');
     }
 }
 
@@ -351,11 +371,8 @@ if (!function_exists('theme_nav_menu')) {
             $rawUrl = (string) ($item['url'] ?? '#');
             $label  = (string) ($item['label'] ?? $item['title'] ?? '');
 
-            $sanitizedUrl = filter_var($rawUrl, FILTER_VALIDATE_URL)
-                ? $rawUrl
-                : (str_starts_with($rawUrl, '/') || str_starts_with($rawUrl, '#')
-                    ? $rawUrl
-                    : '#');
+            // FILTER_VALIDATE_URL lässt `javascript://…%0a…` durch: nur http(s), Pfade, Anker, mailto/tel.
+            $sanitizedUrl = academy365_menu_url($rawUrl);
             $isActive = $sanitizedUrl !== '#' && !str_starts_with($sanitizedUrl, '#') && theme_v4_is_current_path($sanitizedUrl);
 
             $target = (!empty($item['target']) && $item['target'] === '_blank')

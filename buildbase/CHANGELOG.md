@@ -1,5 +1,19 @@
 # Changelog
 
+## 4.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/buildbase.md`)
+
+#### Sicherheit
+- `buildbase_safe_url()` lehnt `/\host` ab: Ein Menüeintrag `/\evil.example` wurde als lokaler Pfad ausgegeben, Browser lesen ihn als `//evil.example` (fremde Adresse). Pfade mit Steuerzeichen werden verworfen statt bereinigt.
+- `theme_route_url()` fällt nie mehr auf die ungeprüfte URL zurück.
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung (`theme_v4_module_enabled()`), Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Fußzeile „Service“: Eintrag „Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält fokussierte Elemente unter dem festen Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 4.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

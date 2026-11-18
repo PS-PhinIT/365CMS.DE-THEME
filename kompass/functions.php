@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('KOMPASS_THEME_VERSION')) {
-    define('KOMPASS_THEME_VERSION', '2.0.0');
+    define('KOMPASS_THEME_VERSION', '2.1.0');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
@@ -393,7 +393,8 @@ if (!function_exists('kompass_safe_url')) {
     function kompass_safe_url(string $url, string $fallback = ''): string
     {
         $candidate = trim($url);
-        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//')) {
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
             return $fallback;
         }
         if (str_starts_with($candidate, '/') || str_starts_with($candidate, '?')) {
@@ -509,7 +510,7 @@ if (!function_exists('kompass_request_locale')) {
     function kompass_request_locale(): string
     {
         try {
-            $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+            $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
             $context = \CMS\Services\ContentLocalizationService::getInstance()->resolveRequestContext($path);
             $locale = strtolower((string) ($context['locale'] ?? 'de'));
 
@@ -646,8 +647,8 @@ if (!function_exists('kompass_excerpt')) {
 if (!function_exists('kompass_slugify')) {
     function kompass_slugify(string $text): string
     {
-        $text = strtr(mb_strtolower(trim(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8')), 'UTF-8'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss']);
-        $text = trim((string) (preg_replace('/[^a-z0-9]+/', '-', $text) ?? ''), '-');
+        // Wie CMS\Slug::fromText() (4.2.0): Umlaute ae/oe/ue/ss, Akzente entfernt („Café“ → cafe statt caf).
+        $text = theme_v4_slug(html_entity_decode(strip_tags($text), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
         return $text !== '' ? $text : 'abschnitt';
     }
@@ -668,7 +669,8 @@ if (!function_exists('kompass_toc')) {
 
         $items = [];
         $used = [];
-        preg_match_all('/\bid\s*=\s*["\']([^"\']+)["\']/i', $html, $existing);
+        // `(?<![\w-])`: `data-id="…"` ist keine ID (sonst verwies das Inhaltsverzeichnis auf ein fehlendes Ziel).
+        preg_match_all('/(?<![\w-])id\s*=\s*["\']([^"\']+)["\']/i', $html, $existing);
         foreach ($existing[1] ?? [] as $id) {
             $used[$id] = true;
         }
@@ -682,7 +684,7 @@ if (!function_exists('kompass_toc')) {
                 return $match[0];
             }
 
-            if (preg_match('/\bid\s*=\s*["\']([^"\']+)["\']/i', $attrs, $idMatch) === 1) {
+            if (preg_match('/(?<![\w-])id\s*=\s*["\']([^"\']+)["\']/i', $attrs, $idMatch) === 1) {
                 $id = $idMatch[1];
             } else {
                 $base = kompass_slugify($text);
@@ -1041,9 +1043,6 @@ if (!function_exists('kompass_nav_menu')) {
             return;
         }
 
-        $current = rtrim((string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/'), '/');
-        $sitePath = rtrim((string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?? ''), '/');
-
         echo '<ul' . ($class !== '' ? ' class="' . kompass_e($class) . '"' : '') . '>';
         foreach ($items as $item) {
             if (!is_array($item)) {
@@ -1055,13 +1054,10 @@ if (!function_exists('kompass_nav_menu')) {
             }
             $rawUrl = (string) ($item['url'] ?? '#');
             $href = kompass_url($rawUrl);
-            $path = rtrim((string) (parse_url($href, PHP_URL_PATH) ?? ''), '/');
-            if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
-                $path = rtrim(substr($path, strlen($sitePath)), '/');
-            }
             $external = kompass_is_external($href);
-            $isActive = !$external && !str_contains($rawUrl, '#')
-                && ($path === '' ? $current === '' : ($current === $path || str_starts_with($current . '/', $path . '/')));
+            // Kit-Helfer: Unterverzeichnis-Installation berücksichtigt (vorher nie aktiv).
+            $isActive = !$external && !str_contains($rawUrl, '#') && preg_match('/^(?:mailto|tel):/i', $href) !== 1
+                && theme_v4_is_current_path($href);
 
             $attrs = $isActive ? ' aria-current="page"' : '';
             if (($item['target'] ?? '') === '_blank' || $external) {
@@ -1093,6 +1089,8 @@ if (!function_exists('kompass_default_menu')) {
                 ['label' => 'Aktuelles', 'url' => '/blog'],
                 ['label' => 'Suche', 'url' => '/search'],
                 ['label' => 'Newsletter', 'url' => '/newsletter'],
+                // 365CMS 4.2.0: Fragen der Bürger:innen im Forum – nur bei aktivem Community-Modul.
+                ['label' => 'Community', 'url' => '/' . theme_v4_community_base_path()],
                 ['label' => 'Sitemap', 'url' => '/sitemap'],
             ],
             'footer-legal' => [
@@ -1298,7 +1296,7 @@ if (!function_exists('kompass_pagination')) {
             return;
         }
 
-        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+        $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
         $build = static function (int $number) use ($path, $param): string {
             $query = array_filter($_GET, static fn(mixed $v): bool => is_scalar($v));
             unset($query['p'], $query['page']);
@@ -1411,6 +1409,7 @@ if (!function_exists('kompass_service_box')) {
                     <a class="kp-button kp-button--accent" href="<?php echo kompass_e(kompass_url($ctaUrl)); ?>"><span><?php echo kompass_e($ctaLabel); ?></span><?php echo kompass_icon('arrow'); ?></a>
                 <?php endif; ?>
             </div>
+            <?php if ($service['phone_href'] !== '' || $service['email_href'] !== '' || $service['hours'] !== [] || $service['address'] !== []) : ?>
             <dl class="kp-service__facts">
                 <?php if ($service['phone_href'] !== '') : ?>
                     <div><dt><?php echo kompass_icon('phone'); ?>Telefon</dt><dd><a href="<?php echo kompass_e($service['phone_href']); ?>"><?php echo kompass_e($service['phone']); ?></a></dd></div>
@@ -1425,6 +1424,7 @@ if (!function_exists('kompass_service_box')) {
                     <div><dt><?php echo kompass_icon('pin'); ?>Anschrift</dt><dd><?php echo kompass_e(kompass_organisation()); ?><br><?php echo implode('<br>', array_map('kompass_e', $service['address'])); ?></dd></div>
                 <?php endif; ?>
             </dl>
+            <?php endif; ?>
         </section>
         <?php
     }

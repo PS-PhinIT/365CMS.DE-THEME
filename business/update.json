@@ -3,14 +3,15 @@
   "name": "Business Presentation",
   "type": "theme",
   "license": "free",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "min_cms_version": "4.0.0",
   "min_php": "8.4.1",
   "requires_php": "8.4.1",
-  "released": "2026-11-15",
+  "released": "2026-11-18",
   "download_url": "",
   "checksum_sha256": "",
   "changelog": {
+    "4.1.0": "Audit 365CMS 4.2.0: Backslash-Adressen (/\\host) in Menüs und Customizer-URLs werden abgelehnt, Blog-Paginierung ohne REQUEST_URI, ungenutzter HTML-Filter biz_sanitize_content_html() entfernt. Kit 1.1.0 mit 4.2.0-Helfern (Community-Modul fail-closed, Capabilities/Rolle moderator, Slugs wie CMS\\Slug, Token-Brücke --community-*), Community im Standard-Footermenü, WCAG 2.2 Fokus und Sprungmarken unter dem Sticky-Header. tested_up_to 4.2.0.",
     "4.0.0": "Kompatibilität mit 365CMS 4.0.0 und 4.1.0 (setzt 4.0.0 und PHP 8.4.1 voraus). Fehlerseiten werten error_code (Fallback errorCode), error_standalone und error_retry_after aus: 403/429/503 enden nicht mehr als HTTP 500, die Wartungsseite ist ein vollständiges Dokument mit Theme-Stylesheet und genau einem main. Desktop- und Mobilnavigation lösen den Core-Hook main_nav aus (Downloads, Knowledgebase, Newsletter), aktive Einträge tragen aria-current, Menübeschriftungen aus dem Core-Feld title werden angezeigt; Standardmenüs werden nicht mehr bei jedem Request in die Datenbank geschrieben, sondern zur Laufzeit gezeigt und verlinken nur vorhandene Seiten und Routen; ThemeManager::registerMenuLocation() entfernt. Neu: contact.php (Core-Formular, Customizer-Bereich Kontakt), knowledgebase/ und newsletter/ als Overrides ohne doppeltes main, gemeinsame Schicht includes/cms-v4-compat.php und css/cms-v4.css mit Token-Brücke. page.php gibt das gerenderte Core-HTML unverändert aus (der Theme-Filter entfernte picture-, Formular- und Download-Blöcke) und läuft auch für Downloads/Feeds (id 0). Kontakt-Buttons der Startseite und des Headers führen auf /contact bzw. nutzen die Customizer-Kontaktdaten statt Platzhaltern (info@example.com, +491234567890); Social-Icons ohne Ziel entfernt; Fußzeile verlinkt nur vorhandene Seiten. Memberbereich in der Theme-Palette über member_head ohne Frontend-Assets; Farbvorschlag login_page.colors. Core-SEO-Head statt eigener description/og:url/robots, Seitentitel aus Modulen, Vorschau mit noindex und Hinweisleiste. Keine Google Fonts mehr, OptionStore statt SQL, Beitragsbild als LCP mit width/height und fetchpriority. WCAG 2.1 AA: Links und Eyebrows im dunklen Kupfer, Primär-Button-Hover, Outline-Button-Rahmen, Fokusrahmen hell/dunkel, Footer-Überschriften h2, Blätter-Buttons nicht mehr weiß auf weiß, Mobil-Drawer geschlossen inert, Escape-Fehler im Menü behoben.",
     "3.1.0": "Kompatibilität mit 365CMS 3.4.00: header.php/footer.php sind gegen Doppel-Einbindung geschützt (der Core rendert beide in ThemeManager::render()). header.php lädt die CSP-Runtime des Cores (cms_csp_runtime_tags(): DOMPurify + Trusted-Types-Policy) als erstes Script. Customizer-CSS (<style id=\"…-custom-vars\">) trägt den CSP-Nonce (theme_csp_nonce_attr()); die Produktiv-CSP hatte den Block bisher verworfen, Farben/Typografie/Layout aus dem Customizer blieben wirkungslos. footer.php löst body_end vor </body> aus (Core-Cookie-Consent, Web-Vitals, PhotoSwipe). Das Navigations-Script wird nur noch einmal geladen (bisher doppelt über before_footer, wodurch Toggles sofort wieder schlossen). Google Fonts werden nicht mehr geladen, wenn im Core „Schriften lokal einbinden“ (privacy_use_local_fonts) aktiv ist (DSGVO). error.php lädt die Theme-Helfer nach, wenn der Fatal-Handler (index.php) die Datei direkt einbindet. Manifest: requires_cms/min_cms_version 3.4.00, tested_up_to 3.4.00.",
     "3.0.2": "365CMS-v3.x.x Security-/Robustheits-Pass: Customizer-CSS-Werte werden validiert/geclamped, eigenes CSS defensiv bereinigt, URL-Helper fail-closed gehärtet, CMS-Seiten-HTML entfernt Event-/Style-Attribute und gefährliche href/src-Protokolle, Templates nutzen strict_types plus ABSPATH-Guard und das Mobile-Menü sperrt Scroll über eine Body-Klasse statt direktem Inline-Style. Nachtrag 2026-05-19: README, Changelog und Update-Feed auf den Abschlussstand synchronisiert.",
@@ -19,5 +20,5 @@
     "1.0.0": "Erstveröffentlichung: Professionelles Business-Präsentation-Theme."
   },
   "requires_cms": "4.0.0",
-  "tested_up_to": "4.1.0"
+  "tested_up_to": "4.2.0"
 }

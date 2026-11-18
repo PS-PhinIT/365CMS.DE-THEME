@@ -1,5 +1,22 @@
 # Changelog
 
+## 4.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/business.md`)
+
+#### Sicherheit
+- `biz_safe_url()` lehnt `/\host` ab: Ein Menüeintrag `/\evil.example` wurde als lokaler Pfad ausgegeben, Browser lesen ihn als `//evil.example` (fremde Adresse). Pfade mit Steuerzeichen werden verworfen statt bereinigt.
+- `blog.php`: Paginierungslinks bauen auf dem normalisierten Anfragepfad statt auf `REQUEST_URI` auf.
+
+#### Wartung
+- Entfernt: `biz_sanitize_content_html()` (seit 4.0.0 ungenutzt; der Filter zerstörte Core-HTML wie `<picture>`, Formulare und SVG).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*`; Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung. Die Community-Vorlagen des Cores erscheinen ohne verschachteltes `<main>` (Header öffnet `<main id="main-content">`).
+- Standard-Footermenü: Eintrag „Community“, sobald das Modul aktiv ist.
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält Fokus und Sprungziele (`#leistungen`, `#kontakt`) unter dem Sticky-Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 4.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0

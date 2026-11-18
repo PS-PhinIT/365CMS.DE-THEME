@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/academy365.md`)
+
+#### Sicherheit
+- Menü-URLs (`theme_nav_menu()`) wurden mit `FILTER_VALIDATE_URL` geprüft, das `javascript://…%0a…` durchlässt: Ein Menüeintrag konnte so ein Script-Link werden. Erlaubt sind jetzt nur http(s), lokale Pfade, Anker, `mailto:` und `tel:` (`academy365_menu_url()`).
+- `academy365_safe_url()` lehnt `/\host` ab (Browser werten `\` wie `/`, also eine fremde Adresse) und gibt Pfade mit Steuerzeichen nicht mehr bereinigt, sondern gar nicht zurück; `theme_route_url()` fällt nie mehr auf die ungeprüfte URL zurück.
+- Paginierungslinks im Archiv bauen auf dem normalisierten Anfragepfad statt auf `REQUEST_URI` auf.
+
+#### Fehler
+- Schriftwahl im Customizer war wirkungslos: Die Font-Stacks wurden HTML-escaped in den `<style>`-Block geschrieben (`&quot;Open Sans&quot;`), die ganze `font-family`-Deklaration war ungültig.
+- Die Standard-Headline zeigte `<br>` als Text („Lerne neue Skills.<br>Starte …“).
+- Startseite: „Kurskatalog entdecken“, „Alle Kurse“, „Zum Kurs“, „Alle Tutoren“ und der Pro-Button verlinkten auf `/courses`, `/tutors`, `/pro` usw., auch ohne solche Seiten (404). Sie erscheinen nur noch, wenn das Ziel existiert.
+- Zähler-Animation der Kennzahlen las den Tausenderpunkt als Dezimaltrenner („185.000 Lernende“ endete als „185.0 Lernende“, „2.400+ Kurse“ als „2.4 + Kurse“); am Ende steht wieder genau der Originaltext.
+- Escape zog auf Mobilgeräten den Fokus auch bei geschlossenem Menü auf den Menüknopf.
+- Teilnehmerzahlen mit deutschem Tausenderpunkt; Fortschrittsbalken mit zugänglichem Namen.
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): `theme_v4_module_enabled()` (unbekannte Module gelten nicht als aktiv), `theme_v4_community_available()/_url()/_link()` (Community nur bei aktivem Modul und vorhandenen Core-Vorlagen, Basispfad aus den Community-Einstellungen), `theme_v4_user_can()` (Capabilities; Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()` (`CMS\Slug::fromText()` mit Rückfall), Token-Brücke `--community-*` für die Core-Vorlagen der Community; Härtungen: `theme_v4_local_asset_url()` und `theme_v4_safe_back_url()` lehnen Backslash-Adressen ab, `theme_v4_is_current_path()` erkennt das Unterverzeichnis nur noch an einer Pfadgrenze.
+- Fußzeile „Plattform“: Eintrag „Community“, sobald das Modul aktiv ist.
+- Kurs-Slugs der Startseite über `theme_v4_slug()` (Umlaute wie im Core: `ae`, `oe`, `ue`, `ss`).
+- WCAG 2.2 (2.4.11): `scroll-padding-top` hält fokussierte Elemente unter dem festen Header sichtbar.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 4.0.1 - 2026-11-15
 
 ### Gemeinsame 4.x-Schicht 1.0.1

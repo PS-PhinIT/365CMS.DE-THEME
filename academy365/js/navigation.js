@@ -44,7 +44,8 @@
       }
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
+      // Nur bei geöffnetem Menü: sonst zog jedes Escape (z. B. in der Suche) den Fokus auf den Menüknopf.
+      if (e.key === 'Escape' && mainNav.classList.contains('ac-nav-open')) {
         mainNav.classList.remove('ac-nav-open');
         menuToggle.setAttribute('aria-expanded', 'false');
         menuToggle.focus();
@@ -151,17 +152,23 @@
         const match    = text.match(/[\d.]+/);
         if (!match) return;
         const numStr   = match[0];
-        const num      = parseFloat(numStr.replace(',', '.'));
-        const isFloat  = numStr.includes('.');
-        const suffix   = text.replace(numStr, '').trim();
+        // Deutsche Tausenderpunkte („185.000“, „2.400“) sind keine Dezimalstellen.
+        const isThousands = /^\d{1,3}(\.\d{3})+$/.test(numStr);
+        const num      = isThousands ? parseInt(numStr.replace(/\./g, ''), 10) : parseFloat(numStr);
+        const isFloat  = !isThousands && numStr.includes('.');
+        if (!isFinite(num) || num <= 0) return;
         const steps    = 50;
         const duration = 1000;
         const interval = duration / steps;
         let current    = 0;
         const timer = setInterval(() => {
           current += num / steps;
-          if (current >= num) { current = num; clearInterval(timer); }
-          el.textContent = (isFloat ? current.toFixed(1) : Math.floor(current).toLocaleString('de-DE')) + (suffix ? ' ' + suffix : '');
+          if (current >= num) {
+            clearInterval(timer);
+            el.textContent = text; // exakt der ursprüngliche Text
+            return;
+          }
+          el.textContent = text.replace(numStr, isFloat ? current.toFixed(1) : Math.floor(current).toLocaleString('de-DE'));
         }, interval);
         obs.unobserve(el);
       });

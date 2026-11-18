@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.1.0 - 2026-11-18
+
+### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/feder.md`)
+
+#### Sicherheit
+- `feder_safe_url()` und die URL-Felder des Customizers lehnen `/\host` ab: Ein Menüeintrag oder Customizer-Link `/\evil.example` wurde als lokaler Pfad ausgegeben, Browser lesen ihn als `//evil.example` (fremde Adresse).
+- Customizer-Upload: Mehrfach-Uploads (`u_…[]`) werden abgewiesen statt mit „Array to string conversion“ verarbeitet.
+- Paginierung und Archiv-Suchformular bauen auf dem normalisierten Anfragepfad statt auf `REQUEST_URI` auf.
+
+#### Fehler
+- Navigation: Bei einer Installation im Unterverzeichnis war nie ein Menüeintrag aktiv (Anfragepfad mit, Menüpfad ohne Unterverzeichnis verglichen). Jetzt über `theme_v4_is_current_path()`.
+- Schlagwort-Links aus Namen mit Akzenten (`Café` → `/tag/caf`) zeigten ins Leere; Slugs jetzt wie der Core (`theme_v4_slug()`: `cafe`, `groesse`).
+
+#### Performance
+- Vor/Zurück-Links unter einem Beitrag laden den Beitragsinhalt nicht mehr mit (zwei Abfragen ohne `content`).
+
+#### 365CMS 4.2.0
+- Gemeinsame Schicht **Kit 1.1.0** (`includes/cms-v4-compat.php`, `css/cms-v4.css`): Modulprüfung, Community-Helfer (nur bei aktivem Modul und vorhandenen Core-Vorlagen), `theme_v4_user_can()` (Rolle `moderator` ohne Admin-Zugang), `theme_v4_slug()`, Token-Brücke `--community-*` (auch im Dark Mode über `--tv4-*`); Härtungen bei Backslash-Adressen und Unterverzeichnis-Erkennung.
+- Standard-Footermenü: Eintrag „Community“, sobald das Modul aktiv ist.
+- `tested_up_to` 4.2.0; `requires_cms` bleibt 4.0.0.
+
 ## 2.0.0 – 2026-11-15
 
 ### Kompatibilität mit 365CMS 4.0.0 und 4.1.0
