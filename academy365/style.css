@@ -4,7 +4,7 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://365cms.de
 Description: Bildung & Weiterbildung Theme. Violett als Lern-Identität, Gold als Zertifikat-Akzent, dunkles Indigo als Wissenstiefe.
-Version: 4.1.0
+Version: 4.1.1
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
 Tested up to: 4.2.0
@@ -37,7 +37,7 @@ License: GNU General Public License v2 or later
     --text-primary:     #1e1b4b;
     --text-secondary:   #374151;
     --link-color:       #7c3aed;
-    --muted-color:      #6b7280;   /* 4.5:1 auf --bg-primary (WCAG AA) */
+    --muted-color:      #5b6472;   /* ≥ 5,0:1 auf Weiß und allen Lila-Tönen (#faf5ff, #f5f3ff, #ede9fe) – #6b7280 erreichte dort nur 4,1–4,5:1 */
     --border-color:     #ddd6fe;
 
     --badge-free:       #10b981;
@@ -181,8 +181,11 @@ ul  { list-style: none; }
 .ac-logo-text {
     font-family: var(--font-heading); font-size: 1.35rem; font-weight: 800;
     color: var(--primary-color);
-    display: inline-flex; align-items: center; gap: .4rem;
+    display: inline-flex; align-items: center; gap: .4rem; max-width: 100%; min-height: 1.5rem;
 }
+.ac-branding { min-width: 0; }
+.ac-branding a { display: inline-flex; align-items: center; min-height: 2.75rem; max-width: 100%; }
+.ac-logo-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .main-navigation ul { display: flex; gap: .15rem; }
 .main-navigation a {
@@ -194,12 +197,16 @@ ul  { list-style: none; }
 .main-navigation a:hover { color: var(--primary-color); background: var(--bg-secondary); text-decoration: none; }
 .main-navigation li.active a { color: var(--primary-color); background: var(--bg-secondary); }
 
-.ac-header-actions { display: flex; align-items: center; gap: .75rem; }
+.ac-header-actions { display: flex; align-items: center; gap: .75rem; flex-shrink: 0; }
+.ac-nav-auth { display: none; }
+/* Fokus bleibt sichtbar: Der beim Abwärtsscrollen ausgeblendete Header erscheint, sobald Fokus in ihn wandert (WCAG 2.4.11) */
+.ac-site-header.ac-header-hidden:focus-within { transform: none; }
 
 .ac-mobile-toggle { display: none; flex-direction: column; gap: 5px; background: none; border: none; cursor: pointer; padding: .5rem; }
 .ac-mobile-toggle span { display: block; width: 22px; height: 2px; background: var(--header-text); border-radius: 2px; }
 
 @media (max-width: 768px) {
+    .ac-header-inner { gap: .75rem; padding: 0 1rem; }
     .ac-mobile-toggle { display: flex; }
     .main-navigation {
         display: none; position: absolute; top: var(--header-height); left: 0; right: 0;
@@ -208,6 +215,11 @@ ul  { list-style: none; }
     .main-navigation.open,
     .main-navigation.ac-nav-open { display: block; }
     .main-navigation ul { flex-direction: column; }
+}
+/* Unter 640 px: Konto-Aktionen wandern ins Menüpanel (Logo, Suche und Menüknopf müssen in 320 px passen) */
+@media (max-width: 640px) {
+    .ac-header-actions .ac-header-auth { display: none; }
+    .ac-nav-auth { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
 }
 
 /* ================================================================
@@ -376,13 +388,13 @@ ul  { list-style: none; }
 /* Rating: visual 5-star bar driven by --rating (0..5) set via JS */
 .ac-rating {
     display: inline-flex; align-items: center; gap: .25rem;
-    font-size: var(--font-xs); color: var(--accent-color); font-weight: 600;
+    font-size: var(--font-xs); color: var(--text-primary); font-weight: 600; /* Zahl dunkel: Gold auf Weiß hat nur 2,15:1 */
 }
 .ac-rating-stars { --rating: 0; display: inline-block; line-height: 1; font-size: .95rem; }
 .ac-rating-stars::before {
     content: "★★★★★";
     letter-spacing: .08em;
-    background: linear-gradient(90deg, var(--accent-color) calc((var(--rating) / 5) * 100%), #e5e7eb calc((var(--rating) / 5) * 100%));
+    background: linear-gradient(90deg, var(--accent-dark) calc((var(--rating) / 5) * 100%), #d1d5db calc((var(--rating) / 5) * 100%)); /* Sterne ≥ 3:1 (1.4.11) */
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -525,7 +537,16 @@ ul  { list-style: none; }
 }
 .ac-footer-logo { display: inline-flex; align-items: center; gap: .4rem; font-family: var(--font-heading); font-weight: 800; color: #fff; font-size: 1.25rem; }
 .ac-footer-nav { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.25rem; }
-.ac-footer-col ul { display: grid; gap: .45rem; }
+.ac-footer-col ul { display: grid; gap: .15rem; }
+/* WCAG 2.2 (2.5.8): Zielgröße mindestens 24 px */
+.ac-footer-col a,
+.ac-footer-bottom a { display: inline-flex; align-items: center; min-height: 1.875rem; }
+.ac-footer-bottom ul { display: flex; flex-wrap: wrap; gap: .15rem 1rem; }
+.ac-footer-logo { min-height: 2.5rem; }
+/* Links im Fließtext brauchen mehr als die Farbe als Merkmal (1.4.1): Violett hat nur 2,8:1 zum Text */
+.ac-page-body a:not(.ac-btn),
+.ac-card-excerpt a,
+.cms-post-meta a { text-decoration: underline; text-underline-offset: .15em; }
 .ac-footer-tagline { color: rgb(255 255 255 / 0.72); margin-top: .6rem; }
 .ac-footer-bottom  {
     border-top: 1px solid rgb(255 255 255 / 0.1);
@@ -604,3 +625,11 @@ form[role="search"] input[type="search"] { flex: 1 1 260px; min-width: 0; paddin
 .theme-v4-module .cms-newsletter,
 .theme-v4-module .cms-kb-content { padding-top: 0; }
 
+
+/* Beispielinhalte (Startseite): sichtbar als Beispiel gekennzeichnet, solange keine echten Kurse/Dozenten angebunden sind */
+.ac-demo-chip {
+    display: inline-block; vertical-align: middle; margin-left: .5rem; padding: .1rem .55rem;
+    border: 1px solid var(--border-color); border-radius: 999px;
+    font-family: var(--font-ui); font-size: var(--font-xs); font-weight: 600; letter-spacing: .02em;
+    color: var(--muted-color); background: var(--bg-secondary); text-transform: none;
+}

@@ -61,8 +61,8 @@
 
 ## 5. Offene Punkte aus dem 4.0/4.1-Audit
 
-- Demo-Kurse/Kennzahlen statisch (bleibt Designentscheidung; prüfen, ob als Demo erkennbar).
-- Browser-/axe-Prüfung stand aus → hier statisch und per Render-Test nachholen, soweit ohne laufende Installation möglich.
+- Demo-Kurse/Kennzahlen statisch (bleibt Designentscheidung; prüfen, ob als Demo erkennbar). → erledigt in 4.1.1 (Abschnitt 8)
+- Browser-/axe-Prüfung stand aus → hier statisch und per Render-Test nachholen, soweit ohne laufende Installation möglich. → erledigt in 4.1.1 (Abschnitt 8)
 
 ## 6. Abnahme
 
@@ -105,3 +105,42 @@ Alle Zeilen in Abschnitt 3 und 4 mit Ergebnis, Kit 1.1.0 in academy365, Metadate
 | `CoreModuleService::isModuleEnabled()` | meldet **unbekannte** Module als aktiv – ein naiver Community-Check wäre auf 4.0/4.1 immer „an“ | `theme_v4_module_enabled()` prüft zuerst `getModuleDefinition()` |
 | `theme_v4_image_dimensions()`, `theme_v4_member_tokens_style()`, `theme_v4_head_tags()`, `theme_v4_error_context()` | nur lokale Uploads ohne `..`, Farben validiert, Vorschau ohne JSON-LD, Status 400–599 | kein Befund |
 | 4.2.0 | Modulprüfung, Community-Helfer (fail-closed bis die Core-Vorlagen `CMS/views/community/` existieren), `theme_v4_user_can()`, `theme_v4_slug()` (identisch zu `CMS\Slug::fromText()` für Umlaute/Akzente, geprüft), `--community-*`-Brücke | umgesetzt |
+
+## 8. Folgeaudit (2026-11-18, umgesetzt in 4.1.1, Kit 1.2.0)
+
+Das erste Audit (Abschnitt 7) war statisch und per Render-Test. Offen waren die im Plan genannte Zielgröße (2.5.8), die Browser-/axe-Prüfung, „Demo als Demo erkennbar“ und die in der Kit-Prüfung vorgesehene Kostenmessung von `theme_v4_link_available()`. Dieses Folgeaudit holt sie nach (Werkzeug: [`tools/`](tools/README.md)).
+
+### Messung vor den Korrekturen
+
+| Prüfung | Ergebnis am Stand 4.1.0 |
+|---|---|
+| Datenbankabfragen für Standardlinks (Attrappe zählt `PageManager::getPageBySlug()`) | Startseite 16, 404 11, Archiv 11, je `SELECT *` mit Seiteninhalt, ungepuffert |
+| Chromium + axe-core (WCAG 2.0–2.2 A/AA, Best Practice), 11 Seiten × Desktop/Mobil | 24 von 26 Läufen mit Befunden (7 Gruppen, s. u.) |
+
+### Befunde
+
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| Q3/B | **hoch** | Unter 640 px (abgemeldet) verdrängten „Anmelden“ und „Kostenlos lernen“ den Menüknopf aus dem Bild; das Logo (Testtitel mit 18 Zeichen) brach auf drei Zeilen um und ragte aus dem Header. Mobil war die Navigation nicht erreichbar (Screenshot 375 px; axe/Fokusprüfung: Knopf von Button überdeckt) | Konto-Aktionen im Menüpanel (`.ac-nav-auth`), Titel mit Auslassung; geprüft bei 320/375/600/700/1024 px |
+| P1 | **mittel** | `theme_v4_link_available()` fragte jede Seitenadresse einzeln ab (16 `SELECT *` samt Inhalt auf der Startseite, ungepuffert, aus der Fußzeile und den Hero-Links). Betrifft alle 13 Themes | Kit 1.2.0: eine Abfrage je Request (`theme_v4_page_index()`), bei > 500 Seiten gebündelt; berücksichtigt `published_at`, englischen Inhalt, Groß-/Kleinschreibung, Prozent-Kodierung, `..` |
+| Q3 | mittel | axe `color-contrast`: Muted `#6b7280` auf `#f5f3ff`/`#ede9fe` nur 4,41/4,07:1 (Kontaktdaten, Karten); Bewertungszahl Gold auf Weiß 2,15:1 | Muted `#5b6472` (≥ 5,04:1), Zahl dunkel, Sterne `--accent-dark` (3,19:1) |
+| Q3 | mittel | axe `link-in-text-block`: Links im Fließtext nur durch Farbe (2,8:1 zum Text) abgesetzt (1.4.1) | unterstrichen |
+| Q3 | mittel | axe `target-size` (2.5.8): Fußzeilenlinks 17 px hoch, Abstand 23,6 px; Rechtslinks; Fußzeilen-Logo 20 px | mindestens 24 px |
+| Q3 | mittel | Beim Abwärtsscrollen ausgeblendeter Header blieb ausgeblendet, wenn der Fokus hineinwanderte (2.4.11) | `.ac-header-hidden:focus-within` |
+| B6 | niedrig | Menüknopf: Escape/Außenklick setzten `aria-expanded`, aber nicht die Beschriftung zurück | `setMenu()` |
+| S11/Demo | mittel | Vier Beispielkurse mit erfundenen Bewertungen/Teilnehmerzahlen und „Tutor 1–4“ waren nicht abschaltbar und nicht als Beispiel erkennbar; Rückfallwerte „Die #1 Lernplattform“, „185.000 Lernende“ | Schalter `show_demo_courses`/`show_demo_tutors` (Standard an), Kennzeichnung „Beispiel“, neutrale Rückfalltexte, Kennzahlenleiste nur mit Inhalt |
+| B4 | mittel | Seitensprache: Header, Suche, Archiv, Beitrag, 404, Fußzeile, Menüknopf (fest in `navigation.js`) und Datum nur deutsch | `theme_v4_t()` bzw. `data-label-*`, `academy365_format_date()` |
+| Q2 | niedrig | Zwei Kopien des URL-Prüfers (`$safeUrl`) und des Datumshelfers in `blog-single.php`/`search.php` | `academy365_safe_url()`, `academy365_format_date()` |
+| Test | – | Ein Teil der ersten Treffer waren Artefakte des Prüfaufbaus (Glätten beim Scrollen, Core-Formular-CSS fehlte, Fehlerfragment ohne Seitenrahmen); sie wurden im Werkzeug behoben, nicht im Theme | – |
+
+### Ergebnis nach den Korrekturen
+
+- Chromium/axe: 30 Läufe (13 Seitenvarianten, Desktop/Mobil, mit und ohne reduzierte Bewegung, Beispiele aus, englische Seite) ohne Befund; Mobilmenü-Prüfung bei 5 Breiten ohne Befund; Kit-Tests (`tools/kit-tests/`) und `TESTS/theme-contract` grün.
+- Standardlinks: 1 Abfrage je Seitenaufruf (vorher 11–16).
+
+### Offen / Grenzen
+
+- Die Prüfung läuft gegen Attrappen der Core-Klassen, ohne echte Installation (CSP-Header, Core-Stylesheets, Plugins). Kontraste gelten für die Standardpalette.
+- Die Standardlinks der Fußzeile zeigen auch auf englischen Seiten auf die Standardrouten (ohne `/en/`); nur die Beschriftungen sind übersetzt.
+- Beispieldaten der Startseite (Titel, Stufen) bleiben deutsch.
+- Kit 1.2.0 liegt zunächst nur in academy365; die übrigen Themes übernehmen es in ihren Folge-PRs (der Kit-Stand 1.1.0 dort bleibt funktionsfähig, nur ohne die Abfrageersparnis).

@@ -12,6 +12,16 @@ if (defined('CMS_THEME_FOOTER_RENDERED')) {
 define('CMS_THEME_FOOTER_RENDERED', true);
 
 $safe = fn(string $v) => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$acLocale = theme_v4_locale($contentLocale ?? null);
+// Englische Beschriftungen der Standardspalten (die Ziele bleiben die Standardrouten).
+$acFooterEn = [
+    'Für Lernende' => 'For learners', 'Alle Kurse' => 'All courses', 'Kategorien' => 'Categories', 'Zertifikate' => 'Certificates',
+    'Wissensdatenbank' => 'Knowledge base', 'Für Tutoren' => 'For tutors', 'Tutor werden' => 'Become a tutor',
+    'Tutor-Leitfaden' => 'Tutor guide', 'FAQ Tutoren' => 'Tutor FAQ', 'Unternehmen' => 'Business', 'Business-Plan' => 'Business plan',
+    'Partner werden' => 'Become a partner', 'Plattform' => 'Platform', 'Über uns' => 'About us', 'Kontakt' => 'Contact',
+    'Barrierefreiheit' => 'Accessibility',
+];
+$acFooterT = static fn(string $de): string => $acLocale === 'en' ? ($acFooterEn[$de] ?? $de) : $de;
 try { $c = \CMS\Services\ThemeCustomizer::instance(); } catch (\Throwable $e) { $c = null; }
 $copyrightText = $c ? $c->get('footer', 'copyright_text', '') : '';
 $footerText = $c ? $c->get('footer', 'footer_text', 'Lernen ohne Grenzen. Starte noch heute.') : 'Lernen ohne Grenzen. Starte noch heute.';
@@ -65,17 +75,17 @@ $copyrightLine = str_replace(
             ],
         ];
         ?>
-        <nav class="ac-footer-nav" aria-label="Fußzeilen-Navigation">
+        <nav class="ac-footer-nav" aria-label="<?php echo $safe(theme_v4_t('Fußzeilen-Navigation', 'Footer navigation', $acLocale)); ?>">
             <?php foreach ($acFooterColumns as $acColumnTitle => $acColumnLinks) :
                 $acColumnLinks = theme_v4_filter_links($acColumnLinks);
                 if ($acColumnLinks === []) {
                     continue;
                 } ?>
             <div class="ac-footer-col">
-                <h2 class="ac-footer-heading"><?php echo $safe($acColumnTitle); ?></h2>
+                <h2 class="ac-footer-heading"><?php echo $safe($acFooterT((string) $acColumnTitle)); ?></h2>
                 <ul>
                     <?php foreach ($acColumnLinks as $acLink) : ?>
-                    <li><a href="<?php echo $safe(academy365_safe_url($acLink['url'], $siteUrl)); ?>"><?php echo $safe($acLink['label']); ?></a></li>
+                    <li><a href="<?php echo $safe(academy365_safe_url($acLink['url'], $siteUrl)); ?>"><?php echo $safe($acFooterT($acLink['label'])); ?></a></li>
                     <?php endforeach; ?>
                 </ul>
             </div>
@@ -88,7 +98,7 @@ $copyrightLine = str_replace(
                 <?php if ($copyrightText && trim($copyrightText) !== '') : ?>
                     <?php echo $safe($copyrightLine); ?>
                 <?php else : ?>
-                    &copy; <?php echo $year; ?> <?php echo $safe($siteTitle); ?>. Alle Rechte vorbehalten.
+                    &copy; <?php echo $year; ?> <?php echo $safe($siteTitle); ?>. <?php echo $safe(theme_v4_t('Alle Rechte vorbehalten.', 'All rights reserved.', $acLocale)); ?>
                 <?php endif; ?>
             </p>
             <?php theme_nav_menu('footer-legal'); ?>

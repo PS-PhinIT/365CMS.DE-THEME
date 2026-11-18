@@ -1,7 +1,7 @@
 {
   "name": "Academy365",
   "slug": "academy365",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "requires_cms": "4.0.0",
   "tested_up_to": "4.2.0",
   "requires_php": "8.4.1",
@@ -139,7 +139,7 @@
         "muted_color": {
           "label": "Gedämpfte Textfarbe",
           "type": "color",
-          "default": "#6b7280",
+          "default": "#5b6472",
           "description": "Sekundärer Text"
         },
         "border_color": {
@@ -510,6 +510,12 @@
           "default": true,
           "description": "Anzahl Teilnehmer auf Kurs-Cards"
         },
+        "show_demo_courses": {
+          "label": "Beispielkurse anzeigen",
+          "type": "checkbox",
+          "default": true,
+          "description": "Vier Beispielkarten mit erfundenen Bewertungen und Teilnehmerzahlen, solange noch keine echten Kurse angebunden sind. Die Karten sind als Beispiel gekennzeichnet – im Echtbetrieb ausschalten."
+        },
         "show_duration": {
           "label": "Kursdauer anzeigen",
           "type": "checkbox",
@@ -557,6 +563,12 @@
           "type": "text",
           "default": "Unsere Experten-Dozenten",
           "description": "Überschrift der Dozenten-Übersicht"
+        },
+        "show_demo_tutors": {
+          "label": "Beispiel-Dozenten anzeigen",
+          "type": "checkbox",
+          "default": true,
+          "description": "Vier Platzhalter-Dozenten mit erfundener Bewertung. Als Beispiel gekennzeichnet – im Echtbetrieb ausschalten."
         },
         "events_section_title": {
           "label": "Seminare & Events Titel",

@@ -54,27 +54,36 @@ $logoSafeUrl  = theme_v4_site_logo(academy365_safe_url((string) $logoUrl));
                 <?php if ($logoSafeUrl !== '') : ?>
                     <img src="<?php echo $safe($logoSafeUrl); ?>" alt="<?php echo $safe($siteTitle); ?>" width="150" height="44">
                 <?php else : ?>
-                    <span class="ac-logo-text"><span aria-hidden="true">🎓</span><?php echo $safe($siteTitle); ?></span>
+                    <span class="ac-logo-text"><span aria-hidden="true">🎓</span><span class="ac-logo-name"><?php echo $safe($siteTitle); ?></span></span>
                 <?php endif; ?>
             </a>
         </div>
         <nav id="site-navigation" class="main-navigation" aria-label="<?php echo theme_v4_e(theme_v4_t('Hauptnavigation', 'Main navigation', $acLocale)); ?>">
             <?php // Eine responsive Navigation für Desktop und Mobil: main_nav einmal (Kontext desktop), sonst doppelte Einträge. ?>
             <?php theme_nav_menu('primary-nav', 'desktop'); ?>
+            <?php // Konto-Aktionen im Menüpanel: Unter 640 px passen sie nicht mehr neben Logo, Suche und Menüknopf (sie verdrängten den Menüknopf aus dem Bild). ?>
+            <div class="ac-nav-auth">
+                <?php if ($isLoggedIn) : ?>
+                    <a href="<?php echo $safe($memberUrl); ?>" class="ac-btn ac-btn-primary"><?php echo theme_v4_e(theme_v4_t('Meine Kurse', 'My courses', $acLocale)); ?></a>
+                <?php else : ?>
+                    <a href="<?php echo $safe($loginUrl); ?>" class="ac-btn ac-btn-ghost"><?php echo theme_v4_e(theme_v4_t('Anmelden', 'Sign in', $acLocale)); ?></a>
+                    <a href="<?php echo $safe($registerUrl); ?>" class="ac-btn ac-btn-primary"><?php echo theme_v4_e(theme_v4_t('Kostenlos lernen', 'Learn for free', $acLocale)); ?></a>
+                <?php endif; ?>
+            </div>
         </nav>
         <div class="ac-header-actions">
             <?php if ($showSearch) : ?>
-                <button id="searchToggle" type="button" class="ac-btn ac-btn-ghost ac-search-toggle-btn" aria-label="Suche öffnen" aria-expanded="false" aria-controls="searchPanel">
+                <button id="searchToggle" type="button" class="ac-btn ac-btn-ghost ac-search-toggle-btn" aria-label="<?php echo theme_v4_e(theme_v4_t('Suche öffnen', 'Open search', $acLocale)); ?>" aria-expanded="false" aria-controls="searchPanel">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
                 </button>
             <?php endif; ?>
             <?php if ($isLoggedIn) : ?>
-                <a href="<?php echo $safe($memberUrl); ?>" class="ac-btn ac-btn-primary">Meine Kurse</a>
+                <a href="<?php echo $safe($memberUrl); ?>" class="ac-btn ac-btn-primary ac-header-auth"><?php echo theme_v4_e(theme_v4_t('Meine Kurse', 'My courses', $acLocale)); ?></a>
             <?php else : ?>
-                <a href="<?php echo $safe($loginUrl); ?>"    class="ac-btn ac-btn-ghost">Anmelden</a>
-                <a href="<?php echo $safe($registerUrl); ?>" class="ac-btn ac-btn-primary">Kostenlos lernen</a>
+                <a href="<?php echo $safe($loginUrl); ?>"    class="ac-btn ac-btn-ghost ac-header-auth"><?php echo theme_v4_e(theme_v4_t('Anmelden', 'Sign in', $acLocale)); ?></a>
+                <a href="<?php echo $safe($registerUrl); ?>" class="ac-btn ac-btn-primary ac-header-auth"><?php echo theme_v4_e(theme_v4_t('Kostenlos lernen', 'Learn for free', $acLocale)); ?></a>
             <?php endif; ?>
-            <button id="mobileMenuToggle" class="ac-mobile-toggle" type="button" aria-label="Menü öffnen" aria-expanded="false" aria-controls="site-navigation">
+            <button id="mobileMenuToggle" class="ac-mobile-toggle" type="button" aria-label="<?php echo theme_v4_e(theme_v4_t('Menü öffnen', 'Open menu', $acLocale)); ?>" data-label-open="<?php echo theme_v4_e(theme_v4_t('Menü öffnen', 'Open menu', $acLocale)); ?>" data-label-close="<?php echo theme_v4_e(theme_v4_t('Menü schließen', 'Close menu', $acLocale)); ?>" aria-expanded="false" aria-controls="site-navigation">
                 <span></span><span></span><span></span>
             </button>
         </div>
@@ -83,11 +92,11 @@ $logoSafeUrl  = theme_v4_site_logo(academy365_safe_url((string) $logoUrl));
     <div id="searchPanel" class="ac-search-panel" hidden>
         <div class="ac-header-inner">
             <form role="search" method="get" action="<?php echo $safe($searchUrl); ?>" class="ac-search-form">
-                <label for="ac-search" class="ac-visually-hidden">Kurse suchen</label>
-                <input id="ac-search" type="search" name="q" placeholder="Kurs, Thema oder Lehrer suchen …" autocomplete="off" class="ac-search-input">
-                <button type="submit" class="ac-btn ac-btn-primary" aria-label="Suchen">Suchen</button>
+                <label for="ac-search" class="ac-visually-hidden"><?php echo theme_v4_e(theme_v4_t('Kurse suchen', 'Search courses', $acLocale)); ?></label>
+                <input id="ac-search" type="search" name="q" placeholder="<?php echo theme_v4_e(theme_v4_t('Kurs, Thema oder Lehrer suchen …', 'Search a course, topic or tutor …', $acLocale)); ?>" autocomplete="off" class="ac-search-input">
+                <button type="submit" class="ac-btn ac-btn-primary"><?php echo theme_v4_e(theme_v4_t('Suchen', 'Search', $acLocale)); ?></button>
             </form>
-            <button id="searchClose" type="button" class="ac-btn ac-btn-ghost" aria-label="Suche schließen"><span aria-hidden="true">✕</span></button>
+            <button id="searchClose" type="button" class="ac-btn ac-btn-ghost" aria-label="<?php echo theme_v4_e(theme_v4_t('Suche schließen', 'Close search', $acLocale)); ?>"><span aria-hidden="true">✕</span></button>
         </div>
     </div>
     <?php endif; ?>

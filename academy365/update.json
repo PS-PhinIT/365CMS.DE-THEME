@@ -3,7 +3,7 @@
   "name": "Academy365",
   "type": "theme",
   "license": "free",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "min_cms_version": "4.0.0",
   "min_php": "8.4.1",
   "requires_php": "8.4.1",
@@ -11,6 +11,7 @@
   "download_url": "",
   "checksum_sha256": "",
   "changelog": {
+    "4.1.1": "Folgeaudit 365CMS 4.2.0: Mobil verdrängten die Konto-Buttons den Menüknopf aus dem Bild (jetzt im Menüpanel, Titel wird gekürzt). Kontraste, unterstrichene Fließtext-Links und Zielgrößen nach WCAG 2.2 AA im Browser geprüft und behoben. Standardlink-Prüfung braucht eine Abfrage statt 11–16 (Kit 1.2.0). Beispielkurse und Beispiel-Dozenten abschaltbar und als Beispiel gekennzeichnet, keine erfundenen Kennzahlen als Rückfall. Seitensprache (/en/) für Header, Suche, Archiv, Beitrag, 404, Fußzeile und Menüknopf, Datum je Sprache.",
     "4.1.0": "Audit 365CMS 4.2.0: Menü-URLs ließen javascript://-Links durch (jetzt nur http(s), Pfade, Anker, mailto/tel), Backslash-Adressen abgelehnt. Schriftwahl wirkte nicht (HTML-escapte Font-Stacks im CSS), Headline zeigte <br> als Text, Startseite verlinkte nicht vorhandene Kurs-/Tutor-/Pro-Seiten, Kennzahlen-Animation las Tausenderpunkte als Dezimalstellen. Kit 1.1.0 mit 4.2.0-Helfern (Community-Modul fail-closed, Capabilities/Rolle moderator, Slugs wie CMS\\Slug, Token-Brücke --community-*), Community-Link in der Fußzeile, WCAG 2.2 Fokus unter festem Header. tested_up_to 4.2.0.",
     "4.0.1": "Gemeinsame 4.x-Schicht 1.0.1: Die Feed-Aggregator-Variablen (--fd-*) gelten nur noch in den Feed-Ansichten statt auf body; im Memberbereich wird der Fokusrahmen als gültiger box-shadow-Wert gesetzt (bisher fiel der Fokus-Halo weg); keine dunkle Member-Palette mehr, weil die Tabler-Shell keinen Dunkelmodus hat.",
     "4.0.0": "Kompatibilität mit 365CMS 4.0.0 und 4.1.0 (setzt 4.0.0 und PHP 8.4.1 voraus). Fehlerseiten werten error_code (Fallback errorCode), error_standalone und error_retry_after aus: 403/429/503 enden nicht mehr als HTTP 500, die Wartungsseite ist ein vollständiges Dokument mit Theme-Stylesheet. Die Hauptnavigation löst den Core-Hook main_nav aus (Downloads, Knowledgebase, Newsletter) und markiert den aktiven Eintrag mit aria-current; Menübeschriftungen aus dem Feld title werden angezeigt. Neue Vorlagen contact.php (Core-Formular), knowledgebase/ und newsletter/ (Core-Views im Theme-Rahmen ohne doppeltes main), gemeinsame Integrationsstile css/cms-v4.css für Downloads, Feeds, Formulare, Hub-Sites, Medien-Credits, Editor.js-Blöcke, Inhaltsverzeichnis und wiederverwendbare Blöcke. Memberbereich und Newsletter-Widget übernehmen die Theme-Palette (member_head), ohne das Frontend-Stylesheet in die Member-Shell zu laden; Farbvorschlag für die Core-Loginseite (theme.json login_page.colors). Core-SEO-Ausgabe im Head (Canonical, Robots, Open Graph, JSON-LD), Vorschau-Links mit noindex und ohne strukturierte Daten. Keine Google-Fonts-Requests mehr, OptionStore statt SQL für privacy_use_local_fonts. Fußzeile verlinkt nur vorhandene Seiten und Routen, Logo/Favicon-Fallback auf site_logo/site_favicon. Beitragsbild als LCP mit width/height und fetchpriority. Kontrast: Badge-Texte, Muted-Farbe und Fokusrahmen erfüllen WCAG 2.1 AA.",

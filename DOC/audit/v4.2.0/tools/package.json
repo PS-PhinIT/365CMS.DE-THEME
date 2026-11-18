@@ -1,0 +1,9 @@
+{
+  "name": "365cms-theme-audit-tools",
+  "private": true,
+  "description": "Render-, Fuzz- und Browser-Prüfung für die Public Themes (siehe README.md)",
+  "devDependencies": {
+    "axe-core": "4.10.2",
+    "playwright": "^1.50.0"
+  }
+}

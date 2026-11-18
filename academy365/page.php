@@ -10,6 +10,8 @@ $page        = isset($page) && is_array($page) ? $page : [];
 $pageTitle   = trim((string) ($page['title'] ?? ''));
 $pageContent = (string) ($page['content'] ?? '');
 $safe        = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$acLocale    = theme_v4_locale($contentLocale ?? null);
+$t           = static fn(string $de, string $en): string => theme_v4_t($de, $en, $acLocale);
 ?>
 <main id="main" class="ac-main-content ac-page-content" role="main">
     <div class="ac-container">
@@ -28,8 +30,8 @@ $safe        = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 
             </article>
         <?php else : ?>
             <div class="ac-empty-state">
-                <p>Seite nicht gefunden.</p>
-                <a href="<?php echo $safe(academy365_safe_url(rtrim((string) SITE_URL, '/') . '/', '/')); ?>" class="ac-btn ac-btn-primary">Zurück zur Startseite</a>
+                <p><?php echo $safe($t('Seite nicht gefunden.', 'Page not found.')); ?></p>
+                <a href="<?php echo $safe(academy365_safe_url(rtrim((string) SITE_URL, '/') . '/', '/')); ?>" class="ac-btn ac-btn-primary"><?php echo $safe($t('Zurück zur Startseite', 'Back to home')); ?></a>
             </div>
         <?php endif; ?>
     </div>
