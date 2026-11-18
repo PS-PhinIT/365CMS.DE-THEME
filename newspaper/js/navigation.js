@@ -136,6 +136,8 @@
 
     // ── Reveal-on-scroll (motion-allowed only) ──────────────────────────
     if (!prefersReducedMotion && 'IntersectionObserver' in window) {
+        // Ausblenden erst mit laufendem Script (style.css: html.news-js .news-reveal); ohne JS bleibt alles sichtbar.
+        document.documentElement.classList.add('news-js');
         const obs = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
                 if (entry.isIntersecting) {

@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('CMSNEWSPAPER_THEME_VERSION')) {
-    define('CMSNEWSPAPER_THEME_VERSION', '2.0.0');
+    define('CMSNEWSPAPER_THEME_VERSION', '2.1.0');
 }
 
 // Marketplace-Slug (index.json); der Theme-Ordner heißt `newspaper`. URLs/Pfade daher immer über das aktive Theme.
@@ -379,7 +379,8 @@ if (!function_exists('news_safe_url')) {
     function news_safe_url(string $url, string $fallback = '#'): string
     {
         $url = trim($url);
-        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_starts_with($url, '//')) {
+        // `//host` und `/\host` (Browser werten „\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1 || str_starts_with($url, '//') || str_contains($url, '\\')) {
             return $fallback;
         }
         if (str_starts_with($url, '/') || str_starts_with($url, '#') || str_starts_with($url, '?')) {
