@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('FEDER_THEME_VERSION')) {
-    define('FEDER_THEME_VERSION', '2.0.0');
+    define('FEDER_THEME_VERSION', '2.1.0');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
@@ -441,7 +441,8 @@ if (!function_exists('feder_safe_url')) {
     function feder_safe_url(string $url, string $fallback = ''): string
     {
         $candidate = trim($url);
-        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//')) {
+        // `//host` und `/\\host` (Browser werten „\\“ wie „/“) sind fremde, protokollrelative Adressen.
+        if ($candidate === '' || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1 || str_starts_with($candidate, '//') || str_contains($candidate, '\\')) {
             return $fallback;
         }
         if (str_starts_with($candidate, '/') || str_starts_with($candidate, '?')) {
@@ -543,7 +544,7 @@ if (!function_exists('feder_request_locale')) {
     function feder_request_locale(): string
     {
         try {
-            $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+            $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
             $context = \CMS\Services\ContentLocalizationService::getInstance()->resolveRequestContext($path);
             $locale = strtolower((string) ($context['locale'] ?? 'de'));
 
@@ -776,9 +777,11 @@ if (!function_exists('feder_get_posts')) {
                 default   => 'COALESCE(p.published_at, p.created_at) DESC',
             };
 
+            // Der volle Inhalt wird nur für die Lesezeit gebraucht; Vor/Zurück-Links laden ihn nicht.
+            $contentColumn = ($args['with_content'] ?? true) === false ? "'' AS content" : 'p.content';
             $rows = $db->get_results(
                 "SELECT p.id, p.title, p.slug, p.slug_en, p.excerpt, p.meta_description, p.featured_image, p.published_at,
-                        p.created_at, p.updated_at, p.category_id, p.author_id, p.views, p.content,
+                        p.created_at, p.updated_at, p.category_id, p.author_id, p.views, {$contentColumn},
                         c.name AS category_name, c.slug AS category_slug,
                         COALESCE(NULLIF(p.author_display_name, ''), NULLIF(u.display_name, ''), NULLIF(u.username, ''), 'Redaktion') AS author_name
                  FROM {$prefix}posts p
@@ -879,7 +882,7 @@ if (!function_exists('feder_post_tags')) {
             }
             $slug = trim((string) (is_array($item) ? ($item['slug'] ?? '') : ''));
             if ($slug === '') {
-                $slug = trim((string) (preg_replace('/[^a-z0-9]+/', '-', strtr(mb_strtolower($name, 'UTF-8'), ['ä' => 'ae', 'ö' => 'oe', 'ü' => 'ue', 'ß' => 'ss'])) ?? ''), '-');
+                $slug = theme_v4_slug($name); // wie CMS\Slug::fromText() (4.2.0), auch für Akzente
             }
             $tags[] = ['name' => $name, 'url' => $slug !== '' ? feder_archive_url('tag', $slug) : feder_search_url($name)];
         }
@@ -898,8 +901,8 @@ if (!function_exists('feder_adjacent_posts')) {
             return ['prev' => null, 'next' => null];
         }
 
-        $prev = feder_get_posts(['limit' => 1, 'before' => $date, 'exclude' => [$id]]);
-        $next = feder_get_posts(['limit' => 1, 'after' => $date, 'exclude' => [$id], 'order' => 'oldest']);
+        $prev = feder_get_posts(['limit' => 1, 'before' => $date, 'exclude' => [$id], 'with_content' => false]);
+        $next = feder_get_posts(['limit' => 1, 'after' => $date, 'exclude' => [$id], 'order' => 'oldest', 'with_content' => false]);
 
         return ['prev' => $prev[0] ?? null, 'next' => $next[0] ?? null];
     }
@@ -953,9 +956,6 @@ if (!function_exists('feder_nav_menu')) {
             return;
         }
 
-        $current = rtrim((string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/'), '/');
-        $sitePath = rtrim((string) (parse_url((string) SITE_URL, PHP_URL_PATH) ?? ''), '/');
-
         echo '<ul' . ($class !== '' ? ' class="' . feder_e($class) . '"' : '') . '>';
         foreach ($items as $item) {
             if (!is_array($item)) {
@@ -968,15 +968,12 @@ if (!function_exists('feder_nav_menu')) {
             }
 
             $href = feder_url($rawUrl);
-            $path = rtrim((string) (parse_url($href, PHP_URL_PATH) ?? ''), '/');
-            if ($sitePath !== '' && str_starts_with($path, $sitePath)) {
-                $path = rtrim(substr($path, strlen($sitePath)), '/');
-            }
             $isExternal = preg_match('#^https?://#i', feder_safe_url($rawUrl, '')) === 1
                 && parse_url($href, PHP_URL_HOST) !== parse_url((string) SITE_URL, PHP_URL_HOST);
-            $isActive = !$isExternal && !str_contains($rawUrl, '#') && (
-                $path === '' ? $current === '' : ($current === $path || str_starts_with($current . '/', $path . '/'))
-            );
+            // Kit-Helfer: gleicher Pfad oder Unterpfad, Unterverzeichnis-Installation berücksichtigt (vorher wurde
+            // der Anfragepfad mit, der Menüpfad ohne Unterverzeichnis verglichen – dort war nie ein Eintrag aktiv).
+            $isActive = !$isExternal && !str_contains($rawUrl, '#') && preg_match('/^(?:mailto|tel):/i', $href) !== 1
+                && theme_v4_is_current_path($href);
 
             $attrs = $isActive ? ' aria-current="page"' : '';
             if (($item['target'] ?? '') === '_blank' || $isExternal) {
@@ -1007,6 +1004,8 @@ if (!function_exists('feder_default_menu')) {
                 ['label' => 'Schlagwörter', 'url' => feder_archive_url('tag')],
                 ['label' => 'Suche', 'url' => '/search'],
                 ['label' => 'Newsletter', 'url' => '/newsletter'],
+                // 365CMS 4.2.0: nur bei aktivem Community-Modul (sonst herausgefiltert).
+                ['label' => 'Community', 'url' => '/' . theme_v4_community_base_path()],
                 ['label' => 'Kontakt', 'url' => '/kontakt'],
             ],
             'footer-legal' => [
@@ -1087,7 +1086,7 @@ if (!function_exists('feder_pagination')) {
             return;
         }
 
-        $path = (string) (parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/');
+        $path = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PHP_URL_PATH) ?? '/'); // normalisiert statt REQUEST_URI
         $build = static function (int $number) use ($path, $param): string {
             $query = array_filter($_GET, static fn(mixed $v): bool => is_scalar($v));
             unset($query['p'], $query['page']);

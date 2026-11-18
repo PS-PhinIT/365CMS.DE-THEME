@@ -57,6 +57,27 @@
 
 Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstest und `php -l` grün.
 
-## 6. Befunde
+## 6. Befunde (Audit 2026-11-18, umgesetzt in 2.1.0)
 
-_Wird nach dem Audit ausgefüllt._
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S2 | **mittel** | `feder_safe_url()` (Menüs, Social-Links, Customizer-Ziele) und `feder_customizer_normalize_url()` ließen `/\evil.example` als lokalen Pfad durch (Render-Test) | behoben |
+| S4/S5 | – | Customizer: `isAdmin()` vor jeder Aktion (Redirect + `exit`), CSRF (`theme_customizer` bzw. Admin-Shell) für Speichern und Zurücksetzen, unbekannte Bereiche abgewiesen | kein Befund |
+| S6 | niedrig | Upload: Endung **und** `finfo`-MIME (JPG/PNG/GIF/WebP, kein SVG), 2 MB, `is_uploaded_file`, Zufallsname unter `uploads/theme-assets/`; aber `u_x[]` (Array-Struktur) führte zu „Array to string conversion“ | Array-Fall abgewiesen |
+| S8 | – | `$_POST`-Felder: Nicht-Skalare → leer, Feldtypen (Farbe `#rrggbb`, Zahl mit Grenzen, Auswahl aus Optionen, URL, Text ohne Tags) | kein Befund |
+| S7 | – | `feder_get_posts()`: Platzhalter für Ausschlüsse/Kategorie/Datum, `LIMIT/OFFSET` als geklemmte Integer, `ORDER BY` aus `match`; `cms_post_publication_where()` in allen Abfragen; Kategoriezählung mit `GROUP BY` über alle Nicht-Aggregatspalten (`ONLY_FULL_GROUP_BY`) | kein Befund |
+| S2 | niedrig | Paginierung und Archiv-Formular spiegelten `REQUEST_URI` | behoben |
+| S1 | – | `$content` (Core-HTML), `$count`/`$total`/`$currentPage` (int), `$coreItems` (Core), Teilen-URLs mit `rawurlencode` und Escaping | kein Befund |
+| S3 | – | `feder_css_color/_number`, `feder_sanitize_custom_css()` | kein Befund |
+| S10 | – | Farbschema: Pre-Paint-Script mit Nonce und Allowlist (`dark`/`light`), `theme.js` ohne HTML-Senken | kein Befund |
+| B | mittel | Aktiver Menüeintrag fehlte bei Installation im Unterverzeichnis (`/cms/blog` gegen `/blog` verglichen) | behoben (`theme_v4_is_current_path()`) |
+| B/K6 | mittel | Schlagwort-Slugs aus Namen ohne Slug: Akzente gingen verloren (`Café` → `caf`, 404) | behoben (`theme_v4_slug()`) |
+| P1 | niedrig | Vor/Zurück-Links luden je eine Abfrage **mit** `p.content` | ohne Inhalt |
+| P1 | akzeptiert | Listen laden `p.content` für die Lesezeit (begrenzt auf ≤ 50 Zeilen); Kategorien einmal je Request | dokumentiert |
+| B1/B5 | – | `feder_format_date()` mit ungültigem Datum, Paginierung `?p[]=` ohne Warnungen | kein Befund |
+| Q3 | – | Dark-Mode-Kontraste unverändert bestanden (4.0-Audit), `aria-pressed` am Schalter; Header nicht fixiert | kein Befund |
+| K2 | – | keine rollenabhängigen Links | kein Befund |
+| K3 | – | Standard-Footermenü „Community“ nur bei aktivem Modul | umgesetzt |
+| K4 | – | `--tv4-*` zeigt auf `--fdr-*` und folgt dem Dark Mode; Präfix `fdr-` kollidiert nicht | geprüft |
+| K5 | – | Header öffnet `<main>`: Kit wandelt `<main>` künftiger Community-Overrides in `<div>` | vorbereitet |
+| K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test inkl. `blog`, `category`, `tag`, `author` | grün |
