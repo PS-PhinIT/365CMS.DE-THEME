@@ -29,7 +29,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('THEME_V4_COMPAT_VERSION')) {
-    define('THEME_V4_COMPAT_VERSION', '1.1.0');
+    define('THEME_V4_COMPAT_VERSION', '1.2.0');
 }
 
 // ── Basis ────────────────────────────────────────────────────────────────────
@@ -284,25 +284,30 @@ if (!function_exists('theme_v4_is_current_path')) {
 
 // ── Standardlinks nur zu existierenden Seiten/Routen ─────────────────────────
 
-if (!function_exists('theme_v4_link_available')) {
+if (!function_exists('theme_v4_link_target')) {
     /**
-     * true, wenn ein interner Standardlink auf eine vorhandene Route oder veröffentlichte Seite zeigt.
-     * Externe URLs, Anker und Mail-/Telefonlinks gelten als verfügbar.
+     * Klassifiziert einen Standardlink, ohne die Datenbank zu fragen.
+     *
+     * `yes`/`no` stehen fest (Route, extern, Anker, Mail/Telefon, Community, Feed-Aggregator); `page` heißt: Das Ziel
+     * ist nur dann vorhanden, wenn eine veröffentlichte Seite mit `slug` in `locale` existiert.
+     *
+     * @return array{state:string,locale:string,slug:string}
      */
-    function theme_v4_link_available(string $url): bool
+    function theme_v4_link_target(string $url): array
     {
-        static $cache = [];
+        $none = ['state' => 'no', 'locale' => 'de', 'slug' => ''];
+        $yes = ['state' => 'yes', 'locale' => 'de', 'slug' => ''];
 
         $url = trim($url);
         if ($url === '' || $url === '#') {
-            return false;
+            return $none;
         }
         if (preg_match('#^(?:mailto:|tel:|\#)#i', $url) === 1) {
-            return true;
+            return $yes;
         }
         $host = (string) (parse_url($url, PHP_URL_HOST) ?? '');
         if ($host !== '' && strcasecmp($host, (string) parse_url(theme_v4_site_url(), PHP_URL_HOST)) !== 0) {
-            return true;
+            return $yes;
         }
 
         $path = (string) (parse_url($url, PHP_URL_PATH) ?? '/');
@@ -315,10 +320,10 @@ if (!function_exists('theme_v4_link_available')) {
             $locale = 'en';
             $path = $m[1] ?? '/';
         }
-        $slug = trim($path, '/');
-        $key = $locale . ':' . $slug;
-        if (array_key_exists($key, $cache)) {
-            return $cache[$key];
+        // Prozentkodierte Slugs (`/%C3%BCber-uns`) vergleichen; `..`/Steuerzeichen sind nie ein Seiten-Slug.
+        $slug = trim(function_exists('mb_strtolower') ? mb_strtolower(rawurldecode($path), 'UTF-8') : strtolower(rawurldecode($path)), '/');
+        if (str_contains($slug, '..') || preg_match('/[\x00-\x1F\x7F\\\\]/', $slug) === 1) {
+            return $none;
         }
 
         // Feste Routen des Themes/Cores (4.0.0: Downloads, Knowledgebase, Newsletter, Kontakt sind Core-Module).
@@ -337,14 +342,13 @@ if (!function_exists('theme_v4_link_available')) {
         // 4.2.0: Community-Modul (Basispfad einstellbar, Standard `forum`), wenn Modul und Vorlagen da sind.
         // Sonst weiter wie bisher (z. B. eine Seite oder ein Plugin-Forum unter demselben Pfad).
         if ($first === theme_v4_community_base_path() && theme_v4_community_available()) {
-            return $cache[$key] = true;
+            return $yes;
         }
-
         if (array_key_exists($slug, $coreRoutes)) {
-            return $cache[$key] = (bool) $coreRoutes[$slug];
+            return $coreRoutes[$slug] ? $yes : $none;
         }
         if (in_array($first, ['blog', 'kategorie', 'tag', 'member', 'downloads', 'kb', 'glossar', 'newsletter'], true)) {
-            return $cache[$key] = (bool) ($coreRoutes[$first] ?? true);
+            return ($coreRoutes[$first] ?? true) ? $yes : $none;
         }
 
         // Feed-Aggregator: Archiv-Slug nur bei eingeschaltetem Aggregator.
@@ -352,33 +356,202 @@ if (!function_exists('theme_v4_link_available')) {
             if (class_exists('\\CMS\\Services\\Feed\\AggregatorSettings')) {
                 $feedSlug = (string) \CMS\Services\Feed\AggregatorSettings::archiveSlug();
                 if ($feedSlug !== '' && ($slug === $feedSlug || str_starts_with($slug, $feedSlug . '/'))) {
-                    return $cache[$key] = \CMS\Services\Feed\AggregatorSettings::isEnabled();
+                    return \CMS\Services\Feed\AggregatorSettings::isEnabled() ? $yes : $none;
                 }
             }
         } catch (\Throwable) {
         }
 
-        // Sonst: veröffentlichte Seite mit diesem Slug.
+        return ['state' => 'page', 'locale' => $locale, 'slug' => $slug];
+    }
+}
+
+if (!function_exists('theme_v4_page_index')) {
+    /**
+     * Alle veröffentlichten Seiten-Slugs in **einer** Abfrage je Request (nur `slug`, `slug_en` und ein Flag, kein
+     * Inhalt; höchstens 500 Zeilen). Schlüssel `de:<slug>` bzw. `en:<slug|slug_en>` (englisch nur mit englischem Inhalt).
+     *
+     * Vorher fragte jeder Standardlink einzeln `PageManager::getPageBySlug()` ab (`SELECT *` samt Inhalt, ungepuffert):
+     * Fußzeile, Startseite und 404 kosteten zusammen bis zu 16 Abfragen je Seitenaufruf.
+     *
+     * @return array<string, bool>|null null bei mehr als 500 Seiten – dann prüft theme_v4_pages_published() gezielt
+     */
+    function theme_v4_page_index(): ?array
+    {
+        static $loaded = false;
+        static $index = [];
+
+        if ($loaded) {
+            return $index;
+        }
+        $loaded = true;
+        $index = [];
         try {
-            $page = \CMS\PageManager::instance()->getPageBySlug($slug, $locale);
-            $cache[$key] = is_array($page) && (string) ($page['status'] ?? '') === 'published';
+            $db = \CMS\Database::instance();
+            $rows = $db->get_results(
+                "SELECT slug, slug_en,
+                        (CHAR_LENGTH(TRIM(COALESCE(title_en, ''))) + CHAR_LENGTH(TRIM(COALESCE(content_en, ''))) > 0) AS has_en
+                 FROM {$db->getPrefix()}pages
+                 WHERE status = 'published' AND (published_at IS NULL OR published_at <= ?)
+                 LIMIT 501",
+                [date('Y-m-d H:i:s')]
+            );
+            $rows = is_array($rows) ? $rows : [];
+            if (count($rows) > 500) {
+                return $index = null;
+            }
+            foreach ($rows as $row) {
+                $row = (array) $row;
+                $slug = strtolower((string) ($row['slug'] ?? ''));
+                if ($slug !== '') {
+                    $index['de:' . $slug] = true;
+                }
+                if (!empty($row['has_en'])) {
+                    foreach (['slug', 'slug_en'] as $column) {
+                        $value = strtolower((string) ($row[$column] ?? ''));
+                        if ($value !== '') {
+                            $index['en:' . $value] = true;
+                        }
+                    }
+                }
+            }
         } catch (\Throwable) {
-            $cache[$key] = false;
+            // Ohne Datenbank (Fatal-Handler, Wartungsmodus) gilt: keine Seite vorhanden.
+            $index = [];
         }
 
-        return $cache[$key];
+        return $index;
+    }
+}
+
+if (!function_exists('theme_v4_page_is_published')) {
+    /** true, wenn eine veröffentlichte Seite mit diesem Slug in dieser Sprache existiert. */
+    function theme_v4_page_is_published(string $slug, string $locale = 'de'): bool
+    {
+        $locale = $locale === 'en' ? 'en' : 'de';
+        $index = theme_v4_page_index();
+        if ($index !== null) {
+            return $index[$locale . ':' . $slug] ?? false;
+        }
+
+        return theme_v4_pages_published([$locale => [$slug]])[$locale . ':' . $slug] ?? false;
+    }
+}
+
+if (!function_exists('theme_v4_pages_published')) {
+    /**
+     * Gezielte Prüfung einzelner Seiten-Slugs für Installationen mit mehr als 500 Seiten (siehe theme_v4_page_index()):
+     * eine Abfrage je Sprache und Aufruf, nur mit `slug`, `slug_en` und einem Flag. Das Ergebnis bleibt gepuffert.
+     *
+     * @param array<string, list<string>> $bySlugLocale Sprache => Slugs
+     * @return array<string, bool> `locale:slug` => veröffentlicht
+     */
+    function theme_v4_pages_published(array $bySlugLocale = []): array
+    {
+        static $known = [];
+
+        foreach ($bySlugLocale as $locale => $slugs) {
+            $locale = $locale === 'en' ? 'en' : 'de';
+            $missing = [];
+            foreach ($slugs as $slug) {
+                $slug = (string) $slug;
+                if ($slug !== '' && !array_key_exists($locale . ':' . $slug, $known)) {
+                    $missing[$slug] = true;
+                }
+            }
+            if ($missing === []) {
+                continue;
+            }
+            $missing = array_slice(array_keys($missing), 0, 200);
+            foreach ($missing as $slug) {
+                $known[$locale . ':' . $slug] = false; // Standard: unbekannt = nicht vorhanden
+            }
+
+            try {
+                $db = \CMS\Database::instance();
+                $table = $db->getPrefix() . 'pages';
+                $marks = implode(',', array_fill(0, count($missing), '?'));
+                $now = date('Y-m-d H:i:s');
+                if ($locale === 'en') {
+                    // Wie PageManager::getPageBySlug(): `slug_en` oder `slug`; englisch nur mit englischem Inhalt.
+                    $rows = $db->get_results(
+                        "SELECT slug, slug_en,
+                                (CHAR_LENGTH(TRIM(COALESCE(title_en, ''))) + CHAR_LENGTH(TRIM(COALESCE(content_en, ''))) > 0) AS has_locale
+                         FROM {$table}
+                         WHERE (slug IN ({$marks}) OR slug_en IN ({$marks}))
+                           AND status = 'published' AND (published_at IS NULL OR published_at <= ?)",
+                        [...$missing, ...$missing, $now]
+                    );
+                } else {
+                    $rows = $db->get_results(
+                        "SELECT slug, slug AS slug_en, 1 AS has_locale
+                         FROM {$table}
+                         WHERE slug IN ({$marks}) AND status = 'published' AND (published_at IS NULL OR published_at <= ?)",
+                        [...$missing, $now]
+                    );
+                }
+                foreach (is_array($rows) ? $rows : [] as $row) {
+                    $row = (array) $row;
+                    if (empty($row['has_locale'])) {
+                        continue;
+                    }
+                    foreach (['slug', 'slug_en'] as $column) {
+                        $value = (string) ($row[$column] ?? '');
+                        if ($value !== '' && array_key_exists($locale . ':' . $value, $known)) {
+                            $known[$locale . ':' . $value] = true;
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Ohne Datenbank (Fatal-Handler, Wartungsmodus) gilt: keine Seite vorhanden.
+            }
+        }
+
+        return $known;
+    }
+}
+
+if (!function_exists('theme_v4_link_available')) {
+    /**
+     * true, wenn ein interner Standardlink auf eine vorhandene Route oder veröffentlichte Seite zeigt.
+     * Externe URLs, Anker und Mail-/Telefonlinks gelten als verfügbar.
+     *
+     * Mehrere Links auf einmal prüft theme_v4_filter_links() mit einer gemeinsamen Abfrage.
+     */
+    function theme_v4_link_available(string $url): bool
+    {
+        $target = theme_v4_link_target($url);
+        if ($target['state'] !== 'page') {
+            return $target['state'] === 'yes';
+        }
+
+        return theme_v4_page_is_published($target['slug'], $target['locale']);
     }
 }
 
 if (!function_exists('theme_v4_filter_links')) {
     /**
-     * Entfernt Standardlinks, deren Ziel nicht existiert.
+     * Entfernt Standardlinks, deren Ziel nicht existiert. Alle Seitenziele werden vorab gebündelt geprüft.
      *
      * @param list<array{label:string,url:string}> $links
      * @return list<array{label:string,url:string}>
      */
     function theme_v4_filter_links(array $links): array
     {
+        // Bis 500 Seiten genügt der Request-Index; nur bei sehr großen Beständen werden die Ziele gebündelt geprüft.
+        if (theme_v4_page_index() === null) {
+            $pending = [];
+            foreach ($links as $link) {
+                $target = theme_v4_link_target((string) ($link['url'] ?? ''));
+                if ($target['state'] === 'page') {
+                    $pending[$target['locale']][] = $target['slug'];
+                }
+            }
+            if ($pending !== []) {
+                theme_v4_pages_published($pending);
+            }
+        }
+
         return array_values(array_filter($links, static fn (array $link): bool => theme_v4_link_available((string) ($link['url'] ?? ''))));
     }
 }

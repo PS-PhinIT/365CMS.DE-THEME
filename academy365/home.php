@@ -9,6 +9,8 @@ if (!defined('ABSPATH')) {
 <main id="main" class="ac-main-content" role="main">
 <?php
 $safe = fn(string $v) => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$acLocale = theme_v4_locale($contentLocale ?? null);
+$t = static fn(string $de, string $en): string => theme_v4_t($de, $en, $acLocale);
 $safeHeadline = static function (string $value): string {
     // Zeilenumbrüche aus dem Customizer und der Standardwert mit `<br>` werden zu <br>; alles andere bleibt Text.
     $value = preg_replace('#<br\s*/?>#i', "\n", trim($value)) ?? '';
@@ -60,6 +62,8 @@ try {
     $showDuration    = filter_var($c->get('learning_courses', 'show_duration', true), FILTER_VALIDATE_BOOLEAN);
     $showProgress    = filter_var($c->get('layout', 'show_progress_bars', true), FILTER_VALIDATE_BOOLEAN);
     $enableGami      = filter_var($c->get('advanced', 'enable_gamification', false), FILTER_VALIDATE_BOOLEAN);
+    $showDemoCourses = filter_var($c->get('learning_courses', 'show_demo_courses', true), FILTER_VALIDATE_BOOLEAN);
+    $showDemoTutors  = filter_var($c->get('learning_content', 'show_demo_tutors', true), FILTER_VALIDATE_BOOLEAN);
     // --- learning_content ---
     $tutorTitle      = $c->get('learning_content', 'tutors_section_title', 'Unsere Experten-Dozenten');
     $tutorSubline    = 'Unsere Dozenten verbinden Praxiswissen mit didaktischer Erfahrung.';
@@ -68,21 +72,23 @@ try {
     $subscriptionBtn = $c->get('learning_content', 'subscription_cta_label', 'Premium 7 Tage gratis testen');
     $subscriptionUrl = $registerUrl;
 } catch (\Throwable $e) {
-    $heroBadge = 'Die #1 Lernplattform'; $heroHeadline = 'Lerne neue Skills.<br>Starte deine Karriere.';
-    $heroSubline = 'Tausende Kurse von echten Experten.'; $heroCta = 'Kurse entdecken';
-    $heroCtaUrl = $coursesUrl; $heroSecCta = 'Als Tutor anmelden'; $heroSecCtaUrl = $linkIf($routeUrl('tutor-register', 'tutor-register'));
-    $coursesLabel = '2.400+ Kurse'; $studentsLabel = '185.000 Lernende'; $tutorsLabel = '620 Tutoren';
+    $heroBadge = ''; $heroHeadline = 'Lerne neue Skills.<br>Starte deine Karriere.';
+    // Ohne Customizer: neutrale Texte, keine erfundenen Kennzahlen oder Superlative.
+    $heroSubline = 'Lerne von erfahrenen Expertinnen und Experten.'; $heroCta = 'Kurse entdecken';
+    $heroCtaUrl = $coursesUrl; $heroSecCta = 'Kostenlos starten'; $heroSecCtaUrl = $registerUrl;
+    $coursesLabel = ''; $studentsLabel = ''; $tutorsLabel = '';
     $coursesSectionTitle = 'Beliebte Kurse'; $labelFree = 'Kostenlos'; $labelCert = 'Zertifikat';
     $labelNew = 'Neu'; $labelBest = 'Bestseller';
-    $showRating = true; $showParticipants = true; $showDuration = true; $showProgress = false; $enableGami = true;
-    $tutorTitle = 'Lerne von den Besten'; $tutorSubline = 'Unsere Tutoren sind erfahrene Praktiker.';
-    $subscriptionCta = 'Unbegrenztes Lernen mit Academy365 Pro'; $subscriptionSub = 'Alle Kurse – ein Preis.';
-    $subscriptionBtn = 'Jetzt Pro werden'; $subscriptionUrl = $linkIf($routeUrl('pro', 'pro'));
+    $showRating = true; $showParticipants = true; $showDuration = true; $showProgress = false; $enableGami = false;
+    $showDemoCourses = true; $showDemoTutors = true;
+    $tutorTitle = 'Unsere Dozentinnen und Dozenten'; $tutorSubline = '';
+    $subscriptionCta = 'Starte deine Weiterbildung heute'; $subscriptionSub = '';
+    $subscriptionBtn = 'Kostenlos starten'; $subscriptionUrl = $registerUrl;
 }
 ?>
 
 <!-- HERO -->
-<section class="ac-hero" aria-label="Startseiten-Hero">
+<section class="ac-hero" aria-label="<?php echo $safe($t('Startseiten-Hero', 'Home hero')); ?>">
     <div class="ac-hero-content">
         <?php if ($heroBadge && trim($heroBadge) !== '') : ?>
             <span class="ac-hero-badge"><?php echo $safe($heroBadge); ?></span>
@@ -100,28 +106,30 @@ try {
             <?php endif; ?>
         </div>
     </div>
-    <div class="ac-hero-stats" aria-label="Plattform-Statistiken">
-        <?php foreach ([$coursesLabel, $studentsLabel, $tutorsLabel] as $stat) : ?>
-            <?php if ($stat && trim($stat) !== '') : ?>
-                <div class="ac-stat-item"><?php echo $safe($stat); ?></div>
-            <?php endif; ?>
+    <?php $heroStats = array_values(array_filter([$coursesLabel, $studentsLabel, $tutorsLabel], static fn($v): bool => is_string($v) && trim($v) !== '')); ?>
+    <?php if ($heroStats !== []) : // leere Leiste (mit Beschriftung für Screenreader) entfällt ?>
+    <div class="ac-hero-stats" aria-label="<?php echo $safe($t('Plattform-Statistiken', 'Platform statistics')); ?>">
+        <?php foreach ($heroStats as $stat) : ?>
+            <div class="ac-stat-item"><?php echo $safe($stat); ?></div>
         <?php endforeach; ?>
     </div>
+    <?php endif; ?>
 </section>
 
 <!-- COURSES -->
-<section class="ac-section ac-courses-section" aria-labelledby="courses-heading">
+<?php if ($showDemoCourses) : // Beispielkarten mit erfundenen Werten: Schalter „Beispielkurse anzeigen“ im Customizer ?>
+<section class="ac-section ac-courses-section" aria-labelledby="courses-heading" data-demo-content="courses">
     <div class="ac-container">
         <div class="ac-section-head">
-            <h2 id="courses-heading"><?php echo $safe($coursesSectionTitle); ?></h2>
+            <h2 id="courses-heading"><?php echo $safe($coursesSectionTitle); ?> <span class="ac-demo-chip"><?php echo $safe($t('Beispiel', 'Example')); ?></span></h2>
             <?php if ($coursesUrl !== '') : ?>
-            <a href="<?php echo $safe($coursesUrl); ?>" class="ac-link-arrow">Alle Kurse →</a>
+            <a href="<?php echo $safe($coursesUrl); ?>" class="ac-link-arrow"><?php echo $safe($t('Alle Kurse', 'All courses')); ?> →</a>
             <?php endif; ?>
         </div>
         <?php if ($enableGami) : ?>
             <div class="ac-gami-hint">
                 <span class="ac-xp-badge">XP</span>
-                Sammle Punkte und schalte Abzeichen frei, je mehr du lernst!
+                <?php echo $safe($t('Sammle Punkte und schalte Abzeichen frei, je mehr du lernst!', 'Earn points and unlock badges the more you learn!')); ?>
             </div>
         <?php endif; ?>
         <!-- Course cards rendered by CMS course loop -->
@@ -168,14 +176,14 @@ try {
                         <?php endif; ?>
                     </div>
                     <?php if ($showProgress && $course['progress'] > 0) : ?>
-                        <div class="ac-progress" role="progressbar" aria-label="Kursfortschritt" aria-valuenow="<?php echo (int) $course['progress']; ?>" aria-valuemin="0" aria-valuemax="100">
+                        <div class="ac-progress" role="progressbar" aria-label="<?php echo $safe($t('Kursfortschritt', 'Course progress')); ?>" aria-valuenow="<?php echo (int) $course['progress']; ?>" aria-valuemin="0" aria-valuemax="100">
                             <div class="ac-progress-bar" data-progress="<?php echo (int) $course['progress']; ?>"></div>
                         </div>
-                        <small><?php echo (int) $course['progress']; ?>% abgeschlossen</small>
+                        <small><?php echo (int) $course['progress']; ?>% <?php echo $safe($t('abgeschlossen', 'completed')); ?></small>
                     <?php endif; ?>
                     <?php $courseUrl = $linkIf($buildUrl('courses/' . $slugify((string) $course['title']))); ?>
                     <?php if ($courseUrl !== '') : ?>
-                    <a href="<?php echo $safe($courseUrl); ?>" class="ac-btn ac-btn-secondary ac-btn-sm ac-mt-1">Zum Kurs</a>
+                    <a href="<?php echo $safe($courseUrl); ?>" class="ac-btn ac-btn-secondary ac-btn-sm ac-mt-1"><?php echo $safe($t('Zum Kurs', 'View course')); ?></a>
                     <?php endif; ?>
                 </div>
             </article>
@@ -184,11 +192,14 @@ try {
     </div>
 </section>
 
+<?php endif; // $showDemoCourses ?>
+
 <!-- TUTORS -->
-<section class="ac-section ac-tutors-section ac-bg-light" aria-labelledby="tutors-heading">
+<?php if ($showDemoTutors) : // Platzhalter-Dozenten: Schalter „Beispiel-Dozenten anzeigen“ im Customizer ?>
+<section class="ac-section ac-tutors-section ac-bg-light" aria-labelledby="tutors-heading" data-demo-content="tutors">
     <div class="ac-container">
         <div class="ac-section-head">
-            <h2 id="tutors-heading"><?php echo $safe($tutorTitle); ?></h2>
+            <h2 id="tutors-heading"><?php echo $safe($tutorTitle); ?> <span class="ac-demo-chip"><?php echo $safe($t('Beispiel', 'Example')); ?></span></h2>
             <?php if ($tutorSubline && trim($tutorSubline) !== '') : ?>
                 <p class="ac-section-subline"><?php echo $safe($tutorSubline); ?></p>
             <?php endif; ?>
@@ -199,10 +210,10 @@ try {
             <div class="ac-tutor-card ac-card">
                 <div class="ac-tutor-avatar"><span aria-hidden="true">👩‍🏫</span></div>
                 <div class="ac-card-body">
-                    <h3 class="ac-card-title">Tutor <?php echo $i + 1; ?></h3>
-                    <p class="ac-muted">Experte für IT &amp; Entwicklung</p>
+                    <h3 class="ac-card-title"><?php echo $safe($t('Dozent', 'Tutor')); ?> <?php echo $i + 1; ?></h3>
+                    <p class="ac-muted"><?php echo $safe($t('Experte für IT & Entwicklung', 'Expert in IT & development')); ?></p>
                     <?php if ($showRating) : ?>
-                        <div class="ac-rating" aria-label="Bewertung">
+                        <div class="ac-rating" aria-label="<?php echo $safe($t('Bewertung', 'Rating')); ?>">
                             <span class="ac-rating-stars" data-rating="4.8" aria-hidden="true"></span>
                             4.8
                         </div>
@@ -213,11 +224,13 @@ try {
         </div>
         <?php if ($tutorsUrl !== '') : ?>
         <div class="ac-section-cta-row">
-            <a href="<?php echo $safe($tutorsUrl); ?>" class="ac-btn ac-btn-secondary">Alle Tutoren →</a>
+            <a href="<?php echo $safe($tutorsUrl); ?>" class="ac-btn ac-btn-secondary"><?php echo $safe($t('Alle Dozenten', 'All tutors')); ?> →</a>
         </div>
         <?php endif; ?>
     </div>
 </section>
+
+<?php endif; // $showDemoTutors ?>
 
 <!-- SUBSCRIPTION CTA -->
 <section class="ac-cta-section" aria-labelledby="cta-heading">

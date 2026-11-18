@@ -162,3 +162,12 @@ Alle 13 Themes sind geprüft und umgesetzt; je Theme stehen die Befunde im Absch
 - **PTC/newspaper:** Admin-Customizer laden das Core-Asset `admin.js` ohne `defer`.
 - **Bestehende Installationen:** kompass (Demo-Kontaktdaten entfallen) und newspaper (Partner-Leiste nur noch mit gepflegten Links) brauchen nach dem Update ggf. Pflege im Customizer; steht im jeweiligen CHANGELOG.
 - **cms-default** (Core-Repository) und **`index.json`** (veraltete Einträge `cms-showcase`, `cms-newspaper`) wie im 4.0/4.1-Protokoll offen.
+
+## 8. Folgeaudit je Theme (ein Pull Request je Theme)
+
+Nach dem Erstaudit wird jedes Theme noch einmal vollständig gegen seinen Plan geprüft: offene und „akzeptierte“ Punkte, Browser-/axe-Prüfung mit [`tools/`](tools/README.md), Kit-Stand. Ergebnisse stehen im Abschnitt „Folgeaudit“ des jeweiligen Plans.
+
+| Theme | Version | Folgeaudit |
+|---|---|---|
+| academy365 | 4.1.1 | [x] [Abschnitt 8](academy365.md#8-folgeaudit-2026-11-18-umgesetzt-in-411-kit-120) |
+| buildbase, business, feder, kompass, kontor, logilink, medcarepro, newspaper, personalflow, PTC, rundschau, technexus | – | [ ] |

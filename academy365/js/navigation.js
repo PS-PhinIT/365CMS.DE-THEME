@@ -32,22 +32,23 @@
   const menuToggle = document.getElementById('mobileMenuToggle');
   const mainNav    = document.getElementById('site-navigation');
   if (menuToggle && mainNav) {
-    menuToggle.addEventListener('click', () => {
-      const open = mainNav.classList.toggle('ac-nav-open');
+    // Ein Ort für Zustand, aria-expanded und Beschriftung (Schließen per Escape/Außenklick ließ „Menü schließen“ stehen).
+    // Die Texte kommen aus dem Markup (Sprache der Seite), nicht aus dem Script.
+    const setMenu = (open) => {
+      mainNav.classList.toggle('ac-nav-open', open);
       menuToggle.setAttribute('aria-expanded', String(open));
-      menuToggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
-    });
+      menuToggle.setAttribute('aria-label', (open ? menuToggle.dataset.labelClose : menuToggle.dataset.labelOpen) || (open ? 'Menü schließen' : 'Menü öffnen'));
+    };
+    menuToggle.addEventListener('click', () => setMenu(!mainNav.classList.contains('ac-nav-open')));
     document.addEventListener('click', (e) => {
       if (!mainNav.contains(e.target) && !menuToggle.contains(e.target)) {
-        mainNav.classList.remove('ac-nav-open');
-        menuToggle.setAttribute('aria-expanded', 'false');
+        setMenu(false);
       }
     });
     document.addEventListener('keydown', (e) => {
       // Nur bei geöffnetem Menü: sonst zog jedes Escape (z. B. in der Suche) den Fokus auf den Menüknopf.
       if (e.key === 'Escape' && mainNav.classList.contains('ac-nav-open')) {
-        mainNav.classList.remove('ac-nav-open');
-        menuToggle.setAttribute('aria-expanded', 'false');
+        setMenu(false);
         menuToggle.focus();
       }
     });

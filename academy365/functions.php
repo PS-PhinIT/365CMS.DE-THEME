@@ -5,7 +5,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('ACADEMY365_THEME_VERSION')) {
-    define('ACADEMY365_THEME_VERSION', '4.1.0');
+    define('ACADEMY365_THEME_VERSION', '4.1.1');
 }
 if (!defined('ACADEMY365_THEME_SLUG')) {
     define('ACADEMY365_THEME_SLUG', 'academy365');
@@ -55,7 +55,7 @@ final class Academy365_Theme {
             'bg'         => $color('bg_color', '#faf5ff'),
             'card_bg'    => $color('card_bg_color', '#ffffff'),
             'text'       => $color('text_color', '#1e1b4b'),
-            'text_muted' => $color('muted_color', '#6b7280'),
+            'text_muted' => $color('muted_color', '#5b6472'),
             'border'     => $color('border_color', '#e9d5ff'),
             'focus'      => '#5b21b6',
             'radius'     => '12px',
@@ -149,7 +149,7 @@ final class Academy365_Theme {
         echo '--bg-card:'          . $color('colors', 'card_bg_color',   '#ffffff') . ';';
         echo '--text-primary:'     . $color('colors', 'text_color',      '#1e1b4b') . ';';
         echo '--link-color:'       . $color('colors', 'link_color',      '#7c3aed') . ';';
-        echo '--muted-color:'      . $color('colors', 'muted_color',     '#6b7280') . ';';
+        echo '--muted-color:'      . $color('colors', 'muted_color',     '#5b6472') . ';';
         echo '--border-color:'     . $color('colors', 'border_color',    '#e9d5ff') . ';';
         echo '--badge-free:'       . $color('colors', 'success_color',   '#10b981') . ';';
         echo '--badge-cert:'       . $color('colors', 'accent_color',    '#f59e0b') . ';';
@@ -279,6 +279,19 @@ function academy365_sanitize_custom_css(string $css): string
     $clean = preg_replace('/\b(?:behavior|binding)\s*:[^;]+;?/i', '', $clean) ?? '';
 
     return str_replace('</', '<\/', $clean);
+}
+
+/**
+ * Datum je Seitensprache: deutsch `02.11.2026`, englisch `Nov 2, 2026`. Ungültige Werte ergeben einen leeren String.
+ */
+function academy365_format_date(mixed $value, string $locale = 'de'): string
+{
+    $ts = is_string($value) && trim($value) !== '' ? strtotime($value) : false;
+    if ($ts === false) {
+        return '';
+    }
+
+    return $locale === 'en' ? date('M j, Y', $ts) : date('d.m.Y', $ts);
 }
 
 /** Menü-URL: http(s), lokaler Pfad, Anker, mailto:/tel: – sonst `#`. */

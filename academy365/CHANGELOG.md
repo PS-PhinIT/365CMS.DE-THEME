@@ -1,5 +1,35 @@
 # Changelog
 
+## 4.1.1 - 2026-11-18
+
+### Folgeaudit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/academy365.md`, Abschnitt 8)
+
+Nachgeholt wurden die im ersten Audit offenen Punkte: die Prüfung im Browser (Chromium, axe-core, WCAG 2.2 AA; Werkzeug unter `DOC/audit/v4.2.0/tools/`), die Kosten der Standardlink-Prüfung sowie Beispielinhalte und Zweisprachigkeit.
+
+#### Fehler
+- **Mobil war die Navigation nicht erreichbar:** Unter 640 px verdrängten „Anmelden“ und „Kostenlos lernen“ den Menüknopf aus dem Bild, das Logo brach in mehrere Zeilen um. Die Konto-Aktionen stehen jetzt im Menüpanel, der Titel wird gekürzt statt umgebrochen; geprüft bei 320, 375, 600, 700 und 1024 px.
+- Menüknopf: Schließen per Escape oder Klick daneben ließ die Beschriftung „Menü schließen“ stehen.
+- Der beim Abwärtsscrollen ausgeblendete Header bleibt sichtbar, solange der Fokus darin liegt (WCAG 2.4.11).
+- Startseite: Die Kennzahlenleiste erscheint nur noch mit Inhalt (vorher leeres Element mit Beschriftung für Screenreader).
+
+#### Barrierefreiheit (WCAG 2.2 AA, im Browser gemessen)
+- Kontrast: Muted-Farbe `#6b7280` erreichte auf den Lila-Tönen nur 4,07–4,41:1, jetzt `#5b6472` (mindestens 5,04:1). Bewertungszahl in Gold auf Weiß (2,15:1) jetzt dunkel, Sterne `--accent-dark` (3,19:1). Bereits gespeicherte Customizer-Farben bleiben erhalten.
+- Links im Fließtext sind unterstrichen (Violett hat nur 2,8:1 zum Text, 1.4.1).
+- Zielgrößen (2.5.8): Fußzeilenlinks, Rechtslinks und Fußzeilen-Logo mindestens 24 px.
+
+#### Performance
+- **Standardlink-Prüfung:** Jeder Link auf eine Seite (Fußzeile, Startseite, 404) fragte `PageManager::getPageBySlug()` einzeln ab (`SELECT *` samt Seiteninhalt, ungepuffert): 11 bis 16 Abfragen je Seitenaufruf. Jetzt eine Abfrage je Request (nur `slug`, `slug_en` und ein Flag, höchstens 500 Zeilen; bei mehr Seiten eine gebündelte Abfrage je Aufruf). Veröffentlichungsdatum und englischer Inhalt werden berücksichtigt, Slugs unabhängig von Groß-/Kleinschreibung und Prozent-Kodierung.
+
+#### Inhalte
+- **Beispielkurse und Beispiel-Dozenten** (erfundene Bewertungen, Teilnehmerzahlen) lassen sich im Customizer abschalten (*Beispielkurse anzeigen*, *Beispiel-Dozenten anzeigen*, Standard an) und sind sichtbar als „Beispiel“ gekennzeichnet. Ohne Customizer zeigt die Startseite keine erfundenen Kennzahlen oder Superlative mehr („Die #1 Lernplattform“, „185.000 Lernende“).
+
+#### Zweisprachigkeit
+- Header, Suche, Archiv, Beitrag, Seite, 404, Fußzeile (Beschriftungen der Standardspalten, Copyright), Startseiten-Texte und die Beschriftungen des Menüknopfs (bisher fest in `navigation.js`) folgen der Seitensprache (`/en/…`); Datumsangaben je Sprache (`02.11.2026` / `Nov 2, 2026`). Die Ziele der Standardlinks in der Fußzeile bleiben die Standardrouten.
+
+#### Wartung
+- Doppelte `$safeUrl`-Closures in `blog-single.php` und `search.php` durch `academy365_safe_url()` ersetzt; `academy365_format_date()` statt zweier Kopien.
+- Gemeinsame Schicht **Kit 1.2.0** (`includes/cms-v4-compat.php`): `theme_v4_link_target()`, `theme_v4_page_index()`, `theme_v4_page_is_published()`, `theme_v4_pages_published()`; `theme_v4_link_available()`/`theme_v4_filter_links()` behalten ihre Signatur. Die übrigen Themes folgen in ihren eigenen Pull Requests.
+
 ## 4.1.0 - 2026-11-18
 
 ### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/academy365.md`)

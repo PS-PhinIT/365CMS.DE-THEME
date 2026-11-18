@@ -11,9 +11,11 @@ $posts       = isset($posts) && is_array($posts) ? $posts : [];
 $currentPage = max(1, (int) ($currentPage ?? 1));
 $totalPages  = max(1, (int) ($totalPages ?? 1));
 $safe        = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$acLocale    = theme_v4_locale($contentLocale ?? null);
+$t           = static fn(string $de, string $en): string => theme_v4_t($de, $en, $acLocale);
 $siteUrl     = academy365_safe_url(rtrim((string) SITE_URL, '/') . '/', '/');
 
-$archiveTitle = 'Beiträge';
+$archiveTitle = $t('Beiträge', 'Posts');
 if (isset($category) && is_array($category) && trim((string) ($category['name'] ?? '')) !== '') {
     $archiveTitle = (string) $category['name'];
 } elseif (isset($tag) && is_array($tag) && trim((string) ($tag['name'] ?? '')) !== '') {
@@ -55,27 +57,27 @@ $pageUrl = static function (int $number) use ($requestPath): string {
                             <?php if ($excerpt !== '') : ?>
                                 <div class="ac-card-excerpt"><?php echo $safe($excerpt); ?></div>
                             <?php endif; ?>
-                            <a href="<?php echo $safe($postUrl); ?>" class="ac-btn ac-btn-secondary ac-btn-sm">Weiterlesen</a>
+                            <a href="<?php echo $safe($postUrl); ?>" class="ac-btn ac-btn-secondary ac-btn-sm"><?php echo $safe($t('Weiterlesen', 'Read more')); ?></a>
                         </div>
                     </article>
                 <?php endforeach; ?>
             </div>
             <?php if ($totalPages > 1) : ?>
-                <nav class="ac-pagination" aria-label="Seitennavigation">
+                <nav class="ac-pagination" aria-label="<?php echo $safe($t('Seitennavigation', 'Pagination')); ?>">
                     <?php if ($currentPage > 1) : ?>
-                        <a href="<?php echo $safe($pageUrl($currentPage - 1)); ?>" class="ac-btn ac-btn-ghost" rel="prev">← Zurück</a>
+                        <a href="<?php echo $safe($pageUrl($currentPage - 1)); ?>" class="ac-btn ac-btn-ghost" rel="prev">← <?php echo $safe($t('Zurück', 'Previous')); ?></a>
                     <?php endif; ?>
-                    <span>Seite <?php echo $currentPage; ?> von <?php echo $totalPages; ?></span>
+                    <span><?php echo $safe($t('Seite', 'Page')); ?> <?php echo $currentPage; ?> <?php echo $safe($t('von', 'of')); ?> <?php echo $totalPages; ?></span>
                     <?php if ($currentPage < $totalPages) : ?>
-                        <a href="<?php echo $safe($pageUrl($currentPage + 1)); ?>" class="ac-btn ac-btn-ghost" rel="next">Weiter →</a>
+                        <a href="<?php echo $safe($pageUrl($currentPage + 1)); ?>" class="ac-btn ac-btn-ghost" rel="next"><?php echo $safe($t('Weiter', 'Next')); ?> →</a>
                     <?php endif; ?>
                 </nav>
             <?php endif; ?>
         <?php else : ?>
             <div class="ac-empty-state">
                 <span class="ac-empty-emoji" aria-hidden="true">📚</span>
-                <p>Noch keine Beiträge vorhanden.</p>
-                <a href="<?php echo $safe($siteUrl); ?>" class="ac-btn ac-btn-primary">Zurück zur Startseite</a>
+                <p><?php echo $safe($t('Noch keine Beiträge vorhanden.', 'No posts yet.')); ?></p>
+                <a href="<?php echo $safe($siteUrl); ?>" class="ac-btn ac-btn-primary"><?php echo $safe($t('Zurück zur Startseite', 'Back to home')); ?></a>
             </div>
         <?php endif; ?>
     </div>

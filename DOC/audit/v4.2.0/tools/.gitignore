@@ -1,0 +1,4 @@
+node_modules
+pages/
+*.png
+package-lock.json
