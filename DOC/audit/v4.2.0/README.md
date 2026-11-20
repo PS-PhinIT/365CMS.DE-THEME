@@ -171,4 +171,5 @@ Nach dem Erstaudit wird jedes Theme noch einmal vollständig gegen seinen Plan g
 |---|---|---|
 | academy365 | 4.1.1 | [x] [Abschnitt 8](academy365.md#8-folgeaudit-2026-11-18-umgesetzt-in-411-kit-120) |
 | buildbase | 4.1.1 | [x] [Abschnitt 7](buildbase.md#7-folgeaudit-2026-11-18-umgesetzt-in-411-kit-120) |
-| business, feder, kompass, kontor, logilink, medcarepro, newspaper, personalflow, PTC, rundschau, technexus | – | [ ] |
+| business | 4.1.1 | [x] [Abschnitt 7](business.md#7-folgeaudit-2026-11-20-umgesetzt-in-411-kit-120) |
+| feder, kompass, kontor, logilink, medcarepro, newspaper, personalflow, PTC, rundschau, technexus | – | [ ] |

@@ -19,6 +19,8 @@ define('CMS_THEME_FOOTER_RENDERED', true);
 
 $siteUrl   = biz_site_url();
 $siteTitle = biz_site_title();
+$bizLocale = theme_v4_locale($contentLocale ?? null);
+$bizT      = static fn(string $de, string $en): string => theme_v4_t($de, $en, $bizLocale);
 $tagline   = (string) biz_config('footer_tagline', 'Ihr Partner für digitale Innovation.');
 
 try {
@@ -29,6 +31,10 @@ try {
     );
 } catch (\Throwable) {
     $copyRaw = '© {year} {site_title}. Alle Rechte vorbehalten.';
+}
+// Unverändertes deutsches Standard-Copyright auf englischen Seiten übersetzen.
+if ($copyRaw === '© {year} {site_title}. Alle Rechte vorbehalten.') {
+    $copyRaw = $bizT('© {year} {site_title}. Alle Rechte vorbehalten.', '© {year} {site_title}. All rights reserved.');
 }
 $copyText = htmlspecialchars(
     strtr($copyRaw, [
@@ -48,18 +54,21 @@ $bizFooterMenu = static function (string $location): string {
 };
 $bizFooterNavHtml   = $bizFooterMenu('footer-nav');
 $bizFooterLegalHtml = $bizFooterMenu('footer-legal');
-$bizServiceLinks = theme_v4_filter_links([
-    ['label' => 'Beratung',    'url' => biz_href('#leistungen')],
-    ['label' => 'Entwicklung', 'url' => biz_href('#leistungen')],
-    ['label' => 'Support',     'url' => biz_href('#leistungen')],
-    ['label' => 'Schulungen',  'url' => biz_href('#leistungen')],
-    ['label' => 'Downloads',   'url' => biz_href('/downloads')],
-]);
+$bizServiceLinks = theme_v4_filter_links(array_merge(
+    // Anker nur, wenn die Startseite den Abschnitt `#leistungen` ausgibt (Customizer: Leistungen gepflegt).
+    biz_has_services() ? [
+        ['label' => $bizT('Beratung', 'Consulting'),     'url' => biz_href('#leistungen')],
+        ['label' => $bizT('Entwicklung', 'Development'), 'url' => biz_href('#leistungen')],
+        ['label' => 'Support',                           'url' => biz_href('#leistungen')],
+        ['label' => $bizT('Schulungen', 'Training'),     'url' => biz_href('#leistungen')],
+    ] : [],
+    [['label' => 'Downloads', 'url' => biz_href('/downloads')]]
+));
 $bizContactLinks = theme_v4_filter_links([
-    ['label' => 'Kontaktformular', 'url' => biz_href('/contact')],
-    ['label' => 'Newsletter',      'url' => biz_href('/newsletter')],
-    ['label' => 'Impressum',       'url' => biz_href('/impressum')],
-    ['label' => 'Datenschutz',     'url' => biz_href('/datenschutz')],
+    ['label' => $bizT('Kontaktformular', 'Contact form'), 'url' => biz_href('/contact')],
+    ['label' => 'Newsletter',                              'url' => biz_href('/newsletter')],
+    ['label' => $bizT('Impressum', 'Legal notice'),        'url' => biz_href('/impressum')],
+    ['label' => $bizT('Datenschutz', 'Privacy policy'),    'url' => biz_href('/datenschutz')],
 ]);
 ?>
     </main><!-- /#main-content -->
@@ -85,7 +94,7 @@ $bizContactLinks = theme_v4_filter_links([
                 <!-- Navigation -->
                 <?php if ($bizFooterNavHtml !== '') : ?>
                 <nav class="biz-footer-col" aria-labelledby="biz-footer-nav-title">
-                    <h2 class="biz-footer-heading" id="biz-footer-nav-title">Navigation</h2>
+                    <h2 class="biz-footer-heading" id="biz-footer-nav-title"><?php echo theme_v4_e($bizT('Navigation', 'Navigation')); ?></h2>
                     <?php echo $bizFooterNavHtml; // biz_nav_menu(): alle Werte escaped ?>
                 </nav>
                 <?php endif; ?>
@@ -93,7 +102,7 @@ $bizContactLinks = theme_v4_filter_links([
                 <!-- Services -->
                 <?php if ($bizServiceLinks !== []) : ?>
                 <div class="biz-footer-col">
-                    <h2 class="biz-footer-heading">Leistungen</h2>
+                    <h2 class="biz-footer-heading"><?php echo theme_v4_e($bizT('Leistungen', 'Services')); ?></h2>
                     <ul>
                         <?php foreach ($bizServiceLinks as $bizLink) : ?>
                         <li><a href="<?php echo htmlspecialchars($bizLink['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($bizLink['label'], ENT_QUOTES, 'UTF-8'); ?></a></li>
@@ -105,7 +114,7 @@ $bizContactLinks = theme_v4_filter_links([
                 <!-- Kontakt -->
                 <?php if ($bizContactLinks !== []) : ?>
                 <div class="biz-footer-col">
-                    <h2 class="biz-footer-heading">Kontakt</h2>
+                    <h2 class="biz-footer-heading"><?php echo theme_v4_e($bizT('Kontakt', 'Contact')); ?></h2>
                     <ul>
                         <?php foreach ($bizContactLinks as $bizLink) : ?>
                         <li><a href="<?php echo htmlspecialchars($bizLink['url'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($bizLink['label'], ENT_QUOTES, 'UTF-8'); ?></a></li>
@@ -120,7 +129,7 @@ $bizContactLinks = theme_v4_filter_links([
             <div class="biz-footer-bottom">
                 <span><?php echo $copyText; ?></span>
                 <?php if ($bizFooterLegalHtml !== '') : ?>
-                <nav class="biz-footer-legal" aria-label="Rechtliche Links">
+                <nav class="biz-footer-legal" aria-label="<?php echo theme_v4_e($bizT('Rechtliche Links', 'Legal links')); ?>">
                     <?php echo $bizFooterLegalHtml; // biz_nav_menu(): alle Werte escaped ?>
                 </nav>
                 <?php endif; ?>

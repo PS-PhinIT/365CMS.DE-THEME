@@ -47,7 +47,17 @@ namespace CMS {
 }
 namespace CMS\Services {
     class ThemeCustomizer { public static function instance(): self { return new self; }
-        public function get(string $s, string $k, mixed $d = null): mixed { return $GLOBALS['CUSTOM'][$s][$k] ?? $d; }
+        // Wie ThemeCustomizer::get() des Cores: gespeicherter Wert, sonst Standard aus theme.json, sonst Standard des Aufrufers
+        public function get(string $s, string $k, mixed $d = null): mixed {
+            if (isset($GLOBALS['CUSTOM'][$s][$k])) { return $GLOBALS['CUSTOM'][$s][$k]; }
+            static $defaults = null;
+            if ($defaults === null) {
+                $file = ($GLOBALS['THEME_DIR'] ?? '') . '/theme.json';
+                $json = is_file($file) ? json_decode((string) file_get_contents($file), true) : [];
+                $defaults = is_array($json['customization'] ?? null) ? $json['customization'] : [];
+            }
+            return isset($defaults[$s]['settings'][$k]['default']) ? $defaults[$s]['settings'][$k]['default'] : $d;
+        }
         public function getAll(): array { return []; } }
     class OptionStore { public static function getInstance(): self { return new self; }
         public function get(string $n, mixed $d = null): mixed { return $d; }

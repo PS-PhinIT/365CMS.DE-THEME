@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BUSINESS_THEME_VERSION')) {
-    define('BUSINESS_THEME_VERSION', '4.1.0');
+    define('BUSINESS_THEME_VERSION', '4.1.1');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">, footer.php schließt es.
@@ -214,26 +214,27 @@ final class IT_Business_Theme
      */
     public static function defaultMenu(string $location): array
     {
+        $t = static fn(string $de, string $en): string => theme_v4_t($de, $en);
         $defaults = [
             'primary' => [
-                ['label' => 'Start',       'url' => '/'],
-                ['label' => 'Über uns',    'url' => '/#ueber-uns'],
-                ['label' => 'Leistungen',  'url' => '/#leistungen'],
-                ['label' => 'Kontakt',     'url' => '/contact'],
+                ['label' => $t('Start', 'Home'),            'url' => '/'],
+                ['label' => $t('Über uns', 'About us'),     'url' => '/#ueber-uns'],
+                ['label' => $t('Leistungen', 'Services'),   'url' => '/#leistungen'],
+                ['label' => $t('Kontakt', 'Contact'),       'url' => '/contact'],
             ],
             'footer-nav' => [
-                ['label' => 'Startseite',  'url' => '/'],
-                ['label' => 'Über uns',    'url' => '/#ueber-uns'],
-                ['label' => 'Leistungen',  'url' => '/#leistungen'],
-                ['label' => 'Newsletter',  'url' => '/newsletter'],
+                ['label' => $t('Startseite', 'Home'),       'url' => '/'],
+                ['label' => $t('Über uns', 'About us'),     'url' => '/#ueber-uns'],
+                ['label' => $t('Leistungen', 'Services'),   'url' => '/#leistungen'],
+                ['label' => 'Newsletter',                   'url' => '/newsletter'],
                 // 365CMS 4.2.0: Basispfad der Community (nur bei aktivem Modul, sonst herausgefiltert).
-                ['label' => 'Community',   'url' => '/' . theme_v4_community_base_path()],
-                ['label' => 'Kontakt',     'url' => '/contact'],
+                ['label' => 'Community',                    'url' => '/' . theme_v4_community_base_path()],
+                ['label' => $t('Kontakt', 'Contact'),       'url' => '/contact'],
             ],
             'footer-legal' => [
-                ['label' => 'Impressum',   'url' => '/impressum'],
-                ['label' => 'Datenschutz', 'url' => '/datenschutz'],
-                ['label' => 'AGB',         'url' => '/agb'],
+                ['label' => $t('Impressum', 'Legal notice'),   'url' => '/impressum'],
+                ['label' => $t('Datenschutz', 'Privacy policy'), 'url' => '/datenschutz'],
+                ['label' => $t('AGB', 'Terms'),             'url' => '/agb'],
             ],
         ];
 
@@ -241,6 +242,14 @@ final class IT_Business_Theme
             static fn(array $link): array => ['label' => $link['label'], 'url' => theme_v4_site_url($link['url'])],
             $defaults[$location] ?? []
         );
+
+        // Der Abschnitt `#leistungen` der Startseite existiert nur mit gepflegten Leistungen.
+        if (!biz_has_services()) {
+            $links = array_values(array_filter(
+                $links,
+                static fn(array $link): bool => !str_contains((string) $link['url'], '#leistungen')
+            ));
+        }
 
         return theme_v4_filter_links($links);
     }
@@ -425,6 +434,54 @@ if (!function_exists('biz_nav_menu')) {
         }
         echo $coreItems;
         echo '</ul>' . "\n";
+    }
+}
+
+if (!function_exists('biz_format_date')) {
+    /** Datum je Seitensprache: deutsch `02.11.2026`, englisch `Nov 2, 2026`; ungültige Werte ergeben einen leeren String. */
+    function biz_format_date(mixed $value, string $locale = 'de'): string
+    {
+        $ts = is_string($value) && trim($value) !== '' ? strtotime($value) : false;
+        if ($ts === false) {
+            return '';
+        }
+
+        return $locale === 'en' ? date('M j, Y', $ts) : date('d.m.Y', $ts);
+    }
+}
+
+if (!function_exists('biz_has_services')) {
+    /** true, wenn im Customizer Leistungen gepflegt sind (Abschnitt `#leistungen` existiert nur dann). */
+    function biz_has_services(): bool
+    {
+        static $has = null;
+
+        return $has ??= biz_parse_lines((string) biz_config('services_list', ''), 3, 12) !== [];
+    }
+}
+
+if (!function_exists('biz_parse_lines')) {
+    /**
+     * Zerlegt ein Customizer-Textfeld in Zeilen mit `$parts` durch `|` getrennten Spalten (leere Zeilen und
+     * Zeilen ohne Pflichtspalten entfallen, höchstens `$max` Zeilen, Spalten auf 400 Zeichen begrenzt).
+     *
+     * @return list<list<string>>
+     */
+    function biz_parse_lines(string $text, int $parts = 1, int $max = 12): array
+    {
+        $rows = [];
+        foreach (preg_split('/\R/u', $text) ?: [] as $line) {
+            $cells = array_map('trim', explode('|', $line, $parts));
+            if (count($cells) < $parts || in_array('', array_slice($cells, 0, $parts === 3 ? 2 : $parts), true)) {
+                continue;
+            }
+            $rows[] = array_map(static fn(string $c): string => function_exists('mb_substr') ? mb_substr($c, 0, 400) : substr($c, 0, 400), $cells);
+            if (count($rows) >= $max) {
+                break;
+            }
+        }
+
+        return $rows;
     }
 }
 

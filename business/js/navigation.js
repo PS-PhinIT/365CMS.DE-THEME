@@ -33,7 +33,7 @@
             overlay.classList.add('is-open');
             toggle.classList.add('is-active');
             toggle.setAttribute('aria-expanded', 'true');
-            toggle.setAttribute('aria-label', 'Menü schließen');
+            toggle.setAttribute('aria-label', toggle.getAttribute('data-label-close') || 'Menü schließen');
             // Geschlossen ist der Drawer inert (nicht per Tab erreichbar); geöffnet erhält der erste Link den Fokus.
             drawer.inert = false;
             drawer.removeAttribute('inert');
@@ -48,7 +48,7 @@
             overlay.classList.remove('is-open');
             toggle.classList.remove('is-active');
             toggle.setAttribute('aria-expanded', 'false');
-            toggle.setAttribute('aria-label', 'Menü öffnen');
+            toggle.setAttribute('aria-label', toggle.getAttribute('data-label-open') || 'Menü öffnen');
             drawer.inert = true;
             drawer.setAttribute('inert', '');
             document.body.classList.remove('mobile-menu-open');
