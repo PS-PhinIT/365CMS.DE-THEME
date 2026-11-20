@@ -1,5 +1,28 @@
 # Changelog
 
+## 4.1.1 - 2026-11-20
+
+### Folgeaudit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/business.md`, Abschnitt 7)
+
+Nachgeholt wurden die im ersten Audit offenen bzw. als „akzeptiert“ geführten Punkte: Prüfung im Browser (Chromium, axe-core, WCAG 2.2 AA bei 1280, 375 und 320 px; Werkzeug unter `DOC/audit/v4.2.0/tools/`), Kosten der Standardlink-Prüfung, Zweisprachigkeit und die fest eingebauten Demo-Inhalte.
+
+#### Inhalte
+- **Startseite pflegbar statt fest verdrahtet:** Leistungen, „Über uns“-Text, Checkliste und Kennzahlen standen bisher im Quelltext von `home.php`, darunter nicht belegbare Angaben („98 %“, „50+“, eine ISO-Zertifizierung). Neue Customizer-Felder in `biz_content`: `services_list` (eine Leistung je Zeile: `Symbol | Titel | Beschreibung`, sechs Beispielleistungen als Standard), `about_text`, `about_checklist`, `facts_list` (`Wert | Beschriftung`). „Über uns“, Checkliste und Kennzahlen erscheinen nur noch mit gepflegtem Inhalt; ohne Leistungen entfallen der Abschnitt `#leistungen`, der Hero-Button dorthin und die Anker-Links in Menü und Fußzeile (kein Link ins Leere). Bereits gespeicherte Werte bleiben erhalten. **Wer die bisherigen Kennzahlen oder Texte anzeigen möchte, trägt sie im Customizer ein.**
+
+#### Fehler
+- Dangling Anker: Standardmenüs und Fußzeile verlinkten auf `#leistungen`, auch wenn die Startseite den Abschnitt nicht ausgibt.
+- Menüknopf: Die Beschriftungen („Menü öffnen/schließen“) kamen fest aus `navigation.js`, jetzt aus dem Markup (`data-label-open/close`, Sprache der Seite).
+
+#### Performance
+- **Standardlink-Prüfung:** Jeder Link auf eine Seite (Fußzeile, Menü, 404) fragte `PageManager::getPageBySlug()` einzeln ab (`SELECT *` samt Inhalt, ungepuffert). Jetzt eine Abfrage je Request (Kit 1.2.0).
+
+#### Zweisprachigkeit
+- Header, Startseite, Archiv, Beitrag, Seite, Suche, 404, Fußzeile (Überschriften, Rechtslinks, Standard-Copyright) und die Standardmenüs folgen der Seitensprache (`/en/…`); Datumsangaben je Sprache (`02.11.2026` / `Nov 2, 2026`).
+
+#### Wartung
+- Doppelte `$safeUrl`-/`$formatDate`-Closures in `blog.php`, `blog-single.php` und `search.php` durch `biz_safe_url()` und `biz_format_date()` ersetzt.
+- Gemeinsame Schicht **Kit 1.2.0** (`includes/cms-v4-compat.php`): `theme_v4_link_target()`, `theme_v4_page_index()`, `theme_v4_page_is_published()`, `theme_v4_pages_published()`; `theme_v4_link_available()`/`theme_v4_filter_links()` behalten ihre Signatur.
+
 ## 4.1.0 - 2026-11-18
 
 ### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/business.md`)

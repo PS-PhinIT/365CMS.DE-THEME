@@ -43,7 +43,7 @@
 
 ## 4. Offene Punkte aus dem 4.0/4.1-Audit
 
-- Statische Demo-Kennzahlen („200+ Projekte“) – als Designentscheidung belassen, prüfen ob im Customizer abschaltbar.
+- Statische Demo-Kennzahlen („200+ Projekte“) – als Designentscheidung belassen, prüfen ob im Customizer abschaltbar. → erledigt in 4.1.1 (Abschnitt 7): Kennzahlen, Leistungen und „Über uns“ sind im Customizer pflegbar, ohne Eintrag entfallen die Abschnitte
 
 ## 5. Abnahme
 
@@ -69,4 +69,40 @@ Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 4.1.0, Vertragstes
 | K3 | – | Standard-Footermenü „Community“ (Basispfad aus den Community-Einstellungen, nur bei aktivem Modul) | umgesetzt |
 | K5 | – | Header öffnet `<main id="main-content">` (`THEME_V4_HEADER_HAS_MAIN`): Kit wandelt `<main>` künftiger `community/`-Overrides in `<div>` | vorbereitet |
 | K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |
-| Demo | akzeptiert | Kennzahlen „98 %“, „50+“ sind statische Designbeispiele | dokumentiert |
+| Demo | akzeptiert | Kennzahlen „98 %“, „50+“ sind statische Designbeispiele | dokumentiert (in 4.1.1 durch pflegbare Felder ersetzt, s. Abschnitt 7) |
+
+## 7. Folgeaudit (2026-11-20, umgesetzt in 4.1.1, Kit 1.2.0)
+
+Das Erstaudit (Abschnitt 6) war statisch und per Render-Test. Offen waren die Browser-/axe-Prüfung, die Kostenmessung der Kit-Linkprüfung, die Seitensprache und die als „akzeptiert“ geführten Demo-Kennzahlen. Werkzeug: [`tools/`](tools/README.md).
+
+### Messung vor den Korrekturen
+
+| Prüfung | Ergebnis am Stand 4.1.0 |
+|---|---|
+| Datenbankabfragen für Standardlinks (Attrappe zählt `PageManager::getPageBySlug()`) | Startseite, 404 und Archiv je mehrere `SELECT *` mit Seiteninhalt, ungepuffert (je Link eine) |
+| Startseite ohne Customizer-Eintrag | feste Texte: sechs Leistungen, „Über uns“ mit Checkliste („Über 200 Projekte“, „ISO 27001-konforme Sicherheitsstandards“), Kennzahlen „10+ Jahre“, „200+ Projekte“, „98 % Kundenzufriedenheit“, „50+ zertifizierte Experten“ – nicht im Customizer änderbar oder abschaltbar |
+| Menü-/Footer-Anker | `#leistungen` im Standardmenü und in vier Fußzeilenlinks |
+
+### Befunde
+
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| S11/Demo | **mittel** | Nicht belegbare Leistungs- und Zertifizierungsangaben (ISO 27001, Projekt-/Expertenzahlen, Zufriedenheitswert) waren fest im Quelltext und erschienen auf jeder Installation | Customizer-Felder `services_list`, `about_text`, `about_checklist`, `facts_list`; Checkliste und Kennzahlen standardmäßig leer, Abschnitte nur mit Inhalt |
+| B | niedrig | Standardmenü und Fußzeile verlinkten auf `#leistungen`, auch wenn der Abschnitt nicht ausgegeben wird | Links entfallen ohne Leistungen (`biz_has_services()`), Hero-Button ebenso |
+| P1 | mittel | `theme_v4_link_available()`: mehrere `SELECT *` samt Inhalt je Seitenaufruf (betrifft alle Themes) | Kit 1.2.0: 1 Abfrage je Request (Render-Test: Startseite, 404, Archiv je 1) |
+| B4 | mittel | Seitensprache: Header, Startseite, Archiv, Beitrag, Seite, Suche, 404, Fußzeile, Standardmenüs, Menüknopf-Beschriftung (fest in `navigation.js`) und Datum nur deutsch | `theme_v4_t()`, `data-label-*`, `biz_format_date()` |
+| Q2 | niedrig | Zwei Kopien des URL-Prüfers und des Datumsformats in `blog.php`/`blog-single.php`/`search.php` | `biz_safe_url()`, `biz_format_date()` |
+| Q3 | – | axe: Kontraste, Zielgrößen (2.5.8), Links im Fließtext, Fokus unter dem Sticky-Header, Kopfzeile bei 320 px (nur „Kontakt“ als Aktion, Menüknopf im Bild) | kein Befund |
+
+### Ergebnis nach den Korrekturen
+
+- Chromium/axe: 45 Läufe (Seitenvarianten × 1280/375/320 px, teils mit/ohne reduzierte Bewegung, inkl. angemeldet, ohne Beispielinhalte, englisch) ohne Befund.
+- `php -l`, `TESTS/theme-contract` des Cores (13 Themes), Render-/Fuzz-Test, Kit-Tests grün.
+- Standardlinks: 1 Abfrage je Seitenaufruf.
+
+### Offen / Grenzen
+
+- Die Prüfung läuft gegen Attrappen der Core-Klassen, ohne echte Installation (CSP-Header, Core-Stylesheets, Plugins). Kontraste gelten für die Standardpalette.
+- Die Beispielleistungen (Standardwert von `services_list`) sind allgemein formulierte Platzhalter; Betreiber sollten sie an ihr Angebot anpassen.
+- Standardlinks auf englischen Seiten zeigen auf die Standardrouten (ohne `/en/`); nur die Beschriftungen sind übersetzt.
+- Die Texte aus dem Customizer sind einsprachig; sie werden nicht übersetzt.

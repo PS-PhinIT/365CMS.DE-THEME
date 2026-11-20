@@ -80,13 +80,13 @@ $logoDims = $logoUrl !== '' ? theme_v4_image_dimensions($logoUrl) : null;
                 <div class="biz-header-cta">
                     <a href="<?php echo htmlspecialchars($bizContact, ENT_QUOTES, 'UTF-8'); ?>"
                        class="btn-biz btn-biz-primary">
-                        Kontakt
+                        <?php echo theme_v4_e(theme_v4_t('Kontakt', 'Contact', $bizLocale)); ?>
                     </a>
                 </div>
 
                 <!-- Mobile Toggle -->
                 <button class="biz-mobile-toggle" id="bizMobileToggle"
-                        aria-label="Menü öffnen" aria-expanded="false" aria-controls="bizMobileDrawer"
+                        aria-label="<?php echo theme_v4_e(theme_v4_t('Menü öffnen', 'Open menu', $bizLocale)); ?>" data-label-open="<?php echo theme_v4_e(theme_v4_t('Menü öffnen', 'Open menu', $bizLocale)); ?>" data-label-close="<?php echo theme_v4_e(theme_v4_t('Menü schließen', 'Close menu', $bizLocale)); ?>" aria-expanded="false" aria-controls="bizMobileDrawer"
                         type="button">
                     <span class="line"></span>
                     <span class="line"></span>
@@ -104,7 +104,7 @@ $logoDims = $logoUrl !== '' ? theme_v4_image_dimensions($logoUrl) : null;
         <div class="biz-drawer-cta">
             <a href="<?php echo htmlspecialchars($bizContact, ENT_QUOTES, 'UTF-8'); ?>"
                class="btn-biz btn-biz-primary biz-drawer-cta-link">
-                Kontakt aufnehmen
+                <?php echo theme_v4_e(theme_v4_t('Kontakt aufnehmen', 'Get in touch', $bizLocale)); ?>
             </a>
         </div>
     </nav>

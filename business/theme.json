@@ -1,7 +1,7 @@
 {
   "name": "Business Presentation",
   "slug": "business",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "requires_cms": "4.0.0",
   "requires_php": "8.4.1",
   "tested_up_to": "4.2.0",
@@ -266,6 +266,30 @@
           "label": "Über uns – Überschrift",
           "type": "text",
           "default": "Über uns – der Experte an Ihrer Seite"
+        },
+        "about_text": {
+          "label": "Über uns – Text",
+          "type": "textarea",
+          "default": "Wir unterstützen Unternehmen dabei, die Potenziale der Digitalisierung auszuschöpfen. Unser Team aus erfahrenen IT-Experten verbindet technisches Know-how mit Branchenverständnis.\n\nWir glauben an langfristige Partnerschaften und nachhaltige Lösungen – nicht an schnelle Fixes. Ihre Ziele sind unsere Ziele.",
+          "description": "Absätze durch eine Leerzeile trennen."
+        },
+        "about_checklist": {
+          "label": "Über uns – Aufzählung",
+          "type": "textarea",
+          "default": "",
+          "description": "Ein Punkt je Zeile (z. B. Zertifizierungen, Referenzen). Nur Angaben eintragen, die belegbar sind; leer = keine Aufzählung. Bis 4.1.0 standen hier fest „Über 200 Projekte“ und „ISO 27001-konforme Sicherheitsstandards“."
+        },
+        "services_list": {
+          "label": "Leistungen",
+          "type": "textarea",
+          "default": "💡 | IT-Beratung | Strategische Beratung für Ihre digitale Transformation. Wir analysieren Ihre Prozesse und entwickeln zukunftssichere IT-Konzepte.\n⚙️ | Softwareentwicklung | Maßgeschneiderte Softwarelösungen für Ihre spezifischen Anforderungen. Von Web-Apps bis hin zu komplexen Enterprise-Systemen.\n🛡️ | IT-Security | Umfassende Sicherheitslösungen zum Schutz Ihrer Daten und Systeme. Schwachstellenanalyse, Penetrationstests und Security-Audits.\n☁️ | Cloud Services | Nahtlose Migration in die Cloud und optimales Management Ihrer Cloud-Infrastruktur für maximale Skalierbarkeit und Effizienz.\n📊 | Data & Analytics | Aus Ihren Daten werden wertvolle Erkenntnisse. Business Intelligence, Reporting-Dashboards und KI-gestützte Analysen.\n🎓 | Schulungen | Praxisnahe Weiterbildungen für Ihr Team. Von Grundlagen bis zu spezialisierten Intensivkursen – flexibel und bedarfsgerecht.",
+          "description": "Eine Leistung je Zeile: Symbol | Titel | Beschreibung (höchstens 12). Leer = Abschnitt „Leistungen“ entfällt (dann auch den Menüeintrag auf #leistungen entfernen)."
+        },
+        "facts_list": {
+          "label": "Zahlen & Fakten",
+          "type": "textarea",
+          "default": "",
+          "description": "Eine Kennzahl je Zeile: Wert | Beschriftung (höchstens 6), z. B. „12 | Jahre Erfahrung“. Nur belegbare Zahlen; leer = Abschnitt entfällt. Bis 4.1.0 standen hier fest 10+ Jahre, 200+ Projekte, 98 % Kundenzufriedenheit und 50+ zertifizierte Experten."
         },
         "about_image": {
           "label": "Über-uns Bild",

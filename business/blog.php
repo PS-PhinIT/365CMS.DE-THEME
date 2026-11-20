@@ -13,28 +13,14 @@ if (!defined('ABSPATH')) {
 
 $safe    = static fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
 $siteUrl = rtrim((string) SITE_URL, '/');
-$safeUrl = static function (string $url, string $fallback = '') use ($siteUrl): string {
-    $url = trim($url);
-    if ($url === '' || preg_match('/[\x00-\x1F\x7F]/', $url) === 1) {
-        return $fallback;
-    }
-    if (str_starts_with($url, '/') && !str_starts_with($url, '//')) {
-        return $siteUrl . $url;
-    }
-    $scheme = strtolower((string) parse_url($url, PHP_URL_SCHEME));
-
-    return in_array($scheme, ['http', 'https'], true) && filter_var($url, FILTER_VALIDATE_URL) ? $url : $fallback;
-};
-$formatDate = static function (mixed $value): string {
-    $ts = is_string($value) && $value !== '' ? strtotime($value) : false;
-
-    return $ts !== false ? date('d.m.Y', $ts) : '';
-};
+$bizLocale = theme_v4_locale($contentLocale ?? null);
+$t = static fn(string $de, string $en): string => theme_v4_t($de, $en, $bizLocale);
+$safeUrl = static fn(string $url, string $fallback = ''): string => biz_safe_url($url, $fallback);
 
 $posts       = isset($posts) && is_array($posts) ? $posts : [];
 $currentPage = max(1, (int) ($currentPage ?? 1));
 $totalPages  = max(1, (int) ($totalPages ?? 1));
-$archiveTitle = 'Beiträge';
+$archiveTitle = $t('Beiträge', 'Posts');
 if (isset($category) && is_array($category) && trim((string) ($category['name'] ?? '')) !== '') {
     $archiveTitle = (string) $category['name'];
 } elseif (isset($tag) && is_array($tag) && trim((string) ($tag['name'] ?? '')) !== '') {
@@ -68,7 +54,7 @@ $pageUrl = static function (int $number) use ($requestPath): string {
                 $itemUrl = $safeUrl(theme_post_url($item), $siteUrl . '/blog');
                 $itemTitle = (string) ($item->title ?? '');
                 $itemText  = trim(strip_tags((string) ($item->excerpt ?? '')));
-                $itemMeta  = $formatDate($item->published_at ?? $item->created_at ?? '');
+                $itemMeta  = biz_format_date($item->published_at ?? $item->created_at ?? '', $bizLocale);
             ?>
                 <article class="biz-card">
                     <?php if ($itemMeta !== '') : ?>
@@ -84,16 +70,16 @@ $pageUrl = static function (int $number) use ($requestPath): string {
         <?php if ($totalPages > 1) : ?>
             <nav class="cms-pagination" aria-label="Seitennavigation">
                 <?php if ($currentPage > 1) : ?>
-                    <a href="<?php echo $safe($pageUrl($currentPage - 1)); ?>" class="btn-biz btn-biz-ghost" rel="prev"><span aria-hidden="true">←</span> Zurück</a>
+                    <a href="<?php echo $safe($pageUrl($currentPage - 1)); ?>" class="btn-biz btn-biz-ghost" rel="prev"><span aria-hidden="true">←</span> <?php echo $safe($t('Zurück', 'Previous')); ?></a>
                 <?php endif; ?>
-                <span aria-current="page">Seite <?php echo $currentPage; ?> von <?php echo $totalPages; ?></span>
+                <span aria-current="page"><?php echo $safe($t('Seite', 'Page')); ?> <?php echo $currentPage; ?> <?php echo $safe($t('von', 'of')); ?> <?php echo $totalPages; ?></span>
                 <?php if ($currentPage < $totalPages) : ?>
-                    <a href="<?php echo $safe($pageUrl($currentPage + 1)); ?>" class="btn-biz btn-biz-ghost" rel="next">Weiter <span aria-hidden="true">→</span></a>
+                    <a href="<?php echo $safe($pageUrl($currentPage + 1)); ?>" class="btn-biz btn-biz-ghost" rel="next"><?php echo $safe($t('Weiter', 'Next')); ?> <span aria-hidden="true">→</span></a>
                 <?php endif; ?>
             </nav>
         <?php endif; ?>
         <?php else : ?>
-            <p class="biz-prose-empty">Noch keine Beiträge vorhanden.</p>
+            <p class="biz-prose-empty"><?php echo $safe($t('Noch keine Beiträge vorhanden.', 'No posts yet.')); ?></p>
         <?php endif; ?>
     </div>
 </div>

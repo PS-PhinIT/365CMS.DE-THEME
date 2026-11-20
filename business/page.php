@@ -54,7 +54,7 @@ $isModule    = (int) ($page['id'] ?? 0) === 0;
                 ?>
             </div>
         <?php else : ?>
-            <p class="biz-prose-empty">Diese Seite hat noch keinen Inhalt.</p>
+            <p class="biz-prose-empty"><?php echo theme_v4_e(theme_v4_t('Diese Seite hat noch keinen Inhalt.', 'This page has no content yet.', theme_v4_locale($contentLocale ?? null))); ?></p>
         <?php endif; ?>
     </div>
 </div>
