@@ -31,7 +31,7 @@ $fdrTitle    = $fdrError['title'] !== '' ? $fdrError['title'] : $fdrDefaults['ti
 $fdrMessage  = $fdrError['message'] !== '' ? $fdrError['message'] : $fdrDefaults['message'];
 $fdrHome     = theme_v4_site_url() . '/';
 $fdrBack     = $fdrError['standalone'] ? '' : theme_v4_safe_back_url();
-$fdrVersion  = defined('FEDER_THEME_VERSION') ? (string) FEDER_THEME_VERSION : '2.0.0';
+$fdrVersion  = defined('FEDER_THEME_VERSION') ? (string) FEDER_THEME_VERSION : '2.1.1';
 
 if ($fdrError['standalone']) {
     $fdrThemeUrl = theme_v4_theme_url(__DIR__);

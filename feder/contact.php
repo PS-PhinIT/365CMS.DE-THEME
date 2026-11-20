@@ -50,7 +50,7 @@ foreach ([$fdrContact['contact_email'] ?? '', feder_text('feder_author', 'social
 }
 ?>
 
-<section class="fdr-wide fdr-contact" aria-labelledby="fdr-contact-title">
+<div class="fdr-wide fdr-contact"><?php // div statt section: ein beschriftetes <section> ist ein Landmark, der <aside> darin wäre nicht mehr oberste Ebene (axe) ?>
     <div class="theme-v4-contact">
         <div class="theme-v4-contact__main">
             <p class="fdr-kicker"><?php echo feder_e(theme_v4_t('Kontakt', 'Contact', $fdrLocale)); ?></p>
@@ -91,4 +91,4 @@ foreach ([$fdrContact['contact_email'] ?? '', feder_text('feder_author', 'social
             </dl>
         </aside>
     </div>
-</section>
+</div>

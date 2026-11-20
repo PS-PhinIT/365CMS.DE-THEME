@@ -15,7 +15,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('FEDER_THEME_VERSION')) {
-    define('FEDER_THEME_VERSION', '2.1.0');
+    define('FEDER_THEME_VERSION', '2.1.1');
 }
 
 // 365CMS 4.x: header.php öffnet <main id="main-content">; Templates und Core-Module geben kein eigenes <main> aus.
@@ -375,6 +375,20 @@ if (!function_exists('feder_text')) {
     }
 }
 
+if (!function_exists('feder_text_t')) {
+    /**
+     * Customizer-Text mit zweisprachigem Standard: Ist der Wert noch der deutsche Standardtext (oder nie
+     * gespeichert), erscheint auf englischen Seiten (/en/…) der englische Text; eigene Texte und bewusst
+     * geleerte Felder bleiben unverändert.
+     */
+    function feder_text_t(string $group, string $key, string $de, string $en): string
+    {
+        $value = feder_text($group, $key, $de);
+
+        return $value === $de ? feder_t($de, $en) : $value;
+    }
+}
+
 if (!function_exists('feder_e')) {
     function feder_e(mixed $value): string
     {
@@ -577,9 +591,23 @@ if (!function_exists('feder_format_date')) {
             return '';
         }
 
+        $month = (int) date('n', $ts) - 1;
+
+        // Englische Seiten (/en/…): Monatsnamen und Reihenfolge englisch (Nov 2 · November 2, 2026 · 2026-11-02).
+        if (theme_v4_locale() === 'en') {
+            $months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            return match ($format) {
+                'short' => date('Y-m-d', $ts),
+                'day'   => date('M j', $ts),
+                'year'  => date('Y', $ts),
+                'iso'   => date('c', $ts),
+                default => $months[$month] . ' ' . date('j, Y', $ts),
+            };
+        }
+
         $months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
         $short = ['Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni', 'Juli', 'Aug.', 'Sep.', 'Okt.', 'Nov.', 'Dez.'];
-        $month = (int) date('n', $ts) - 1;
 
         return match ($format) {
             'short' => date('d.m.Y', $ts),
@@ -987,30 +1015,38 @@ if (!function_exists('feder_nav_menu')) {
     }
 }
 
+if (!function_exists('feder_t')) {
+    /** Zweisprachiger Textwähler (Seitensprache aus Kontext oder Pfad `/en/…`). */
+    function feder_t(string $de, string $en, mixed $contentLocale = null): string
+    {
+        return theme_v4_t($de, $en, $contentLocale);
+    }
+}
+
 if (!function_exists('feder_default_menu')) {
     /** @return array<int, array{label:string,url:string}> */
     function feder_default_menu(string $location): array
     {
         return match ($location) {
             'primary' => [
-                ['label' => 'Start', 'url' => '/'],
-                ['label' => 'Alle Texte', 'url' => '/blog'],
-                ['label' => 'Themen', 'url' => feder_archive_url('category')],
-                ['label' => 'Über mich', 'url' => '/ueber-uns'],
+                ['label' => feder_t('Start', 'Home'), 'url' => '/'],
+                ['label' => feder_t('Alle Texte', 'All posts'), 'url' => '/blog'],
+                ['label' => feder_t('Themen', 'Topics'), 'url' => feder_archive_url('category')],
+                ['label' => feder_t('Über mich', 'About me'), 'url' => '/ueber-uns'],
             ],
             'footer-nav' => [
-                ['label' => 'Alle Texte', 'url' => '/blog'],
-                ['label' => 'Themen', 'url' => feder_archive_url('category')],
-                ['label' => 'Schlagwörter', 'url' => feder_archive_url('tag')],
-                ['label' => 'Suche', 'url' => '/search'],
+                ['label' => feder_t('Alle Texte', 'All posts'), 'url' => '/blog'],
+                ['label' => feder_t('Themen', 'Topics'), 'url' => feder_archive_url('category')],
+                ['label' => feder_t('Schlagwörter', 'Tags'), 'url' => feder_archive_url('tag')],
+                ['label' => feder_t('Suche', 'Search'), 'url' => '/search'],
                 ['label' => 'Newsletter', 'url' => '/newsletter'],
                 // 365CMS 4.2.0: nur bei aktivem Community-Modul (sonst herausgefiltert).
                 ['label' => 'Community', 'url' => '/' . theme_v4_community_base_path()],
-                ['label' => 'Kontakt', 'url' => '/kontakt'],
+                ['label' => feder_t('Kontakt', 'Contact'), 'url' => '/kontakt'],
             ],
             'footer-legal' => [
-                ['label' => 'Impressum', 'url' => '/impressum'],
-                ['label' => 'Datenschutz', 'url' => '/datenschutz'],
+                ['label' => feder_t('Impressum', 'Legal notice'), 'url' => '/impressum'],
+                ['label' => feder_t('Datenschutz', 'Privacy policy'), 'url' => '/datenschutz'],
             ],
             default => [],
         };
@@ -1105,9 +1141,9 @@ if (!function_exists('feder_pagination')) {
         $pages = array_values(array_unique($pages));
         sort($pages);
 
-        echo '<nav class="fdr-pagination" aria-label="Seitennavigation">';
+        echo '<nav class="fdr-pagination" aria-label="' . feder_e(feder_t('Seitennavigation', 'Pagination')) . '">';
         if ($current > 1) {
-            echo '<a class="fdr-pagination__step" href="' . feder_e($build($current - 1)) . '" rel="prev">' . feder_icon('arrow-left') . '<span>Neuere</span></a>';
+            echo '<a class="fdr-pagination__step" href="' . feder_e($build($current - 1)) . '" rel="prev">' . feder_icon('arrow-left') . '<span>' . feder_e(feder_t('Neuere', 'Newer')) . '</span></a>';
         }
         echo '<ol class="fdr-pagination__pages">';
         $last = 0;
@@ -1124,7 +1160,7 @@ if (!function_exists('feder_pagination')) {
         }
         echo '</ol>';
         if ($current < $total) {
-            echo '<a class="fdr-pagination__step" href="' . feder_e($build($current + 1)) . '" rel="next"><span>Ältere</span>' . feder_icon('arrow') . '</a>';
+            echo '<a class="fdr-pagination__step" href="' . feder_e($build($current + 1)) . '" rel="next"><span>' . feder_e(feder_t('Ältere', 'Older')) . '</span>' . feder_icon('arrow') . '</a>';
         }
         echo '</nav>';
     }
@@ -1135,9 +1171,10 @@ if (!function_exists('feder_search_form')) {
     {
         ?>
         <form role="search" method="get" action="<?php echo feder_e(feder_search_url()); ?>" class="fdr-searchform<?php echo $class !== '' ? ' ' . feder_e($class) : ''; ?>">
-            <label for="<?php echo feder_e($id); ?>" class="fdr-visually-hidden">Suchbegriff</label>
-            <input id="<?php echo feder_e($id); ?>" type="search" name="q" value="<?php echo feder_e($value); ?>" placeholder="Wonach suchen Sie?" maxlength="120" autocomplete="off">
-            <button type="submit" class="fdr-button"><?php echo feder_icon('search'); ?><span>Suchen</span></button>
+            <label for="<?php echo feder_e($id); ?>" class="fdr-visually-hidden"><?php echo feder_e(feder_t('Suchbegriff', 'Search term')); ?></label>
+            <input id="<?php echo feder_e($id); ?>" type="search" name="q" value="<?php echo feder_e($value); ?>" placeholder="<?php echo feder_e(feder_t('Wonach suchen Sie?', 'What are you looking for?')); ?>" maxlength="120" autocomplete="off">
+            <?php $submitLabel = feder_t('Suchen', 'Search'); // aria-label: mobil blendet CSS den sichtbaren Text aus ?>
+            <button type="submit" class="fdr-button" aria-label="<?php echo feder_e($submitLabel); ?>"><?php echo feder_icon('search'); ?><span><?php echo feder_e($submitLabel); ?></span></button>
         </form>
         <?php
     }
@@ -1169,18 +1206,18 @@ if (!function_exists('feder_page_title')) {
             $source = $context['post'] ?? $context['page'];
             $label = trim((string) (is_array($source) ? ($source['title'] ?? '') : ($source->title ?? '')));
         } elseif (isset($context['author']) && is_array($context['author'])) {
-            $label = 'Texte von ' . trim((string) ($context['author']['display_name'] ?? ''));
+            $label = feder_t('Texte von ', 'Posts by ', $context['contentLocale'] ?? null) . trim((string) ($context['author']['display_name'] ?? ''));
         } elseif (isset($context['category']) && is_array($context['category'])) {
             $label = trim((string) ($context['category']['name'] ?? ''));
         } elseif (isset($context['tag']) && is_array($context['tag'])) {
-            $label = 'Schlagwort: ' . trim((string) ($context['tag']['name'] ?? ''));
+            $label = feder_t('Schlagwort: ', 'Tag: ', $context['contentLocale'] ?? null) . trim((string) ($context['tag']['name'] ?? ''));
         } elseif (array_key_exists('results', $context)) {
             $query = trim((string) ($context['query'] ?? ''));
-            $label = $query !== '' ? 'Suche: ' . $query : 'Suche';
+            $label = $query !== '' ? feder_t('Suche: ', 'Search: ', $context['contentLocale'] ?? null) . $query : feder_t('Suche', 'Search', $context['contentLocale'] ?? null);
         } elseif (isset($context['posts'])) {
-            $label = 'Alle Texte';
+            $label = feder_t('Alle Texte', 'All posts', $context['contentLocale'] ?? null);
         } elseif (http_response_code() === 404) {
-            $label = 'Seite nicht gefunden';
+            $label = feder_t('Seite nicht gefunden', 'Page not found', $context['contentLocale'] ?? null);
         }
 
         $separator = '–';

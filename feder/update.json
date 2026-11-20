@@ -3,14 +3,15 @@
   "name": "Feder",
   "type": "theme",
   "license": "free",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "min_cms_version": "4.0.0",
   "min_php": "8.4.1",
   "requires_php": "8.4.1",
-  "released": "2026-11-18",
+  "released": "2026-11-20",
   "download_url": "",
   "checksum_sha256": "",
   "changelog": {
+    "2.1.1": "Folgeaudit: Barrierefreiheit (Suchknopf, 404-Kontrast, Kontakt-Landmark), Beispieltexte keine Standardwerte mehr, Seitensprache, Kit 1.2.0",
     "2.1.0": "Audit 365CMS 4.2.0: Backslash-Adressen (/\\host) in Menüs und Customizer-Links abgelehnt, Mehrfach-Uploads im Customizer abgewiesen, Paginierung ohne REQUEST_URI. Aktiver Menüeintrag bei Installation im Unterverzeichnis, Schlagwort-Slugs mit Akzenten wie der Core, Vor/Zurück-Links ohne Beitragsinhalt. Kit 1.1.0 mit 4.2.0-Helfern (Community-Modul fail-closed, Capabilities/Rolle moderator, Slugs wie CMS\\Slug, Token-Brücke --community-*), Community im Footermenü. tested_up_to 4.2.0.",
     "2.0.0": "Kompatibilität mit 365CMS 4.0.0 und 4.1.0 (setzt 4.0.0 und PHP 8.4.1 voraus). Breaking: CSS-Präfix fd- → fdr- (Klassen, Custom Properties, data-Attribute), weil der Feed-Aggregator des Cores und die gemeinsamen 4.x-Stile --fd-*/.fd-* belegen und sonst Links, Header und Karten des Themes überschrieben; eigenes CSS im Customizer bitte anpassen. Fehlerseiten werten error_code (Fallback errorCode), error_standalone und error_retry_after aus; 403/429/503 behalten ihren Status, die Wartungsseite ist ein vollständiges Dokument mit Theme-Stylesheet. Desktop- und Mobilnavigation lösen den Core-Hook main_nav aus (Downloads, Knowledgebase, Newsletter). Neue Vorlagen contact.php (Core-Formular, Customizer-Bereich Kontakt), knowledgebase/ und newsletter/ (Core-Views im Theme-Rahmen ohne doppeltes main), gemeinsame Integrationsstile css/cms-v4.css mit Token-Brücke für hell und dunkel. Memberbereich und Newsletter-Widget übernehmen die Feder-Palette (member_head), ohne Frontend-Assets in der Member-Shell; Farbvorschlag für die Core-Loginseite (login_page.colors). Core-SEO über theme_v4_head_tags(), Vorschau-Links und Entwürfe mit noindex, ohne JSON-LD und mit Hinweisleiste; Dokumenttitel berücksichtigt $title der Core-Module. Keine Google-Fonts-Requests mehr (Schriften über die Core-Schriftverwaltung, System-Fallbacks), OptionStore statt SQL für privacy_use_local_fonts, Kategorien mit Beitragszahl in einer gebündelten Abfrage. Fallback-Menüs, Autorenlink und Newsletter-Box verlinken nur vorhandene Ziele (Newsletter-Standard /newsletter), Logo/Favicon-Fallback auf site_logo/site_favicon. Beitrags-, Seiten- und Startseitenbild als LCP mit fetchpriority, alle Bilder mit width/height und Fokus-Punkt. CSP: cms_csp_runtime_tags(true) als erstes Script.",
     "1.0.0": "Erstveröffentlichung: lesefokussiertes Blog-Theme mit Serifen-Typografie (Fraunces + Literata), Papier-Palette mit Bordeaux-Akzent, Hell-/Dunkelmodus inkl. Schalter, Lesefortschritt, Autorenbox, Teilen-Links ohne Fremd-Scripts, verwandten Beiträgen, Jahres-Beitragsliste, Themen-Chips, Kategorie-/Schlagwort-Übersichten, Autor:innen-Archiv, Suche, 404- und eigenständiger Fehlerseite. SEO-Metadaten über das Core-SEO-Modul, CSP-Nonce für alle Inline-Blöcke, lokale Schriften über den Font-Manager (local_font_slugs) und vollständiger Customizer (theme.json → customization) mit Bild-Upload pro Feld."

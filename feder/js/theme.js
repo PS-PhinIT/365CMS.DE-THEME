@@ -159,6 +159,9 @@
     Array.prototype.slice.call(document.querySelectorAll('[data-fdr-copy]')).forEach(function (button) {
         var label = button.querySelector('[data-fdr-copy-label]');
         var original = label ? label.textContent : '';
+        // Rückmeldungen kommen aus dem Markup (Sprache der Seite); die deutschen Texte sind der Rückfall.
+        var msgDone = button.getAttribute('data-fdr-copy-done') || 'Link kopiert';
+        var msgFail = button.getAttribute('data-fdr-copy-failed') || 'Kopieren nicht möglich';
 
         button.addEventListener('click', function () {
             var url = button.getAttribute('data-fdr-copy') || window.location.href;
@@ -173,12 +176,12 @@
 
             if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
                 navigator.clipboard.writeText(url).then(function () {
-                    done('Link kopiert');
+                    done(msgDone);
                 }, function () {
-                    done('Kopieren nicht möglich');
+                    done(msgFail);
                 });
             } else {
-                done('Kopieren nicht möglich');
+                done(msgFail);
             }
         });
     });

@@ -1,4 +1,4 @@
-// node run.js <themeDir>  – prüft pages/<slug>/*.html in Chromium (axe-core + eigene WCAG-2.2-Prüfungen)
+// node run.js <themeDir> [seiten,…]  (SCHEME=dark: Browser meldet prefers-color-scheme: dark) – prüft pages/<slug>/*.html in Chromium (axe-core + eigene WCAG-2.2-Prüfungen)
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
 const themeDir = path.resolve(process.argv[2]); const slug = path.basename(themeDir);
@@ -17,7 +17,7 @@ const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'ima
     for (const vp of viewports) {
       for (const motion of ['no-preference', 'reduce']) {
         if (motion === 'no-preference' && name !== 'home' && name !== 'index') continue;
-        const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: motion });
+        const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, reducedMotion: motion, colorScheme: process.env.SCHEME === 'dark' ? 'dark' : 'light' });
         const page = await ctx.newPage();
         const errors = [];
         page.on('pageerror', e => errors.push('pageerror: ' + e.message));

@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.1.1 - 2026-11-20
+
+### Folgeaudit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/feder.md`, Abschnitt 7)
+
+Nachgeholt wurden die im ersten Audit offenen Punkte: Prüfung im Browser (Chromium, axe-core, WCAG 2.2 AA bei 1280, 375 und 320 px; Werkzeug unter `DOC/audit/v4.2.0/tools/`), Kosten der Standardlink-Prüfung, Zweisprachigkeit und die fest eingebauten Beispieltexte.
+
+#### Fehler (Barrierefreiheit)
+- **Suchknopf ohne Namen:** Unter 640 px blendet das CSS den Text „Suchen“ aus; der Knopf (Suchseite, 404, Kopfzeile) hatte dann keinen zugänglichen Namen (axe `button-name`, kritisch). Der Knopf trägt jetzt `aria-label`.
+- **404/Fehlerseite:** Die große Zahl „404“ hatte als helle Füllung mit Kontur nur 1,2:1 Kontrast zum Hintergrund; sie ist jetzt in Akzentfarbe (Vollfläche).
+- **Kontaktseite:** Der `<aside>` mit den Kontaktdaten lag in einem beschrifteten `<section>` (Landmark in Landmark, axe `landmark-complementary-is-top-level`); der Rahmen ist jetzt ein `<div>`.
+
+- **Dunkelmodus, Formular-Button:** Der Absende-Button der Core-Formulare (`.cms-form__submit`, Kontaktseite) hat die Schrift fest auf Weiß; auf dem hellen Dunkelmodus-Akzent (#e8909b) ergab das 2,4:1. Die Schriftfarbe folgt jetzt dem Token „auf Akzent“.
+
+#### Inhalte
+- **Beispieltexte keine Standardwerte mehr:** `theme.json` lieferte auf jeder Installation ohne eigene Werte „Autorin & Redakteurin“, eine Kurzbiografie, das Intro („Notizen über Arbeit, Technik und das gute Leben“ mit der Angabe „Neue Texte erscheinen etwa zweimal im Monat“), den Newsletter-Text („Einmal im Monat eine kurze Mail … Kein Spam, jederzeit abbestellbar“) und die Fußzeilen-Kurzbeschreibung – Zusagen und Angaben, die nur Betreiber machen können. Die Felder sind jetzt leer (Intro-Überschrift: Seitentitel); bereits im Customizer gespeicherte Werte bleiben erhalten. **Wer die Texte weiter anzeigen möchte, trägt sie im Customizer ein.**
+
+#### Performance
+- **Standardlink-Prüfung:** Kit 1.2.0 prüft Seiten-Links mit einer Abfrage je Request statt einer `SELECT *`-Abfrage samt Seiteninhalt je Link. Bei feder (ein Standardlink auf der Startseite) ändert sich die Zahl nicht (1 → 1), die Abfrage lädt aber keine Inhalte mehr.
+
+#### Zweisprachigkeit
+- Header, Startseite, Archive, Beitrag (Teilen, Autorenbox, Vor/Zurück, Lesezeit), Seite, Suche, 404, Fußzeile, Suchformular, Paginierung, Standardmenüs und Dokumenttitel folgen der Seitensprache (`/en/…`); Datumsangaben je Sprache (`2. November 2026` / `November 2, 2026`). Die Rückmeldung des Knopfes „Link kopieren“ kommt aus dem Markup statt fest aus `theme.js`. Customizer-Standardtexte (Intro-Kicker, Überschriften, Newsletter-Button) erscheinen auf englischen Seiten englisch, solange sie nicht geändert wurden.
+
+#### Wartung
+- Gemeinsame Schicht **Kit 1.2.0** (`includes/cms-v4-compat.php`): `theme_v4_link_target()`, `theme_v4_page_index()`, `theme_v4_page_is_published()`, `theme_v4_pages_published()`; `theme_v4_link_available()`/`theme_v4_filter_links()` behalten ihre Signatur.
+- Neue Helfer `feder_t()` und `feder_text_t()`.
+
 ## 2.1.0 - 2026-11-18
 
 ### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/feder.md`)

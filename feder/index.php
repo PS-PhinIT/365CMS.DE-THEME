@@ -24,16 +24,16 @@ $topics = feder_get_categories();
 ?>
 
 <header class="fdr-archive-head fdr-measure">
-    <p class="fdr-kicker">Übersicht</p>
+    <p class="fdr-kicker"><?php echo feder_e(feder_t('Übersicht', 'Overview')); ?></p>
     <h1 class="fdr-archive-head__title"><?php echo feder_e(feder_site_title()); ?></h1>
     <?php if (feder_site_description() !== '') : ?>
         <p class="fdr-archive-head__text"><?php echo feder_e(feder_site_description()); ?></p>
     <?php endif; ?>
 </header>
 
-<section class="fdr-archive fdr-measure" aria-label="Inhalte">
+<section class="fdr-archive fdr-measure" aria-label="<?php echo feder_e(feder_t('Inhalte', 'Content')); ?>">
     <?php if ($recent !== []) : ?>
-        <h2 class="fdr-section-title">Neueste Texte</h2>
+        <h2 class="fdr-section-title"><?php echo feder_e(feder_t('Neueste Texte', 'Latest posts')); ?></h2>
         <ul class="fdr-simplelist">
             <?php foreach ($recent as $item) : ?>
                 <li>
@@ -45,7 +45,7 @@ $topics = feder_get_categories();
     <?php endif; ?>
 
     <?php if ($topics !== []) : ?>
-        <h2 class="fdr-section-title">Themen</h2>
+        <h2 class="fdr-section-title"><?php echo feder_e(feder_t('Themen', 'Topics')); ?></h2>
         <ul class="fdr-chips">
             <?php foreach ($topics as $topic) : ?>
                 <li><a class="fdr-chip" href="<?php echo feder_e($topic['url']); ?>"><?php echo feder_e($topic['name']); ?><span class="fdr-chip__count"><?php echo (int) $topic['count']; ?></span></a></li>
@@ -54,6 +54,6 @@ $topics = feder_get_categories();
     <?php endif; ?>
 
     <?php if ($recent === [] && $topics === []) : ?>
-        <p class="fdr-empty">Hier gibt es noch keine Inhalte.</p>
+        <p class="fdr-empty"><?php echo feder_e(feder_t('Hier gibt es noch keine Inhalte.', 'There is no content here yet.')); ?></p>
     <?php endif; ?>
 </section>

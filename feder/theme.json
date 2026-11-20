@@ -1,7 +1,7 @@
 {
     "name": "Feder",
     "slug": "feder",
-    "version": "2.1.0",
+    "version": "2.1.1",
     "requires_cms": "4.0.0",
     "requires_php": "8.4.1",
     "tested_up_to": "4.2.0",
@@ -45,9 +45,7 @@
         "footer-legal": "Rechtliche Links (Footer)"
     },
     "settings": {
-        "intro_kicker": "Willkommen im Blog",
-        "intro_headline": "Notizen über Arbeit, Technik und das gute Leben.",
-        "intro_text": "Hier schreibe ich über Dinge, die mich beschäftigen: Werkzeuge, Gewohnheiten und Ideen, die den Alltag leichter machen. Neue Texte erscheinen etwa zweimal im Monat."
+        "intro_kicker": "Willkommen im Blog"
     },
     "customization": {
         "colors": {
@@ -150,8 +148,8 @@
             "description": "Angaben für die Vorstellung auf der Startseite und die Autorenbox unter Beiträgen.",
             "settings": {
                 "author_name": { "label": "Name", "type": "text", "default": "" , "description": "Leer = Seitentitel verwenden."},
-                "author_role": { "label": "Rolle / Kurzbeschreibung", "type": "text", "default": "Autorin & Redakteurin" },
-                "author_bio": { "label": "Kurzbiografie", "type": "textarea", "default": "Ich schreibe über Technik, Arbeit und Alltag – verständlich, ehrlich und ohne Buzzwords." },
+                "author_role": { "label": "Rolle / Kurzbeschreibung", "type": "text", "default": "", "description": "Leer = keine Angabe. Bis 2.1.0 stand hier „Autorin & Redakteurin“." },
+                "author_bio": { "label": "Kurzbiografie", "type": "textarea", "default": "", "description": "Leer = Autorenbox ohne Text. Bis 2.1.0 stand hier ein Beispieltext über Technik, Arbeit und Alltag." },
                 "author_image": { "label": "Portrait (Bild-URL)", "type": "image", "default": "" },
                 "author_url": { "label": "Link „Mehr über mich“", "type": "text", "default": "/ueber-uns" },
                 "social_mastodon": { "label": "Mastodon-Profil (URL)", "type": "text", "default": "" },
@@ -165,8 +163,8 @@
             "label": "Startseite",
             "settings": {
                 "intro_kicker": { "label": "Intro: Kicker", "type": "text", "default": "Willkommen im Blog" },
-                "intro_headline": { "label": "Intro: Überschrift", "type": "text", "default": "Notizen über Arbeit, Technik und das gute Leben." },
-                "intro_text": { "label": "Intro: Text", "type": "textarea", "default": "Hier schreibe ich über Dinge, die mich beschäftigen: Werkzeuge, Gewohnheiten und Ideen, die den Alltag leichter machen. Neue Texte erscheinen etwa zweimal im Monat." },
+                "intro_headline": { "label": "Intro: Überschrift", "type": "text", "default": "", "description": "Leer = Seitentitel." },
+                "intro_text": { "label": "Intro: Text", "type": "textarea", "default": "", "description": "Leer = kein Einleitungstext. Bis 2.1.0 stand hier ein Beispieltext mit der Angabe „etwa zweimal im Monat“." },
                 "show_featured": { "label": "Neuesten Beitrag hervorheben", "type": "checkbox", "default": true },
                 "stream_heading": { "label": "Überschrift der Beitragsliste", "type": "text", "default": "Neueste Texte" },
                 "stream_count": { "label": "Anzahl Beiträge in der Liste", "type": "number", "default": 8, "min": 3, "max": 20 },
@@ -174,7 +172,7 @@
                 "topics_heading": { "label": "Überschrift Themen", "type": "text", "default": "Themen" },
                 "show_newsletter": { "label": "Newsletter-/Kontaktbox anzeigen", "type": "checkbox", "default": true },
                 "newsletter_heading": { "label": "Box: Überschrift", "type": "text", "default": "Neue Texte per E-Mail" },
-                "newsletter_text": { "label": "Box: Text", "type": "textarea", "default": "Einmal im Monat eine kurze Mail mit neuen Beiträgen und Leseempfehlungen. Kein Spam, jederzeit abbestellbar." },
+                "newsletter_text": { "label": "Box: Text", "type": "textarea", "default": "", "description": "Leer = nur Überschrift und Button. Bis 2.1.0 stand hier „Einmal im Monat … Kein Spam, jederzeit abbestellbar“ – eine Zusage, die nur Betreiber machen können." },
                 "newsletter_cta_label": { "label": "Box: Button-Text", "type": "text", "default": "Newsletter abonnieren" },
                 "newsletter_cta_url": { "label": "Box: Button-Link", "type": "text", "default": "/newsletter", "description": "Standard: Core-Newsletter. Der Button erscheint nur, wenn die Seite bzw. das Modul existiert." }
             }
@@ -194,7 +192,7 @@
         "footer": {
             "label": "Footer",
             "settings": {
-                "footer_tagline": { "label": "Kurzbeschreibung", "type": "textarea", "default": "Ein persönliches Blog über Technik, Arbeit und Alltag." },
+                "footer_tagline": { "label": "Kurzbeschreibung", "type": "textarea", "default": "", "description": "Leer = keine Kurzbeschreibung. Bis 2.1.0 stand hier „Ein persönliches Blog über Technik, Arbeit und Alltag.“" },
                 "footer_copyright": { "label": "Copyright-Text", "type": "text", "default": "© {year} {site_title}", "description": "Platzhalter: {year}, {site_title}" },
                 "show_back_to_top": { "label": "Link „Nach oben“ anzeigen", "type": "checkbox", "default": true }
             }

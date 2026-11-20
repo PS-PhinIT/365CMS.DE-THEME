@@ -24,25 +24,25 @@ $isOverview = !empty($isOverview);
 $overviewItems = isset($overviewItems) && is_array($overviewItems) ? $overviewItems : [];
 $showReadingTime = feder_flag('feder_article', 'show_reading_time', true);
 
-$kicker = 'Archiv';
-$title = 'Alle Texte';
+$kicker = feder_t('Archiv', 'Archive');
+$title = feder_t('Alle Texte', 'All posts');
 $description = '';
 $pageParam = 'p';
 $searchable = false;
 
 if (isset($author) && is_array($author)) {
-    $kicker = 'Autor:in';
-    $title = trim((string) ($author['display_name'] ?? 'Autor:in'));
+    $kicker = feder_t('Autor:in', 'Author');
+    $title = trim((string) ($author['display_name'] ?? feder_t('Autor:in', 'Author')));
     $description = trim((string) ($author['bio'] ?? ''));
     $pageParam = 'page';
 } elseif (isset($category) && is_array($category)) {
-    $kicker = $isOverview ? 'Übersicht' : 'Thema';
-    $title = trim((string) ($category['name'] ?? 'Thema'));
+    $kicker = $isOverview ? feder_t('Übersicht', 'Overview') : feder_t('Thema', 'Topic');
+    $title = trim((string) ($category['name'] ?? feder_t('Thema', 'Topic')));
     $description = trim((string) ($category['description'] ?? ''));
     $searchable = true;
 } elseif (isset($tag) && is_array($tag)) {
-    $kicker = $isOverview ? 'Übersicht' : 'Schlagwort';
-    $title = $isOverview ? trim((string) ($tag['name'] ?? 'Schlagwörter')) : '#' . trim((string) ($tag['name'] ?? ''));
+    $kicker = $isOverview ? feder_t('Übersicht', 'Overview') : feder_t('Schlagwort', 'Tag');
+    $title = $isOverview ? trim((string) ($tag['name'] ?? feder_t('Schlagwörter', 'Tags'))) : '#' . trim((string) ($tag['name'] ?? ''));
     $description = trim((string) ($tag['description'] ?? ''));
     $searchable = true;
 }
@@ -62,16 +62,16 @@ $formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PH
     <?php endif; ?>
     <p class="fdr-meta">
         <?php if ($isOverview) : ?>
-            <?php echo (int) $total; ?> <?php echo $total === 1 ? 'Eintrag' : 'Einträge'; ?>
+            <?php echo feder_e((int) $total . ' ' . ($total === 1 ? feder_t('Eintrag', 'entry') : feder_t('Einträge', 'entries'))); ?>
         <?php else : ?>
-            <?php echo (int) $total; ?> <?php echo $total === 1 ? 'Beitrag' : 'Beiträge'; ?><?php if ($totalPages > 1) : ?> · Seite <?php echo $currentPage; ?> von <?php echo $totalPages; ?><?php endif; ?>
+            <?php echo feder_e((int) $total . ' ' . ($total === 1 ? feder_t('Beitrag', 'post') : feder_t('Beiträge', 'posts'))); ?><?php if ($totalPages > 1) : ?> · <?php echo feder_e(sprintf(feder_t('Seite %d von %d', 'Page %d of %d'), $currentPage, $totalPages)); ?><?php endif; ?>
         <?php endif; ?>
     </p>
     <?php if ($searchable) : ?>
         <form class="fdr-searchform fdr-searchform--inline" method="get" action="<?php echo feder_e($formAction); ?>" role="search">
-            <label for="fdr-archive-q" class="fdr-visually-hidden">In diesem Archiv suchen</label>
-            <input id="fdr-archive-q" type="search" name="q" value="<?php echo feder_e($archiveQuery); ?>" placeholder="In „<?php echo feder_e($title); ?>“ suchen …" maxlength="120">
-            <button type="submit" class="fdr-button fdr-button--ghost"><?php echo feder_icon('search'); ?><span>Filtern</span></button>
+            <label for="fdr-archive-q" class="fdr-visually-hidden"><?php echo feder_e(feder_t('In diesem Archiv suchen', 'Search this archive')); ?></label>
+            <input id="fdr-archive-q" type="search" name="q" value="<?php echo feder_e($archiveQuery); ?>" placeholder="<?php echo feder_e(sprintf(feder_t('In „%s“ suchen …', 'Search in “%s” …'), $title)); ?>" maxlength="120">
+            <button type="submit" class="fdr-button fdr-button--ghost"><?php echo feder_icon('search'); ?><span><?php echo feder_e(feder_t('Filtern', 'Filter')); ?></span></button>
         </form>
     <?php endif; ?>
 </header>
@@ -79,7 +79,7 @@ $formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PH
 <?php if ($isOverview) : ?>
     <section class="fdr-overview fdr-wide" aria-label="<?php echo feder_e($title); ?>">
         <?php if ($overviewItems === []) : ?>
-            <p class="fdr-empty fdr-measure">Keine Einträge gefunden.</p>
+            <p class="fdr-empty fdr-measure"><?php echo feder_e(feder_t('Keine Einträge gefunden.', 'No entries found.')); ?></p>
         <?php else : ?>
             <ul class="fdr-overview__grid">
                 <?php foreach ($overviewItems as $item) :
@@ -95,7 +95,7 @@ $formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PH
                             <?php if (trim((string) ($item['description'] ?? '')) !== '') : ?>
                                 <span class="fdr-overview__text"><?php echo feder_e((string) $item['description']); ?></span>
                             <?php endif; ?>
-                            <span class="fdr-overview__count"><?php echo $count; ?> <?php echo $count === 1 ? 'Beitrag' : 'Beiträge'; ?></span>
+                            <span class="fdr-overview__count"><?php echo feder_e($count . ' ' . ($count === 1 ? feder_t('Beitrag', 'post') : feder_t('Beiträge', 'posts'))); ?></span>
                         </a>
                     </li>
                 <?php endforeach; ?>
@@ -103,11 +103,11 @@ $formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PH
         <?php endif; ?>
     </section>
 <?php else : ?>
-    <section class="fdr-archive fdr-measure" aria-label="Beiträge">
+    <section class="fdr-archive fdr-measure" aria-label="<?php echo feder_e(feder_t('Beiträge', 'Posts')); ?>">
         <?php if ($posts === []) : ?>
             <div class="fdr-empty">
-                <p><?php echo $archiveQuery !== '' ? 'Keine Beiträge passen zu „' . feder_e($archiveQuery) . '“.' : 'Hier ist noch nichts erschienen.'; ?></p>
-                <p><a class="fdr-link-arrow" href="<?php echo feder_e(feder_url('/blog')); ?>">Zu allen Texten<?php echo feder_icon('arrow'); ?></a></p>
+                <p><?php echo $archiveQuery !== '' ? feder_e(sprintf(feder_t('Keine Beiträge passen zu „%s“.', 'No posts match “%s”.'), $archiveQuery)) : feder_e(feder_t('Hier ist noch nichts erschienen.', 'Nothing has been published here yet.')); ?></p>
+                <p><a class="fdr-link-arrow" href="<?php echo feder_e(feder_url('/blog')); ?>"><?php echo feder_e(feder_t('Zu allen Texten', 'Go to all posts')); ?><?php echo feder_icon('arrow'); ?></a></p>
             </div>
         <?php else : ?>
             <ol class="fdr-cards">
@@ -137,7 +137,7 @@ $formAction = (string) (parse_url(theme_v4_site_url(theme_v4_request_path()), PH
                                     <p class="fdr-card__excerpt"><?php echo feder_e($itemExcerpt); ?></p>
                                 <?php endif; ?>
                                 <?php if ($showReadingTime && isset($item->content)) : ?>
-                                    <p class="fdr-meta"><?php echo feder_icon('clock'); ?><span><?php echo feder_reading_time((string) $item->content); ?> Min. Lesezeit</span></p>
+                                    <p class="fdr-meta"><?php echo feder_icon('clock'); ?><span><?php echo feder_e(sprintf(feder_t('%d Min. Lesezeit', '%d min read'), feder_reading_time((string) $item->content))); ?></span></p>
                                 <?php endif; ?>
                             </div>
                             <?php if ($itemImage !== '') : ?>
