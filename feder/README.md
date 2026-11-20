@@ -1,6 +1,6 @@
 # Feder – Blog-Theme für 365CMS
 
-**Version:** 2.1.0
+**Version:** 2.1.1
 **Ziel:** 365CMS 4.0.0 – 4.2.0 · PHP 8.4.1+
 **Slug:** `feder`
 **Kategorie:** Blog

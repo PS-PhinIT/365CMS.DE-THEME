@@ -37,7 +37,7 @@ $updated = (string) ($page['content_updated_at'] ?? $page['updated_at'] ?? '');
                 <p class="fdr-article__dek"><?php echo feder_e($lead); ?></p>
             <?php endif; ?>
             <?php if ($updated !== '' && feder_format_date($updated) !== '') : ?>
-                <p class="fdr-meta">Zuletzt aktualisiert am <time datetime="<?php echo feder_e(feder_format_date($updated, 'iso')); ?>"><?php echo feder_e(feder_format_date($updated)); ?></time></p>
+                <p class="fdr-meta"><?php echo feder_e(feder_t('Zuletzt aktualisiert am', 'Last updated on')); ?> <time datetime="<?php echo feder_e(feder_format_date($updated, 'iso')); ?>"><?php echo feder_e(feder_format_date($updated)); ?></time></p>
             <?php endif; ?>
         </header>
     <?php elseif ($title !== '') : ?>
@@ -54,7 +54,7 @@ $updated = (string) ($page['content_updated_at'] ?? $page['updated_at'] ?? '');
         <?php if (trim($content) !== '') : ?>
             <?php echo $content; // Vom Core gerendertes und sanitiertes HTML (Editor.js, Downloads, Feeds) ?>
         <?php else : ?>
-            <p class="fdr-empty">Diese Seite hat noch keinen Inhalt.</p>
+            <p class="fdr-empty"><?php echo feder_e(feder_t('Diese Seite hat noch keinen Inhalt.', 'This page has no content yet.')); ?></p>
         <?php endif; ?>
     </div>
 </article>

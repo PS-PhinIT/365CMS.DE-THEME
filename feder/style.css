@@ -4,7 +4,7 @@ Theme URI: https://365cms.de
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: Lesefokussiertes Blog-Theme für Autor:innen, Essays und persönliche Blogs – Serifen-Typografie (Fraunces + Literata), Papier-Palette mit Bordeaux-Akzent, Hell-/Dunkelmodus, Lesefortschritt, Autorenbox und verwandte Beiträge.
-Version: 2.1.0
+Version: 2.1.1
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
 Tested up to: 4.2.0
@@ -1285,13 +1285,13 @@ textarea {
 
 .fdr-notfound__code {
     margin: 0 0 0.5rem;
-    color: var(--fdr-accent-soft);
+    /* Vollfarbe statt heller Füllung mit Kontur: Füllung auf Hintergrund hatte nur 1,2:1 (WCAG 1.4.11/1.4.3). */
+    color: var(--fdr-accent);
     font-family: var(--fdr-font-heading);
     font-size: clamp(5rem, 3rem + 10vw, 9rem);
     font-style: italic;
     font-weight: 600;
     line-height: 0.9;
-    -webkit-text-stroke: 1px var(--fdr-accent);
 }
 
 .fdr-notfound .fdr-section-title {
@@ -2204,6 +2204,12 @@ textarea {
     :root:not([data-theme="light"]) {
         --tv4-border-strong: #7a6d60;
     }
+}
+
+/* Formular-Button des Cores (forms-public.css setzt die Schrift fest auf Weiß): Im Dunkelmodus ist der Akzent hell
+   (#e8909b), Weiß darauf hätte nur 2,4:1. Schriftfarbe folgt dem Token „auf Akzent“ (hell: Papier, dunkel: dunkles Papier). */
+.cms-form .cms-form__submit {
+    color: var(--tv4-on-primary);
 }
 
 /* Core-Module (Knowledgebase, Newsletter) im Feder-Rahmen; der Header ist höchstens sticky, kein Versatz nötig. */

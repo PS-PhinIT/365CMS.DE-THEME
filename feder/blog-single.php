@@ -52,9 +52,9 @@ $boxImage = feder_media_url(feder_text('feder_author', 'author_image'));
 $boxUrl = feder_safe_url(feder_text('feder_author', 'author_url', '/ueber-uns'));
 
 $shareLinks = [
-    ['label' => 'Per E-Mail teilen', 'icon' => 'mail', 'url' => 'mailto:?subject=' . rawurlencode($title) . '&body=' . rawurlencode($permalink)],
-    ['label' => 'Auf LinkedIn teilen', 'icon' => 'linkedin', 'url' => 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode($permalink)],
-    ['label' => 'Auf Bluesky teilen', 'icon' => 'bluesky', 'url' => 'https://bsky.app/intent/compose?text=' . rawurlencode($title . ' ' . $permalink)],
+    ['label' => feder_t('Per E-Mail teilen', 'Share by email'), 'icon' => 'mail', 'url' => 'mailto:?subject=' . rawurlencode($title) . '&body=' . rawurlencode($permalink)],
+    ['label' => feder_t('Auf LinkedIn teilen', 'Share on LinkedIn'), 'icon' => 'linkedin', 'url' => 'https://www.linkedin.com/sharing/share-offsite/?url=' . rawurlencode($permalink)],
+    ['label' => feder_t('Auf Bluesky teilen', 'Share on Bluesky'), 'icon' => 'bluesky', 'url' => 'https://bsky.app/intent/compose?text=' . rawurlencode($title . ' ' . $permalink)],
 ];
 ?>
 
@@ -71,15 +71,15 @@ $shareLinks = [
             <span class="fdr-byline__avatar" aria-hidden="true"><?php echo feder_e(feder_initials($authorName !== '' ? $authorName : feder_site_title())); ?></span>
             <p class="fdr-byline__text">
                 <?php if ($authorName !== '') : ?>
-                    <span>von <?php if ($authorUrl !== '') : ?><a href="<?php echo feder_e($authorUrl); ?>" rel="author"><?php echo feder_e($authorName); ?></a><?php else : ?><?php echo feder_e($authorName); ?><?php endif; ?></span>
+                    <span><?php echo feder_e(feder_t('von', 'by')); ?> <?php if ($authorUrl !== '') : ?><a href="<?php echo feder_e($authorUrl); ?>" rel="author"><?php echo feder_e($authorName); ?></a><?php else : ?><?php echo feder_e($authorName); ?><?php endif; ?></span>
                 <?php endif; ?>
                 <span class="fdr-byline__meta">
                     <time datetime="<?php echo feder_e(feder_format_date($published, 'iso')); ?>"><?php echo feder_e(feder_format_date($published)); ?></time>
                     <?php if ($showUpdated) : ?>
-                        <span class="fdr-dot" aria-hidden="true">·</span><span>aktualisiert am <time datetime="<?php echo feder_e(feder_format_date($updated, 'iso')); ?>"><?php echo feder_e(feder_format_date($updated)); ?></time></span>
+                        <span class="fdr-dot" aria-hidden="true">·</span><span><?php echo feder_e(feder_t('aktualisiert am', 'updated on')); ?> <time datetime="<?php echo feder_e(feder_format_date($updated, 'iso')); ?>"><?php echo feder_e(feder_format_date($updated)); ?></time></span>
                     <?php endif; ?>
                     <?php if ($showReadingTime) : ?>
-                        <span class="fdr-dot" aria-hidden="true">·</span><span><?php echo feder_reading_time($content); ?> Min. Lesezeit</span>
+                        <span class="fdr-dot" aria-hidden="true">·</span><span><?php echo feder_e(sprintf(feder_t('%d Min. Lesezeit', '%d min read'), feder_reading_time($content))); ?></span>
                     <?php endif; ?>
                 </span>
             </p>
@@ -98,7 +98,7 @@ $shareLinks = [
 
     <footer class="fdr-article__footer fdr-measure">
         <?php if ($tags !== []) : ?>
-            <ul class="fdr-tags" aria-label="Schlagwörter">
+            <ul class="fdr-tags" aria-label="<?php echo feder_e(feder_t('Schlagwörter', 'Tags')); ?>">
                 <?php foreach ($tags as $tagItem) : ?>
                     <li><a class="fdr-chip fdr-chip--small" href="<?php echo feder_e($tagItem['url']); ?>">#<?php echo feder_e($tagItem['name']); ?></a></li>
                 <?php endforeach; ?>
@@ -107,9 +107,9 @@ $shareLinks = [
 
         <?php if ($showShare) : ?>
             <div class="fdr-share">
-                <p class="fdr-share__label"><?php echo feder_icon('share'); ?><span>Teilen</span></p>
+                <p class="fdr-share__label"><?php echo feder_icon('share'); ?><span><?php echo feder_e(feder_t('Teilen', 'Share')); ?></span></p>
                 <ul class="fdr-share__list">
-                    <li><button type="button" class="fdr-share__button" data-fdr-copy="<?php echo feder_e($permalink); ?>"><?php echo feder_icon('link'); ?><span data-fdr-copy-label>Link kopieren</span></button></li>
+                    <li><button type="button" class="fdr-share__button" data-fdr-copy="<?php echo feder_e($permalink); ?>" data-fdr-copy-done="<?php echo feder_e(feder_t('Link kopiert', 'Link copied')); ?>" data-fdr-copy-failed="<?php echo feder_e(feder_t('Kopieren nicht möglich', 'Copying not possible')); ?>"><?php echo feder_icon('link'); ?><span data-fdr-copy-label><?php echo feder_e(feder_t('Link kopieren', 'Copy link')); ?></span></button></li>
                     <?php foreach ($shareLinks as $share) : ?>
                         <li><a class="fdr-share__button" href="<?php echo feder_e($share['url']); ?>"<?php echo str_starts_with($share['url'], 'http') ? ' target="_blank" rel="noopener noreferrer"' : ''; ?>><?php echo feder_icon($share['icon']); ?><span class="fdr-visually-hidden"><?php echo feder_e($share['label']); ?></span></a></li>
                     <?php endforeach; ?>
@@ -118,7 +118,7 @@ $shareLinks = [
         <?php endif; ?>
 
         <?php if ($showAuthorBox) : ?>
-            <aside class="fdr-authorbox" aria-label="Über die Autorin / den Autor">
+            <aside class="fdr-authorbox" aria-label="<?php echo feder_e(feder_t('Über die Autorin / den Autor', 'About the author')); ?>">
                 <div class="fdr-authorbox__portrait" aria-hidden="true">
                     <?php if ($boxImage !== '') : ?>
                         <img src="<?php echo feder_e($boxImage); ?>" alt="" width="72" height="72" loading="lazy" decoding="async">
@@ -132,23 +132,23 @@ $shareLinks = [
                         <p class="fdr-authorbox__bio"><?php echo feder_e($boxBio); ?></p>
                     <?php endif; ?>
                     <?php if ($boxUrl !== '' && theme_v4_link_available(feder_url($boxUrl))) : ?>
-                        <a class="fdr-link-arrow" href="<?php echo feder_e(feder_url($boxUrl)); ?>">Mehr über mich<?php echo feder_icon('arrow'); ?></a>
+                        <a class="fdr-link-arrow" href="<?php echo feder_e(feder_url($boxUrl)); ?>"><?php echo feder_e(feder_t('Mehr über mich', 'More about me')); ?><?php echo feder_icon('arrow'); ?></a>
                     <?php endif; ?>
                 </div>
             </aside>
         <?php endif; ?>
 
         <?php if ($adjacent['prev'] !== null || $adjacent['next'] !== null) : ?>
-            <nav class="fdr-postnav" aria-label="Weitere Beiträge">
+            <nav class="fdr-postnav" aria-label="<?php echo feder_e(feder_t('Weitere Beiträge', 'More posts')); ?>">
                 <?php if ($adjacent['prev'] !== null) : ?>
                     <a class="fdr-postnav__link fdr-postnav__link--prev" href="<?php echo feder_e(feder_post_link($adjacent['prev'])); ?>" rel="prev">
-                        <span class="fdr-postnav__label"><?php echo feder_icon('arrow-left'); ?>Älterer Text</span>
+                        <span class="fdr-postnav__label"><?php echo feder_icon('arrow-left'); ?><?php echo feder_e(feder_t('Älterer Text', 'Older post')); ?></span>
                         <span class="fdr-postnav__title"><?php echo feder_e((string) ($adjacent['prev']->title ?? '')); ?></span>
                     </a>
                 <?php endif; ?>
                 <?php if ($adjacent['next'] !== null) : ?>
                     <a class="fdr-postnav__link fdr-postnav__link--next" href="<?php echo feder_e(feder_post_link($adjacent['next'])); ?>" rel="next">
-                        <span class="fdr-postnav__label">Neuerer Text<?php echo feder_icon('arrow'); ?></span>
+                        <span class="fdr-postnav__label"><?php echo feder_e(feder_t('Neuerer Text', 'Newer post')); ?><?php echo feder_icon('arrow'); ?></span>
                         <span class="fdr-postnav__title"><?php echo feder_e((string) ($adjacent['next']->title ?? '')); ?></span>
                     </a>
                 <?php endif; ?>
@@ -159,7 +159,7 @@ $shareLinks = [
 
 <?php if ($related !== []) : ?>
     <section class="fdr-related fdr-wide" aria-labelledby="fdr-related-title">
-        <h2 class="fdr-section-title" id="fdr-related-title"><?php echo feder_e(feder_text('feder_article', 'related_heading', 'Weiterlesen')); ?></h2>
+        <h2 class="fdr-section-title" id="fdr-related-title"><?php echo feder_e(feder_text_t('feder_article', 'related_heading', 'Weiterlesen', 'Keep reading')); ?></h2>
         <ul class="fdr-related__grid">
             <?php foreach ($related as $item) :
                 $itemUrl = feder_post_link($item);

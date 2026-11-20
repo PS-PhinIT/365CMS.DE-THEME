@@ -50,7 +50,7 @@
 
 ## 4. Offene Punkte aus dem 4.0/4.1-Audit
 
-- Neue SQL-Abfragen nur gegen Stubs geprüft (`ONLY_FULL_GROUP_BY`) → Abfragen erneut lesen.
+- Neue SQL-Abfragen nur gegen Stubs geprüft (`ONLY_FULL_GROUP_BY`) → Abfragen erneut lesen. → erneut gelesen in 4.1.1-Folgeaudit (Abschnitt 7): keine Änderung nötig, Befunde unten.
 - Member-Shell bewusst nur hell.
 
 ## 5. Abnahme
@@ -81,3 +81,44 @@ Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 2.1.0, Vertragstes
 | K4 | – | `--tv4-*` zeigt auf `--fdr-*` und folgt dem Dark Mode; Präfix `fdr-` kollidiert nicht | geprüft |
 | K5 | – | Header öffnet `<main>`: Kit wandelt `<main>` künftiger Community-Overrides in `<div>` | vorbereitet |
 | K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test inkl. `blog`, `category`, `tag`, `author` | grün |
+
+## 7. Folgeaudit (2026-11-20, umgesetzt in 2.1.1, Kit 1.2.0)
+
+Das Erstaudit (Abschnitt 6) war statisch und per Render-Test. Offen waren die Browser-/axe-Prüfung, die Kostenmessung der Kit-Linkprüfung, die Seitensprache und die Beispieltexte in `theme.json`. Werkzeug: [`tools/`](tools/README.md).
+
+### Messung vor den Korrekturen
+
+| Prüfung | Ergebnis am Stand 2.1.0 |
+|---|---|
+| Chromium + axe-core (WCAG 2.0–2.2 A/AA, Best Practice), 13 Seitenvarianten × 1280/375/320 px (hell) | 16 von 45 Läufen mit Befunden: `button-name` (kritisch, 6 Läufe), `color-contrast` (9 Läufe, „404“ 1,17:1), `landmark-complementary-is-top-level` (3 Läufe, Kontaktseite) |
+| Datenbankabfragen für Standardlinks (Attrappe zählt `PageManager::getPageBySlug()`) | Startseite 1 Aufruf (`SELECT *` samt Inhalt), 404/Archiv/Beitrag 0 |
+| Texte ohne eigene Werte | Startseite und Autorenbox mit Rolle „Autorin & Redakteurin“, Kurzbiografie, Intro mit „etwa zweimal im Monat“, Newsletter-Zusage „Einmal im Monat … Kein Spam“ |
+| Sprache `/en/…` | nur Skip-Link und Vorschauhinweis übersetzt |
+
+### Befunde
+
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| Q3 | **hoch** | Suchknopf (Suchseite, 404, Kopfzeile) ohne zugänglichen Namen unter 640 px: das CSS blendet den Text aus (axe `button-name`) | `aria-label` |
+| Q3 | mittel | „404“/Fehlercode als helle Füllung mit Kontur: 1,2:1 zum Hintergrund | Vollfarbe in Akzentfarbe |
+| Q3 | **hoch** | Dunkelmodus: Absende-Button der Core-Formulare (`.cms-form__submit`, Kontaktseite) mit fest weißer Schrift auf dem hellen Akzent (#e8909b): 2,4:1 (axe `color-contrast`, nur im Dunkelmodus-Lauf sichtbar) | Schriftfarbe über `--tv4-on-primary` |
+| Q3 | niedrig | Kontaktseite: `<aside>` in beschriftetem `<section>` (Landmark in Landmark) | `<div>` |
+| S11/Demo | **mittel** | Beispieltexte als Standardwerte (`theme.json`, `settings` und Customizer): Rolle „Autorin & Redakteurin“, Kurzbiografie, Intro mit Veröffentlichungsrhythmus, Newsletter-Zusage „Kein Spam, jederzeit abbestellbar“, Fußzeilen-Kurzbeschreibung – erscheinen auf jeder Installation | Standardwerte leer (Intro-Überschrift: Seitentitel), Beschreibungen nennen den früheren Text; gespeicherte Werte bleiben |
+| P1 | mittel | `theme_v4_link_available()`: je Link eine `SELECT *`-Abfrage samt Inhalt (betrifft alle Themes) | Kit 1.2.0: 1 Abfrage je Request (bei feder 1 → 1, ohne Inhalte) |
+| B4 | mittel | Seitensprache: Header (Suche, Menü, Farbschema), Startseite, Archive, Beitrag, Seite, Suche, 404, Fußzeile, Suchformular, Paginierung, Standardmenüs, Dokumenttitel, Datum und Rückmeldung „Link kopiert“ (fest in `theme.js`) nur deutsch | `feder_t()`, `feder_text_t()`, `data-fdr-copy-*`, englisches Datumsformat |
+| S6 | – | Customizer-Upload, Array-Fall (`u_x[]`) aus 2.1.0 erneut geprüft | kein Befund |
+| S7 | – | Abfragen erneut gelesen (`ONLY_FULL_GROUP_BY`, Platzhalter, `LIMIT/OFFSET`) | kein Befund |
+| Q3 | – | axe (hell und mit `prefers-color-scheme: dark`): Kontraste, Zielgrößen (2.5.8), Links im Fließtext, Fokus, Kopfzeile bei 320 px | kein Befund |
+
+### Ergebnis nach den Korrekturen
+
+- Chromium/axe: 45 Läufe (13 Seitenvarianten × 1280/375/320 px, teils mit/ohne reduzierte Bewegung, inkl. angemeldet, ohne Beispielinhalte, englisch) ohne Befund; zusätzlich 27 Läufe im Dunkelmodus (`SCHEME=dark`: Startseite, Beitrag, Seite, Suche, 404, Kontakt, Fehlerseite) ohne Befund.
+- `php -l`, `TESTS/theme-contract` des Cores (13 Themes), Render-/Fuzz-Test inkl. `blog`, `category`, `tag`, `author`, Kit-Tests grün.
+- Englische Startseite im Render-Test: keine deutschen Theme-Texte außer Customizer-Eingaben und Menüs des Betreibers.
+
+### Offen / Grenzen
+
+- Die Prüfung läuft gegen Attrappen der Core-Klassen, ohne echte Installation (CSP-Header, Core-Stylesheets, Plugins). Kontraste gelten für die Standardpalette; eigene Customizer-Farben sind nicht geprüft.
+- Customizer-Texte, die der Betreiber geändert hat, sind einsprachig; nur unveränderte Standardtexte werden übersetzt.
+- Die Standardlinks (Fußzeile, Autorenlink) zeigen auf englischen Seiten auf die Standardrouten (ohne `/en/`); nur die Beschriftungen sind übersetzt.
+- Der Dokumenttitel nutzt die Seitensprache aus dem Kontext (`contentLocale`), sonst aus dem Pfad.

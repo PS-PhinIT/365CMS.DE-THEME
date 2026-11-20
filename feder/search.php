@@ -22,18 +22,18 @@ $topics = $count === 0 ? feder_get_categories(8) : [];
 ?>
 
 <header class="fdr-archive-head fdr-measure">
-    <p class="fdr-kicker">Suche</p>
+    <p class="fdr-kicker"><?php echo feder_e(feder_t('Suche', 'Search')); ?></p>
     <h1 class="fdr-archive-head__title">
         <?php if ($searchQuery !== '') : ?>
-            <?php echo $count; ?> <?php echo $count === 1 ? 'Treffer' : 'Treffer'; ?> für „<?php echo feder_e($searchQuery); ?>“
+            <?php echo feder_e(feder_t(sprintf('%d Treffer für „%s“', $count, $searchQuery), sprintf($count === 1 ? '%d result for “%s”' : '%d results for “%s”', $count, $searchQuery))); ?>
         <?php else : ?>
-            Was möchten Sie lesen?
+            <?php echo feder_e(feder_t('Was möchten Sie lesen?', 'What would you like to read?')); ?>
         <?php endif; ?>
     </h1>
     <?php feder_search_form('fdr-search-page', $searchQuery, 'fdr-searchform--large'); ?>
 </header>
 
-<section class="fdr-archive fdr-measure" aria-label="Suchergebnisse">
+<section class="fdr-archive fdr-measure" aria-label="<?php echo feder_e(feder_t('Suchergebnisse', 'Search results')); ?>">
     <?php if ($results !== []) : ?>
         <ol class="fdr-results">
             <?php foreach ($results as $result) :
@@ -63,12 +63,12 @@ $topics = $count === 0 ? feder_get_categories(8) : [];
         </ol>
     <?php elseif ($searchQuery !== '') : ?>
         <div class="fdr-empty">
-            <p>Zu „<?php echo feder_e($searchQuery); ?>“ wurde nichts gefunden. Versuchen Sie einen anderen Begriff oder stöbern Sie in den Themen.</p>
+            <p><?php echo feder_e(sprintf(feder_t('Zu „%s“ wurde nichts gefunden. Versuchen Sie einen anderen Begriff oder stöbern Sie in den Themen.', 'Nothing found for “%s”. Try a different term or browse the topics.'), $searchQuery)); ?></p>
         </div>
     <?php endif; ?>
 
     <?php if ($topics !== []) : ?>
-        <h2 class="fdr-section-title">Themen</h2>
+        <h2 class="fdr-section-title"><?php echo feder_e(feder_t('Themen', 'Topics')); ?></h2>
         <ul class="fdr-chips">
             <?php foreach ($topics as $topic) : ?>
                 <li><a class="fdr-chip" href="<?php echo feder_e($topic['url']); ?>"><?php echo feder_e($topic['name']); ?><span class="fdr-chip__count"><?php echo (int) $topic['count']; ?></span></a></li>

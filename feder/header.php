@@ -87,27 +87,27 @@ $bodyClasses = feder_body_class(
             <?php endif; ?>
         </a>
 
-        <nav class="fdr-nav" aria-label="Hauptnavigation">
+        <nav class="fdr-nav" aria-label="<?php echo feder_e(feder_t('Hauptnavigation', 'Main navigation')); ?>">
             <?php feder_nav_menu('primary', 'fdr-nav__list', feder_default_menu('primary'), 'desktop'); ?>
         </nav>
 
         <div class="fdr-header__actions">
             <?php if ($showSearch) : ?>
                 <button type="button" class="fdr-icon-button" data-fdr-toggle="search" aria-controls="fdr-search-panel" aria-expanded="false">
-                    <?php echo feder_icon('search'); ?><span class="fdr-visually-hidden">Suche öffnen</span>
+                    <?php echo feder_icon('search'); ?><span class="fdr-visually-hidden"><?php echo feder_e(feder_t('Suche öffnen', 'Open search')); ?></span>
                 </button>
             <?php endif; ?>
             <?php if ($showToggle) : ?>
                 <button type="button" class="fdr-icon-button fdr-scheme-toggle" data-fdr-scheme-toggle aria-pressed="false">
                     <span class="fdr-scheme-toggle__sun"><?php echo feder_icon('sun'); ?></span>
                     <span class="fdr-scheme-toggle__moon"><?php echo feder_icon('moon'); ?></span>
-                    <span class="fdr-visually-hidden">Dunkles Farbschema</span>
+                    <span class="fdr-visually-hidden"><?php echo feder_e(feder_t('Dunkles Farbschema', 'Dark color scheme')); ?></span>
                 </button>
             <?php endif; ?>
             <button type="button" class="fdr-icon-button fdr-menu-toggle" data-fdr-toggle="menu" aria-controls="fdr-menu-panel" aria-expanded="false">
                 <span class="fdr-menu-toggle__open"><?php echo feder_icon('menu'); ?></span>
                 <span class="fdr-menu-toggle__close"><?php echo feder_icon('close'); ?></span>
-                <span class="fdr-visually-hidden">Menü</span>
+                <span class="fdr-visually-hidden"><?php echo feder_e(feder_t('Menü', 'Menu')); ?></span>
             </button>
         </div>
     </div>
@@ -121,7 +121,7 @@ $bodyClasses = feder_body_class(
     <?php endif; ?>
 
     <div class="fdr-panel fdr-panel--menu" id="fdr-menu-panel" hidden>
-        <nav class="fdr-panel__inner" aria-label="Mobile Navigation">
+        <nav class="fdr-panel__inner" aria-label="<?php echo feder_e(feder_t('Mobile Navigation', 'Mobile navigation')); ?>">
             <?php feder_nav_menu('primary', 'fdr-mobile-nav', feder_default_menu('primary'), 'mobile'); ?>
         </nav>
     </div>
