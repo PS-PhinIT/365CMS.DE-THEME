@@ -10,15 +10,17 @@ if (!defined('ABSPATH')) {
 // Schlagwort-Archive zusätzlich `$category` bzw. `$tag` (Name, Slug).
 $posts = isset($posts) && is_array($posts) ? $posts : [];
 $safe  = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$bbLocale = theme_v4_locale($contentLocale ?? null);
+$t = static fn(string $de, string $en): string => theme_v4_t($de, $en, $bbLocale);
 $siteUrl = buildbase_safe_url((string) SITE_URL, '/');
 
 $bbArchiveName = static fn(mixed $source): string =>
     trim((string) (is_array($source) ? ($source['name'] ?? '') : (is_object($source) ? ($source->name ?? '') : '')));
-$bbTitle = 'Beiträge';
+$bbTitle = $t('Beiträge', 'Posts');
 if (isset($category) && $bbArchiveName($category) !== '') {
-    $bbTitle = 'Kategorie: ' . $bbArchiveName($category);
+    $bbTitle = $t('Kategorie', 'Category') . ': ' . $bbArchiveName($category);
 } elseif (isset($tag) && !is_string($tag) && $bbArchiveName($tag) !== '') {
-    $bbTitle = 'Schlagwort: ' . $bbArchiveName($tag);
+    $bbTitle = $t('Schlagwort', 'Tag') . ': ' . $bbArchiveName($tag);
 }
 
 $bbPage  = max(1, (int) ($currentPage ?? 1));
@@ -49,18 +51,18 @@ $bbBase  = theme_v4_site_url(theme_v4_request_path());
             </div>
 
             <?php if ($bbPages > 1) : ?>
-            <nav class="cms-pagination" aria-label="Seitennavigation">
+            <nav class="cms-pagination" aria-label="<?php echo $safe($t('Seitennavigation', 'Pagination')); ?>">
                 <?php if ($bbPage > 1) : ?>
-                    <a class="bb-btn bb-btn-outline" href="<?php echo $safe($bbBase . ($bbPage - 1 > 1 ? '?p=' . ($bbPage - 1) : '')); ?>" rel="prev"><span aria-hidden="true">←</span> Neuere Beiträge</a>
+                    <a class="bb-btn bb-btn-outline" href="<?php echo $safe($bbBase . ($bbPage - 1 > 1 ? '?p=' . ($bbPage - 1) : '')); ?>" rel="prev"><span aria-hidden="true">←</span> <?php echo $safe($t('Neuere Beiträge', 'Newer posts')); ?></a>
                 <?php endif; ?>
-                <span aria-current="page">Seite <?php echo $bbPage; ?> von <?php echo $bbPages; ?></span>
+                <span aria-current="page"><?php echo $safe($t('Seite', 'Page')); ?> <?php echo $bbPage; ?> <?php echo $safe($t('von', 'of')); ?> <?php echo $bbPages; ?></span>
                 <?php if ($bbPage < $bbPages) : ?>
-                    <a class="bb-btn bb-btn-outline" href="<?php echo $safe($bbBase . '?p=' . ($bbPage + 1)); ?>" rel="next">Ältere Beiträge <span aria-hidden="true">→</span></a>
+                    <a class="bb-btn bb-btn-outline" href="<?php echo $safe($bbBase . '?p=' . ($bbPage + 1)); ?>" rel="next"><?php echo $safe($t('Ältere Beiträge', 'Older posts')); ?> <span aria-hidden="true">→</span></a>
                 <?php endif; ?>
             </nav>
             <?php endif; ?>
         <?php else : ?>
-            <p class="bb-empty">Noch keine Beiträge.</p>
+            <p class="bb-empty"><?php echo $safe($t('Noch keine Beiträge.', 'No posts yet.')); ?></p>
         <?php endif; ?>
     </div>
 </main>

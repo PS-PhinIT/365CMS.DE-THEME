@@ -17,19 +17,28 @@ try {
     $c = null;
 }
 
+$bbLocale = theme_v4_locale($contentLocale ?? null);
+$t = static fn(string $de, string $en): string => theme_v4_t($de, $en, $bbLocale);
+
 $heroBadge    = (string) ($c?->get('build_hero', 'hero_badge',              '🔨 Handwerk trifft Qualität')                                       ?? '🔨 Handwerk trifft Qualität');
 $heroHeadline = (string) ($c?->get('build_hero', 'hero_headline',           'Ihr Bau- & Handwerker-Verzeichnis')                                 ?? 'Ihr Bau- & Handwerker-Verzeichnis');
 $heroSubline  = (string) ($c?->get('build_hero', 'hero_subline',            'Finden Sie qualifizierte Handwerker und Baufirmen in Ihrer Region.') ?? '');
 $heroCta      = (string) ($c?->get('build_hero', 'hero_cta_label',          'Handwerker finden')                                                 ?? 'Handwerker finden');
 $heroSecCta   = (string) ($c?->get('build_hero', 'hero_quote_request_label','Kostenvoranschlag anfordern')                                       ?? 'Kostenvoranschlag anfordern');
 
-$showStats    = filter_var($c?->get('build_hero', 'show_hero_stats', true) ?? true, FILTER_VALIDATE_BOOLEAN);
-$statValue1   = (string) ($c?->get('build_hero', 'hero_stat_1_value', '800+')                       ?? '800+');
-$statLabel1   = (string) ($c?->get('build_hero', 'hero_stat_1_label', 'Handwerker im Netzwerk')     ?? 'Handwerker im Netzwerk');
-$statValue2   = (string) ($c?->get('build_hero', 'hero_stat_2_value', '2.400+')                     ?? '2.400+');
-$statLabel2   = (string) ($c?->get('build_hero', 'hero_stat_2_label', 'Abgeschlossene Projekte')    ?? 'Abgeschlossene Projekte');
-$statValue3   = (string) ($c?->get('build_hero', 'hero_stat_3_value', '4,8★')                       ?? '4,8★');
-$statLabel3   = (string) ($c?->get('build_hero', 'hero_stat_3_label', 'Ø Kundenbewertung')          ?? 'Ø Kundenbewertung');
+// Kennzahlen nur mit eigenen, belegbaren Werten: keine erfundenen Standardzahlen oder Bewertungen.
+$showStats    = filter_var($c?->get('build_hero', 'show_hero_stats', false) ?? false, FILTER_VALIDATE_BOOLEAN);
+$heroStats    = [];
+foreach ([1 => ['Handwerker im Netzwerk', 'Tradespeople in the network'], 2 => ['Abgeschlossene Projekte', 'Completed projects'], 3 => ['Ø Kundenbewertung', 'Avg. customer rating']] as $statNo => $statDefaults) {
+    $statValue = trim((string) ($c?->get('build_hero', 'hero_stat_' . $statNo . '_value', '') ?? ''));
+    $statLabel = trim((string) ($c?->get('build_hero', 'hero_stat_' . $statNo . '_label', $statDefaults[0]) ?? ''));
+    if ($bbLocale === 'en' && $statLabel === $statDefaults[0]) {
+        $statLabel = $statDefaults[1]; // unveränderter deutscher Standardtext
+    }
+    if ($statValue !== '' && $statLabel !== '') {
+        $heroStats[] = ['value' => $statValue, 'label' => $statLabel];
+    }
+}
 
 $portfolioTitle = (string) ($c?->get('build_content', 'portfolio_section_title',    'Referenz-Projekte')                       ?? 'Referenz-Projekte');
 $portfolioSub   = (string) ($c?->get('build_content', 'portfolio_section_subtitle', 'Realisierte Projekte mit Qualitätsnachweis') ?? '');
@@ -68,7 +77,7 @@ $showProjects = theme_v4_link_available($projectsUrl);
 
 <main id="main" class="bb-main" role="main">
 
-    <section class="bb-hero" aria-label="Hero">
+    <section class="bb-hero" aria-label="<?php echo $safe($t('Startseiten-Hero', 'Home hero')); ?>">
         <div class="bb-container">
             <?php if ($heroBadge !== '') : ?>
                 <div class="bb-hero-badge"><?php echo $safe($heroBadge); ?></div>
@@ -87,20 +96,14 @@ $showProjects = theme_v4_link_available($projectsUrl);
                 <?php endif; ?>
             </div>
             <?php endif; ?>
-            <?php if ($showStats) : ?>
-                <div class="bb-stats-row" role="list" aria-label="Kennzahlen">
+            <?php if ($showStats && $heroStats !== []) : ?>
+                <div class="bb-stats-row" role="list" aria-label="<?php echo $safe($t('Kennzahlen', 'Key figures')); ?>">
+                    <?php foreach ($heroStats as $heroStat) : ?>
                     <div class="bb-stat" role="listitem">
-                        <span class="bb-stat-number"><?php echo $safe($statValue1); ?></span>
-                        <span class="bb-stat-label"><?php echo $safe($statLabel1); ?></span>
+                        <span class="bb-stat-number"><?php echo $safe($heroStat['value']); ?></span>
+                        <span class="bb-stat-label"><?php echo $safe($heroStat['label']); ?></span>
                     </div>
-                    <div class="bb-stat" role="listitem">
-                        <span class="bb-stat-number"><?php echo $safe($statValue2); ?></span>
-                        <span class="bb-stat-label"><?php echo $safe($statLabel2); ?></span>
-                    </div>
-                    <div class="bb-stat" role="listitem">
-                        <span class="bb-stat-number"><?php echo $safe($statValue3); ?></span>
-                        <span class="bb-stat-label"><?php echo $safe($statLabel3); ?></span>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>
@@ -118,7 +121,7 @@ $showProjects = theme_v4_link_available($projectsUrl);
             <div class="bb-grid">
                 <div class="bb-card bb-card--portfolio-cta">
                     <a href="<?php echo $safe($projectsUrl); ?>" class="bb-btn bb-btn-primary">
-                        Alle Referenzen ansehen <span aria-hidden="true">&rarr;</span>
+                        <?php echo $safe($t('Alle Referenzen ansehen', 'View all references')); ?> <span aria-hidden="true">&rarr;</span>
                     </a>
                 </div>
             </div>
@@ -127,7 +130,7 @@ $showProjects = theme_v4_link_available($projectsUrl);
     <?php endif; ?>
 
     <?php if (!$isLoggedIn) : ?>
-        <section class="bb-section bb-section--alt" aria-label="Betrieb registrieren">
+        <section class="bb-section bb-section--alt" aria-label="<?php echo $safe($t('Betrieb registrieren', 'Register your business')); ?>">
             <div class="bb-container bb-section-center">
                 <h2><?php echo $safe($ctaTitle); ?></h2>
                 <?php if ($ctaText !== '') : ?>

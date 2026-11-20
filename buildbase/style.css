@@ -4,7 +4,7 @@ Theme URI: https://phinit.de/themes/buildbase
 Author: PHINIT.DE / Andreas Hepp
 Author URI: https://phinit.de
 Description: Bau- & Handwerk-Theme für 365CMS – robust, solide, handwerklich. Mit Notfall-Banner, Gewerk-Badges, Portfolio-Grid und industrieller Typografie.
-Version: 4.1.0
+Version: 4.1.1
 Requires PHP: 8.4.1
 Requires CMS: 4.0.0
 Tested up to: 4.2.0
@@ -236,7 +236,10 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0 1.25rem;
 }
 
-.bb-site-logo { display: inline-flex; align-items: center; }
+.bb-site-logo { display: inline-flex; align-items: center; min-height: 2.75rem; max-width: 100%; }
+.bb-branding { min-width: 0; }
+.bb-logo-text { display: inline-flex; align-items: center; max-width: 100%; }
+.bb-logo-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bb-site-logo img { max-height: var(--logo-max-height); width: auto; }
 .bb-logo-text {
     font-family: var(--font-heading);
@@ -269,7 +272,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 .main-navigation a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--safety-color); }
 
-.bb-header-actions { display: flex; align-items: center; gap: .75rem; }
+.bb-header-actions { display: flex; align-items: center; gap: .75rem; flex-shrink: 0; }
+.bb-nav-auth { display: none; }
 
 .bb-icon-btn {
     display: inline-flex;
@@ -369,7 +373,14 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
     .main-navigation.open { display: block; }
     .main-navigation ul { flex-direction: column; gap: 0; }
     .main-navigation a { display: block; padding: .75rem 1rem; }
-    .bb-header-actions .bb-btn-ghost { display: none; }
+    .bb-header-inner { gap: .75rem; padding: 0 1rem; }
+    /* Konto-Aktionen wandern ins Menüpanel (Logo, Suche und Menüknopf müssen in 320 px passen) */
+    .bb-header-actions .bb-header-auth { display: none; }
+    .bb-nav-auth { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid color-mix(in srgb, var(--header-text) 20%, transparent); }
+    .main-navigation .bb-nav-auth .bb-btn { display: inline-flex; padding: var(--btn-padding-y) var(--btn-padding-x); }
+    /* Outline auf dunklem Panel: Amber statt Braun (wie im Hero) */
+    .main-navigation .bb-nav-auth .bb-btn-outline { color: var(--safety-color); border-color: var(--safety-color); }
+    .main-navigation .bb-nav-auth .bb-btn-outline:hover { background: var(--safety-color); color: var(--text-primary); }
 }
 
 /* ================================================================
@@ -698,6 +709,7 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
 }
 .bb-error-title {
     font-family: var(--font-heading);
+    overflow-wrap: anywhere; /* „WARTUNGSARBEITEN“ in Versalien war auf 375 px breiter als die Karte */
     margin: 1rem 0 .5rem;
     text-transform: uppercase;
     letter-spacing: .5px;
@@ -779,6 +791,8 @@ body.has-emergency-banner .bb-site-content { padding-top: calc(var(--header-heig
     .bb-cta-group .bb-btn { justify-content: center; }
     .bb-error-code { font-size: 4rem; }
     .bb-error-code--system { font-size: 3rem; }
+    .bb-error-card { padding: 2rem 1rem; }
+    .bb-error-title { font-size: 1.6rem; }
 }
 
 @media (min-width: 1440px) {

@@ -29,6 +29,11 @@ try {
 }
 
 $safe = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$bbLocale = theme_v4_locale($contentLocale ?? null);
+// Unveränderter deutscher Standardtext: auf englischen Seiten die englische Fassung zeigen (eigene Texte bleiben unberührt).
+if ($bbLocale === 'en' && $copyrightTpl === '&copy; {year} {site_title}. Alle Rechte vorbehalten.') {
+    $copyrightTpl = '&copy; {year} {site_title}. All rights reserved.';
+}
 
 // Vorlage enthält z. B. `&copy;`: erst Entities auflösen, dann einmal escapen (bisher als „&amp;copy;“ sichtbar).
 $copyright = str_replace(
@@ -109,7 +114,7 @@ $bbFooterLegalHtml = $bbFooterMenu('footer-legal');
             <div class="bb-container">
                 <?php echo $safe($copyright); ?>
                 <?php if ($bbFooterLegalHtml !== '') : ?>
-                    <nav class="bb-footer-legal" aria-label="Rechtliche Links"><?php echo $bbFooterLegalHtml; // escaped ?></nav>
+                    <nav class="bb-footer-legal" aria-label="<?php echo $safe(theme_v4_t('Rechtliche Links', 'Legal links', $bbLocale)); ?>"><?php echo $bbFooterLegalHtml; // escaped ?></nav>
                 <?php endif; ?>
             </div>
         </div>
