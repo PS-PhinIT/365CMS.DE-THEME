@@ -87,7 +87,7 @@ if ($bbIsPreview)  { $bodyClasses[] = 'is-preview'; }
                     <?php else : ?>
                         <span class="bb-logo-text">
                             <span class="bb-logo-icon" aria-hidden="true">&#9874;</span>
-                            <?php echo $safe($siteTitle); ?>
+                            <span class="bb-logo-name"><?php echo $safe($siteTitle); ?></span>
                         </span>
                     <?php endif; ?>
                 </a>
@@ -96,11 +96,20 @@ if ($bbIsPreview)  { $bodyClasses[] = 'is-preview'; }
             <nav id="site-navigation" class="main-navigation" aria-label="<?php echo $safe(theme_v4_t('Hauptnavigation', 'Main navigation', $bbLocale)); ?>">
                 <?php // Eine responsive Navigation für Desktop und Mobil: main_nav einmal (Kontext desktop), sonst doppelte Einträge. ?>
                 <?php theme_nav_menu('primary-nav', 'desktop'); ?>
+                <?php // Konto-Aktionen im Menüpanel: Unter 768 px passen sie nicht neben Logo, Suche und Menüknopf (der Menüknopf lag außerhalb des Bildes, „Anmelden“ war mobil gar nicht erreichbar). ?>
+                <div class="bb-nav-auth">
+                    <?php if ($isLoggedIn) : ?>
+                        <a href="<?php echo $safe($memberUrl); ?>" class="bb-btn bb-btn-primary">Dashboard</a>
+                    <?php else : ?>
+                        <a href="<?php echo $safe($loginUrl); ?>" class="bb-btn bb-btn-outline"><?php echo $safe(theme_v4_t('Anmelden', 'Sign in', $bbLocale)); ?></a>
+                        <a href="<?php echo $safe($registerUrl); ?>" class="bb-btn bb-btn-primary"><?php echo $safe(theme_v4_t('Profil anlegen', 'Create profile', $bbLocale)); ?></a>
+                    <?php endif; ?>
+                </div>
             </nav>
 
             <div class="bb-header-actions">
                 <?php if ($showSearch) : ?>
-                    <button id="searchToggle" type="button" class="bb-icon-btn" aria-label="Suche öffnen" aria-expanded="false" aria-controls="searchPanel">
+                    <button id="searchToggle" type="button" class="bb-icon-btn" aria-label="<?php echo $safe(theme_v4_t('Suche öffnen', 'Open search', $bbLocale)); ?>" aria-expanded="false" aria-controls="searchPanel">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" focusable="false">
                             <circle cx="11" cy="11" r="8"/>
                             <path d="M21 21l-4.35-4.35"/>
@@ -109,13 +118,13 @@ if ($bbIsPreview)  { $bodyClasses[] = 'is-preview'; }
                 <?php endif; ?>
 
                 <?php if ($isLoggedIn) : ?>
-                    <a href="<?php echo $safe($memberUrl); ?>" class="bb-btn bb-btn-primary">Dashboard</a>
+                    <a href="<?php echo $safe($memberUrl); ?>" class="bb-btn bb-btn-primary bb-header-auth">Dashboard</a>
                 <?php else : ?>
-                    <a href="<?php echo $safe($loginUrl); ?>"    class="bb-btn bb-btn-ghost">Anmelden</a>
-                    <a href="<?php echo $safe($registerUrl); ?>" class="bb-btn bb-btn-primary">Profil anlegen</a>
+                    <a href="<?php echo $safe($loginUrl); ?>"    class="bb-btn bb-btn-ghost bb-header-auth"><?php echo $safe(theme_v4_t('Anmelden', 'Sign in', $bbLocale)); ?></a>
+                    <a href="<?php echo $safe($registerUrl); ?>" class="bb-btn bb-btn-primary bb-header-auth"><?php echo $safe(theme_v4_t('Profil anlegen', 'Create profile', $bbLocale)); ?></a>
                 <?php endif; ?>
 
-                <button id="mobileMenuToggle" type="button" class="bb-mobile-toggle" aria-label="Menü öffnen" aria-expanded="false" aria-controls="site-navigation">
+                <button id="mobileMenuToggle" type="button" class="bb-mobile-toggle" aria-label="<?php echo $safe(theme_v4_t('Menü öffnen', 'Open menu', $bbLocale)); ?>" data-label-open="<?php echo $safe(theme_v4_t('Menü öffnen', 'Open menu', $bbLocale)); ?>" data-label-close="<?php echo $safe(theme_v4_t('Menü schließen', 'Close menu', $bbLocale)); ?>" aria-expanded="false" aria-controls="site-navigation">
                     <span></span><span></span><span></span>
                 </button>
             </div>
@@ -125,11 +134,11 @@ if ($bbIsPreview)  { $bodyClasses[] = 'is-preview'; }
             <div id="searchPanel" class="bb-search-panel" hidden>
                 <div class="bb-header-inner">
                     <form role="search" method="get" action="<?php echo $safe($searchUrl); ?>" class="bb-search-form">
-                        <label for="bb-search" class="bb-visually-hidden">Suche</label>
-                        <input id="bb-search" type="search" name="q" placeholder="Handwerker, Baufirmen, Projekte suchen …" autocomplete="off" class="bb-search-input bb-focus-shadow">
-                        <button type="submit" class="bb-btn bb-btn-primary" aria-label="Suchen">Suchen</button>
+                        <label for="bb-search" class="bb-visually-hidden"><?php echo $safe(theme_v4_t('Suche', 'Search', $bbLocale)); ?></label>
+                        <input id="bb-search" type="search" name="q" placeholder="<?php echo $safe(theme_v4_t('Handwerker, Baufirmen, Projekte suchen …', 'Search tradespeople, companies, projects …', $bbLocale)); ?>" autocomplete="off" class="bb-search-input bb-focus-shadow">
+                        <button type="submit" class="bb-btn bb-btn-primary"><?php echo $safe(theme_v4_t('Suchen', 'Search', $bbLocale)); ?></button>
                     </form>
-                    <button id="searchClose" type="button" class="bb-btn bb-btn-ghost" aria-label="Suche schließen"><span aria-hidden="true">&times;</span></button>
+                    <button id="searchClose" type="button" class="bb-btn bb-btn-ghost" aria-label="<?php echo $safe(theme_v4_t('Suche schließen', 'Close search', $bbLocale)); ?>"><span aria-hidden="true">&times;</span></button>
                 </div>
             </div>
         <?php endif; ?>

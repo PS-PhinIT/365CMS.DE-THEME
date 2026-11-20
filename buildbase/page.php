@@ -10,6 +10,8 @@ if (!defined('ABSPATH')) {
 // Auch Core-Module rendern über page.php (Downloads, Feeds: `id` 0, ohne weitere Felder).
 $page = isset($page) && is_array($page) && $page !== [] ? (object) $page : null;
 $safe    = fn(string $v): string => htmlspecialchars($v, ENT_QUOTES, 'UTF-8');
+$bbLocale = theme_v4_locale($contentLocale ?? null);
+$t = static fn(string $de, string $en): string => theme_v4_t($de, $en, $bbLocale);
 $siteUrl = buildbase_safe_url((string) SITE_URL, '/');
 ?>
 <main id="main" class="bb-main bb-page-section" role="main">
@@ -25,9 +27,9 @@ $siteUrl = buildbase_safe_url((string) SITE_URL, '/');
             </article>
         <?php else : ?>
             <div class="bb-card bb-error-card">
-                <h1 class="bb-error-title">Seite nicht gefunden</h1>
+                <h1 class="bb-error-title"><?php echo $safe($t('Seite nicht gefunden', 'Page not found')); ?></h1>
                 <div class="bb-error-actions">
-                    <a href="<?php echo $safe($siteUrl); ?>" class="bb-btn bb-btn-primary">Zur Startseite</a>
+                    <a href="<?php echo $safe($siteUrl); ?>" class="bb-btn bb-btn-primary"><?php echo $safe($t('Zur Startseite', 'Back to home')); ?></a>
                 </div>
             </div>
         <?php endif; ?>

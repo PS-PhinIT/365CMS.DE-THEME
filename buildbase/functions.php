@@ -14,7 +14,7 @@ if (!defined('ABSPATH')) {
 }
 
 if (!defined('BUILDBASE_THEME_VERSION')) {
-    define('BUILDBASE_THEME_VERSION', '4.1.0');
+    define('BUILDBASE_THEME_VERSION', '4.1.1');
 }
 if (!defined('BUILDBASE_THEME_SLUG')) {
     define('BUILDBASE_THEME_SLUG', 'buildbase');
@@ -247,6 +247,17 @@ final class BuildBase_Theme {
 }
 
 BuildBase_Theme::instance();
+
+/** Datum je Seitensprache: deutsch `02.11.2026`, englisch `Nov 2, 2026`; ungültige Werte ergeben einen leeren String. */
+function buildbase_format_date(mixed $value, string $locale = 'de'): string
+{
+    $ts = is_string($value) && trim($value) !== '' ? strtotime($value) : false;
+    if ($ts === false) {
+        return '';
+    }
+
+    return $locale === 'en' ? date('M j, Y', $ts) : date('d.m.Y', $ts);
+}
 
 function buildbase_css_color(string $value, string $fallback): string
 {

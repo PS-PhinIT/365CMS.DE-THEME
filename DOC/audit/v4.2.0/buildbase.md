@@ -42,7 +42,7 @@
 
 ## 4. Offene Punkte aus dem 4.0/4.1-Audit
 
-- Browser-/axe-Prüfung ausstehend; Kontraste nur Standardpalette.
+- Browser-/axe-Prüfung ausstehend; Kontraste nur Standardpalette. → Browserprüfung erledigt in 4.1.1 (Abschnitt 8); Kontraste weiterhin nur für die Standardpalette
 
 ## 5. Abnahme
 
@@ -67,3 +67,42 @@ Alle Zeilen in Abschnitt 3 mit Ergebnis, Kit 1.1.0, Metadaten 4.1.0, Vertragstes
 | K4/K5 | – | Theme-Variablen `--accent-color` (keine Kollision), Header ohne `<main>` | geprüft |
 | K6–K8 | – | keine Slug-Erzeugung, keine Benachrichtigungen, keine eigenen POST-Formulare | kein Befund |
 | K9 | – | `php -l`, `TESTS/theme-contract`, Render-/Fuzz-Test | grün |
+
+## 7. Folgeaudit (2026-11-18, umgesetzt in 4.1.1, Kit 1.2.0)
+
+Das Erstaudit (Abschnitt 6) war statisch und per Render-Test. Offen waren die Browser-/axe-Prüfung, die Kostenmessung der Kit-Linkprüfung und die Seitensprache. Werkzeug: [`tools/`](tools/README.md).
+
+### Messung vor den Korrekturen
+
+| Prüfung | Ergebnis am Stand 4.1.0 |
+|---|---|
+| Datenbankabfragen für Standardlinks (Attrappe zählt `PageManager::getPageBySlug()`) | Startseite, 404 und Archiv je 5, je `SELECT *` mit Seiteninhalt, ungepuffert |
+| Chromium + axe-core (WCAG 2.0–2.2 A/AA, Best Practice), 13 Seitenvarianten × 1280/375 px | axe ohne Befund; 2 Läufe mit Befunden (horizontaler Überlauf Wartungsseite 375 px, Menüknopf angemeldet 375 px teilweise außerhalb des Bildes) |
+| Sichtprüfung Kopfzeile bei 320 px | Logo dreizeilig, „Profil anlegen“ verdrängt den Menüknopf vollständig aus dem Bild |
+
+Die erste Fassung der Fokusprüfung im Werkzeug erkannte nur vertikal verdeckte Elemente; sie meldet jetzt auch seitlich aus dem Bild liegende und prüft zusätzlich 320 px.
+
+### Befunde
+
+| ID | Schwere | Befund | Ergebnis |
+|---|---|---|---|
+| Q3/B | **hoch** | Unter 768 px blieb die Hauptaktion im Header und verdrängte den Menüknopf teilweise (375 px) oder ganz (320 px) aus dem Bild. „Anmelden“ (`bb-btn-ghost`) war mobil per CSS ausgeblendet und sonst nirgends erreichbar. Mobil war die Navigation unerreichbar bzw. kein Login möglich | Konto-Aktionen im Menüpanel (`.bb-nav-auth`), Titel mit Auslassung; 45 Läufe inkl. 320 px ohne Befund |
+| S11/Demo | **mittel** | `theme.json`: `show_hero_stats` = an, Werte „800+“, „2.400+“, „4,8★“ mit Beschriftungen „Handwerker im Netzwerk“, „Abgeschlossene Projekte“, „Ø Kundenbewertung“ → auf jeder Installation ohne eigene Werte erfundene Leistungs- und **Bewertungsangaben** öffentlich sichtbar | Schalter aus, Werte leer, Kennzahl nur mit Wert und Beschriftung; gespeicherte Werte bleiben |
+| P1 | mittel | `theme_v4_link_available()`: 5 `SELECT *` samt Inhalt je Seitenaufruf (Betrifft alle Themes) | Kit 1.2.0: 1 Abfrage je Request (Render-Test: 5 → 1) |
+| B | niedrig | Wartungs-/Fehlerseite: „WARTUNGSARBEITEN“ (Versalien) 34 px breiter als die Karte bei 375 px | `overflow-wrap`, kleinere Schrift und Innenabstand unter 480 px |
+| B4 | mittel | Seitensprache: Header (Suche, Menüknopf, Konto-Buttons), Archiv, Beitrag, Seite, Suche, Fußzeile (Rechtslinks, Standard-Copyright), Startseite, Menüknopf-Beschriftung (fest in `navigation.js`) und Datum nur deutsch | `theme_v4_t()` bzw. `data-label-*`, `buildbase_format_date()` |
+| Q2 | niedrig | Zwei Kopien des URL-Prüfers (`$safeUrl`) in `blog-single.php`/`search.php`, ungenutzte `$formatDate`-Closure in `search.php` | `buildbase_safe_url()`, Closure entfernt |
+| Q2 | – | Ungenutzte Funktionen in `functions.php` | keine (`theme_use_local_fonts`, `theme_csp_nonce_attr` sind dokumentierte Core-Laufzeithelfer) |
+| Q3 | – | axe: Kontraste, Zielgrößen (2.5.8), Links im Fließtext, Fokus unter dem festen Header, Alt-Sektion (Befund aus 4.0) | kein Befund |
+
+### Ergebnis nach den Korrekturen
+
+- Chromium/axe: 45 Läufe (13 Seitenvarianten × 1280/375/320 px, teils mit/ohne reduzierte Bewegung, inkl. angemeldet, Beispiel-Kennzahlen, englisch) ohne Befund; Menüpanel bei 320 px per Screenshot geprüft; Kennzahlenleiste in 4 Konfigurationen (Standard, eigene Werte, teilweise Werte, englisch) im Render-Test.
+- `php -l`, `TESTS/theme-contract` des Cores (13 Themes), Render-/Fuzz-Test grün.
+- Standardlinks: 1 Abfrage je Seitenaufruf (vorher 5).
+
+### Offen / Grenzen
+
+- Die Prüfung läuft gegen Attrappen der Core-Klassen, ohne echte Installation (CSP-Header, Core-Stylesheets, Plugins). Kontraste gelten für die Standardpalette; eigene Customizer-Farben sind nicht geprüft.
+- Die Standardlinks der Fußzeile und des Heros zeigen auf englischen Seiten auf die Standardrouten (ohne `/en/`); nur die Beschriftungen sind übersetzt.
+- Der Menüpanel-Test (`menu.js`) im Werkzeug nutzt academy365-Selektoren; für buildbase wurde das Panel per Screenshot und über den allgemeinen Browserlauf geprüft.

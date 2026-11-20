@@ -1,7 +1,7 @@
 {
   "name": "BuildBase",
   "slug": "buildbase",
-  "version": "4.1.0",
+  "version": "4.1.1",
   "requires_cms": "4.0.0",
   "requires_php": "8.4.1",
   "tested_up_to": "4.2.0",
@@ -463,13 +463,13 @@
         "show_hero_stats": {
           "label": "Hero-Kennzahlen anzeigen",
           "type": "checkbox",
-          "default": true,
-          "description": "Drei kompakte Kennzahlen unterhalb der CTA-Buttons"
+          "default": false,
+          "description": "Drei kompakte Kennzahlen unterhalb der CTA-Buttons. Nur mit eigenen, belegbaren Zahlen verwenden: Bis 4.1.0 standen hier erfundene Beispielwerte (800+ Handwerker, 2.400+ Projekte, 4,8★ Bewertung). Leere Werte werden nicht angezeigt."
         },
         "hero_stat_1_value": {
           "label": "Kennzahl 1 – Wert",
           "type": "text",
-          "default": "800+",
+          "default": "",
           "description": "Z.B. Anzahl Handwerker im Netzwerk"
         },
         "hero_stat_1_label": {
@@ -480,7 +480,7 @@
         "hero_stat_2_value": {
           "label": "Kennzahl 2 – Wert",
           "type": "text",
-          "default": "2.400+",
+          "default": "",
           "description": "Z.B. abgeschlossene Projekte"
         },
         "hero_stat_2_label": {
@@ -491,7 +491,7 @@
         "hero_stat_3_value": {
           "label": "Kennzahl 3 – Wert",
           "type": "text",
-          "default": "4,8★",
+          "default": "",
           "description": "Z.B. Durchschnittsbewertung"
         },
         "hero_stat_3_label": {

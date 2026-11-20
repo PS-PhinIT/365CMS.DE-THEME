@@ -14,7 +14,7 @@ Wiederholbare Prüfungen, mit denen die Audits unter `DOC/audit/v4.2.0/` durchge
 |---|---|
 | `php <repo>/TESTS/theme-contract/run.php <theme-repo>` (im Core) | Theme-Vertrag des Cores (CSP, Hooks, Versionen) |
 | `./run.sh <themedir>` | Rendert alle Vorlagen mit manipulierten Eingaben (`?q[]=`, `?p[]=`, `id = 0`, Entwurf, Fehlerseiten): je ein `<main>`, keine PHP-Warnungen, keine Inline-Tags ohne Nonce, keine `javascript:`-/Backslash-Links, keine doppelten IDs |
-| `./gen.sh <themedir>` + `node run.js <themedir>` | Lädt die gerenderten Seiten mit Theme-CSS/-JS in Chromium (Desktop 1280 px, Mobil 375 px, mit und ohne reduzierte Bewegung): axe-core (WCAG 2.0–2.2 A/AA, Best Practice, u. a. Kontrast, `target-size` 2.5.8, `link-in-text-block`), horizontales Scrollen, Fokus nicht verdeckt (Tab-Durchlauf), JS-Fehler |
+| `./gen.sh <themedir>` + `node run.js <themedir>` | Lädt die gerenderten Seiten mit Theme-CSS/-JS in Chromium (Desktop 1280 px, Mobil 375 und 320 px, mit und ohne reduzierte Bewegung): axe-core (WCAG 2.0–2.2 A/AA, Best Practice, u. a. Kontrast, `target-size` 2.5.8, `link-in-text-block`), horizontales Scrollen, Fokus nicht verdeckt oder außerhalb des Bildes, auch seitlich (Tab-Durchlauf), JS-Fehler |
 | `node menu.js <themedir>` | Mobilmenü bei 320/375/600/700/1024 px: Menüknopf im Bild, Panel öffnet/schließt, kein horizontales Scrollen (academy365-Selektoren; für andere Themes anpassen) |
 | `node shot.js <themedir> <seite> <breite> <datei.png> [höhe]` | Screenshot einer gerenderten Seite |
 | `php kit-tests/*.php <themedir>/includes/cms-v4-compat.php` | Kit-Helfer: Seitenprüfung (`links.php`, `links-large-and-failure.php`), Slugs/Pfade/Rückfälle (`smoke.php`) |

@@ -5,7 +5,7 @@ const themeDir = path.resolve(process.argv[2]); const slug = path.basename(theme
 const pagesDir = path.join(__dirname, 'pages', slug);
 const axeSrc = fs.readFileSync(path.join(__dirname, 'node_modules/axe-core/axe.min.js'), 'utf8');
 const only = process.argv[3] ? process.argv[3].split(',') : null;
-const viewports = [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobil', width: 375, height: 800 }];
+const viewports = [{ name: 'desktop', width: 1280, height: 900 }, { name: 'mobil', width: 375, height: 800 }, { name: 'mobil-320', width: 320, height: 640 }];
 const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
 
 (async () => {
@@ -63,8 +63,8 @@ const mime = { '.css': 'text/css', '.js': 'application/javascript', '.png': 'ima
             const cx = Math.min(Math.max(b.left + b.width / 2, 0), innerWidth - 1), cy = Math.min(Math.max(b.top + b.height / 2, 0), innerHeight - 1);
             const top = document.elementFromPoint(cx, cy);
             const covered = top && top !== el && !el.contains(top) && !top.contains(el);
-            const offscreen = b.bottom < 0 || b.top > innerHeight;
-            return (covered || offscreen) ? { label: el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0] + (el.textContent ? ' „' + el.textContent.trim().slice(0, 24) + '“' : ''), by: covered ? top.tagName + '.' + String(top.className).split(' ')[0] : 'außerhalb' } : null;
+            const offscreen = b.bottom < 0 || b.top > innerHeight || b.right > innerWidth + 1 || b.left < -1; // auch seitlich aus dem Bild (z. B. Menüknopf hinter Buttons)
+            return (covered || offscreen) ? { label: el.tagName.toLowerCase() + '.' + String(el.className).split(' ')[0] + (el.textContent ? ' „' + el.textContent.trim().slice(0, 24) + '“' : ''), by: covered ? top.tagName + '.' + String(top.className).split(' ')[0] : 'außerhalb (' + Math.round(b.left) + '–' + Math.round(b.right) + ' px bei ' + innerWidth + ' px Breite)' } : null;
           });
           if (r) hidden.push(JSON.stringify(r));
         }

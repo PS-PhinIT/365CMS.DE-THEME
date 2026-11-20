@@ -24,7 +24,8 @@
         const isOpen = () => mToggle.getAttribute('aria-expanded') === 'true';
         const setOpen = (open) => {
             mToggle.setAttribute('aria-expanded', String(open));
-            mToggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
+            // Beschriftungen kommen aus dem Markup (Sprache der Seite), nicht aus dem Script
+            mToggle.setAttribute('aria-label', (open ? mToggle.dataset.labelClose : mToggle.dataset.labelOpen) || (open ? 'Menü schließen' : 'Menü öffnen'));
             nav.classList.toggle('open', open);
         };
         mToggle.addEventListener('click', () => {

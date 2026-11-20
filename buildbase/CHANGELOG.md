@@ -1,5 +1,29 @@
 # Changelog
 
+## 4.1.1 - 2026-11-18
+
+### Folgeaudit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/buildbase.md`, Abschnitt 8)
+
+Nachgeholt wurden die im ersten Audit offenen Punkte: Prüfung im Browser (Chromium, axe-core, WCAG 2.2 AA bei 1280, 375 und 320 px; Werkzeug unter `DOC/audit/v4.2.0/tools/`), Kosten der Standardlink-Prüfung und Zweisprachigkeit.
+
+#### Fehler
+- **Mobil war die Navigation nicht erreichbar:** Unter 768 px blieb „Profil anlegen“ bzw. „Dashboard“ im Header und verdrängte den Menüknopf teilweise oder ganz aus dem Bild (bei 320 px nicht mehr sichtbar); „Anmelden“ war mobil gar nicht erreichbar (nur im Header, dort ausgeblendet). Die Konto-Aktionen stehen jetzt im Menüpanel, der Titel wird gekürzt statt umgebrochen.
+- Wartungs- und Fehlerseite: „WARTUNGSARBEITEN“ in Versalien war auf 375 px breiter als die Karte (34 px horizontaler Überlauf).
+- Menüknopf: Die Beschriftungen („Menü öffnen/schließen“) kamen fest aus `navigation.js`, jetzt aus dem Markup (Sprache der Seite).
+
+#### Inhalte
+- **Hero-Kennzahlen:** `theme.json` lieferte auf jeder Installation ohne eigene Werte „800+ Handwerker im Netzwerk“, „2.400+ Abgeschlossene Projekte“ und eine Kundenbewertung „4,8★“ (Schalter standardmäßig an): erfundene Leistungs- und Bewertungsangaben. Der Schalter ist jetzt standardmäßig aus, die Wert-Felder sind leer, und eine Kennzahl erscheint nur mit Wert und Beschriftung. Bereits im Customizer gespeicherte Werte bleiben erhalten. **Wer eigene Zahlen anzeigen möchte, schaltet „Hero-Kennzahlen anzeigen“ ein und trägt die Werte ein.**
+
+#### Performance
+- **Standardlink-Prüfung:** Jeder Link auf eine Seite (Fußzeile, Hero, 404) fragte `PageManager::getPageBySlug()` einzeln ab (`SELECT *` samt Inhalt, ungepuffert): 5 Abfragen je Seitenaufruf. Jetzt eine Abfrage je Request (Kit 1.2.0).
+
+#### Zweisprachigkeit
+- Header (Suche, Menüknopf, Konto-Buttons), Archiv (Titel, Paginierung), Beitrag, Seite, Suche, Fußzeile (Rechtslinks, Standard-Copyright) und Startseite folgen der Seitensprache (`/en/…`); Datumsangaben je Sprache (`02.11.2026` / `Nov 2, 2026`).
+
+#### Wartung
+- Doppelte `$safeUrl`-Closures in `blog-single.php` und `search.php` durch `buildbase_safe_url()` ersetzt, ungenutzte `$formatDate`-Closure in `search.php` entfernt, `buildbase_format_date()` für das Datum.
+- Gemeinsame Schicht **Kit 1.2.0** (`includes/cms-v4-compat.php`): `theme_v4_link_target()`, `theme_v4_page_index()`, `theme_v4_page_is_published()`, `theme_v4_pages_published()`; `theme_v4_link_available()`/`theme_v4_filter_links()` behalten ihre Signatur.
+
 ## 4.1.0 - 2026-11-18
 
 ### Audit 365CMS 4.2.0 (Plan und Befunde: `DOC/audit/v4.2.0/buildbase.md`)
